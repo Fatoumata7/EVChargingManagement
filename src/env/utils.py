@@ -4,7 +4,7 @@ utils.py
 
 from scipy.stats import truncnorm
 import numpy as np
-import experiments.config as config
+import src.experiments.config as config
 
 
 def get_truncated_normal(mean, sd, low, high):

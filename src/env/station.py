@@ -5,10 +5,11 @@ station.py — Agent station de recharge
 import numpy as np
 import random
 from loguru import logger
-import env.utils as utils
-import env.offer as off
-import experiments.config as config
 from ortools.linear_solver import pywraplp
+
+import src.env.utils as utils
+import src.env.offer as off
+import src.experiments.config as config
 
 
 class Station:
@@ -214,7 +215,7 @@ class Station:
         return int(np.sum(self.schedule != -1))
 
     def display_parameters(self, file):
-        print('--- AGENT STATION')
+        print('--- AGENT STATION', file=file)
         print(f'  m             : {self.m}', file=file)
         print(f'  loc           : {self.loc}', file=file)
         print(f'  society_id    : {self.society_id}', file=file)

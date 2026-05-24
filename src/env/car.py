@@ -4,9 +4,10 @@ car.py — Agent véhicule électrique
 
 import numpy as np
 import math
-import env.utils as utils
 import random
-import experiments.config as config
+
+import src.env.utils as utils
+import src.experiments.config as config
 
 
 class Car:
@@ -277,7 +278,7 @@ class Car:
         return best_offer, best_u
 
     def display_parameters(self, file):
-        print('--- AGENT CAR')
+        print('--- AGENT CAR', file=file)
         print(f'  idx           : {self.idx}', file=file)
         print(f'  loc           : ({self.x:.1f}, {self.y:.1f})', file=file)
         print(f'  soc           : {self.soc_m * 1e-3:.3f}km', file=file)

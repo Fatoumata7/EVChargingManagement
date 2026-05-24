@@ -15,15 +15,15 @@ class Offer:
 
         self.distance = distance
 
-    def display_offer(self):
+    def display_offer(self, file):
 
-        print(f"station_id = {self.station_id}")
-        print(f"charger_id = {self.charger_id}")
+        print(f"station_id = {self.station_id}", file=file)
+        print(f"charger_id = {self.charger_id}", file=file)
 
-        print(f"t_arr = {self.t_arr}")
-        print(f"t_dep = {self.t_dep}")
-        print(f"d_prop = {self.d_prop}")
+        print(f"t_arr = {self.t_arr}", file=file)
+        print(f"t_dep = {self.t_dep}", file=file)
+        print(f"d_prop = {self.d_prop}", file=file)
 
-        print(f"distance = {self.distance * 1e-3:.2f}km")
+        print(f"distance = {self.distance * 1e-3:.2f}km", file=file)
 
     

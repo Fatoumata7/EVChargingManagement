@@ -7,11 +7,11 @@ import os
 from dotenv import load_dotenv
 
 
-import experiments.config as cfg_module
-import env.station as st
-import env.car as car_module
-import env.society as sct
-import experiments.simulation as sim_module
+import src.experiments.config as cfg_module
+import src.env.station as st
+import src.env.car as car_module
+import src.env.society as sct
+import src.experiments.simulation as sim_module
 
 
 def define_agents(config):

@@ -5,11 +5,12 @@ simulation.py — Boucle principale avec collecte des métriques
 import math
 import time
 import numpy as np
-import experiments.config as cfg
-from env.metrics import MetricsCollector
-from env.visualizer import Visualizer
-from env.metrics import MetricsCollector, BreakdownTracker
 from loguru import logger   
+
+import src.experiments.config as cfg
+from src.env.metrics import MetricsCollector
+from src.env.visualizer import Visualizer
+from src.env.metrics import MetricsCollector, BreakdownTracker
 
 
 class Simulation:
@@ -32,37 +33,34 @@ class Simulation:
         self._broken_cars = set()   # car.idx des voitures actuellement en panne
 
     # ------------------------------------------------------------------
-    def run(self):
+    def run(self, file):
         for t in range(self.t_max):
-            print(f'{t}/{self.t_max}')
             self.current_t = t
-            self.step(t)
-        print(f"\n=== Simulation terminée ({self.t_max} slots) ===")
+            self.step(t, self.config.log_iter, file=file)
+        print(f"\n\n=== Simulation terminée ({self.t_max} slots) ===", file=file)
         self.metrics.print_report()
         self.breakdowns.print_report()
-        #print(f"  Pannes sèches : {self.breakdowns.count} cars")
+        #print(f"\n  Pannes sèches : {self.breakdowns.count} cars", file=file)
     # ------------------------------------------------------------------
-    def step(self, t_c: int):
+    
+    def step(self, t_c: int, log_iter: int, file):
 
-        logger.info(f'INSTANT {t_c}')
-
-        # LOG
-        #logger.info('----- SOCs state')
-        #for car in self.cars:
-            #print(f'- car_{car.idx}: {car.soc_m * 1e-3:.2f}km')
-            #print(f'- soc: {car.soc_m:.2f}')
-            #print(f'- soc_threshold: {car.soc_threshold_m:.2f}')
-
+        str_log_tmp = f'\n--------------------------------------------- INSTANT {t_c}/{self.config.TOTAL_TIME}' + \
+            '---------------------------------------------\n'
+        file.write(str_log_tmp)
+        if t_c % log_iter == 0: 
+            logger.info(str_log_tmp)
+            
         # 0. Déplacement vers station
         arrived = []
         for car_idx, target_station in list(self._driving_to_station.items()):
             car = self._get_car(car_idx)
             dist = self._get_distance(car, target_station)
-            print(f'car_{car.idx} (soc: {car.soc_m:.2f} -> {(car.soc_m / car.autonomy) * 100:.2f}km) '
-                  f'{car.state} station_{target_station.m} REMAINING DISTANCE {dist * 1e-3:.2f}km')
+            print(f'\ncar_{car.idx} (soc: {car.soc_m:.2f} -> {(car.soc_m / car.autonomy) * 100:.2f}km) '
+                  f'{car.state} station_{target_station.m} REMAINING DISTANCE {dist * 1e-3:.2f}km', file=file)
             if car.update_state(target_station.loc):
                 arrived.append(car_idx)
-                print(f'car_{car.idx} ARRIVED station_{target_station.m}')
+                print(f'\ncar_{car.idx} ARRIVED station_{target_station.m}', file=file)
         for car_idx in arrived:
             del self._driving_to_station[car_idx]
 
@@ -72,7 +70,7 @@ class Simulation:
                 car.update_state()
 
         # 1.b Pannes & gestion
-        self._step_breakdown_detection(t_c)
+        self._step_breakdown_detection(t_c, file=file)
 
         # 2. Émission des requêtes
         demands   = {s.m: [] for s in self.stations}
@@ -81,14 +79,14 @@ class Simulation:
 
         for car in self.cars:
             if car.needs_charging():
-                print(f'car_{car.idx} NEED CHARGING (soc:{car.soc_m * 1e-3:.2f}km < {car.soc_threshold_m * 1e-3:.2f}km)')
+                print(f'\ncar_{car.idx} NEED CHARGING (soc:{car.soc_m * 1e-3:.2f}km < {car.soc_threshold_m * 1e-3:.2f}km)', file=file)
                 req = car.emit_request(t_c, (car.x, car.y), id_demand)
-                print(f'-> REQUEST {req['n']}'
+                print(f'\n-> REQUEST {req['n']}'
                       f' | DURATION: {req['d_n']} slots '
                       f'-> {req['d_n'] // self.config.NB_SLOTS_IN_ONE_HOUR}H '
                       f'{(req['d_n'] % self.config.NB_SLOTS_IN_ONE_HOUR) * self.config.SLOT_DURATION}min'
                       f' | RAY: {req['r_n']*1e-3:.2f}km'
-                      f' | PATIENCE: {req['g_n']*5:.2f}min')
+                      f' | PATIENCE: {req['g_n']*5:.2f}min', file=file)
                 self.metrics.record_demand_emitted(id_demand)
                 self.nb_demands += 1
                 car.set_state('REQUESTING')
@@ -96,8 +94,8 @@ class Simulation:
                 eligible, min_d, min_s = self._get_eligible_stations(
                     req['loc'][0], req['loc'][1], req['r_n']
                 )
-                print(f'-> MIN_DIST = {min_d*1e-3:.2f}km, station {min_s}')
-                print(f'-> {len(eligible)} ELIGIBLE STATION')
+                print(f'\n-> MIN_DIST = {min_d*1e-3:.2f}km, station {min_s}', file=file)
+                print(f'\n-> {len(eligible)} ELIGIBLE STATION', file=file)
                 # --- fix: si rayon de recherche trop petit et pas d'eligible station, le véhicule continue de rouler
                 if len(eligible) == 0:
                     car.set_state('DRIVING')
@@ -138,12 +136,12 @@ class Simulation:
                 continue
 
             #for nb, offer in enumerate(offers):
-                #print(f'----- OFFER N°{nb}')
+                #print(f'\n----- OFFER N°{nb}', file=file)
                 #offer.display_offer()
             best_offer, best_u = car.choose_offer(offers, car.request, min_d)
             if best_offer is not None:
-                print(f'----- CHOOSEN OFFER:')
-                best_offer.display_offer()
+                print(f'\n----- CHOOSEN OFFER:', file=file)
+                best_offer.display_offer(file=file)
             if best_offer is None:
                 car.set_state('DRIVING')
                 continue
@@ -195,9 +193,9 @@ class Simulation:
 
         # 7. Mise à jour sociétés
         if t_c > 0 and t_c % self.config.SOCIETY_UPDATE_INTERVAL == 0:
-            logger.info('#### UPDATE SOCIETY STRATEGY')
+            logger.info('#### UPDATE SOCIETY STRATEGY', file=file)
             for society in self.societies:
-                society.update_strategy()
+                society.update_strategy(file=file)
 
         # --- VISUALISATION
         if self.config.VISUALIZE:
@@ -253,7 +251,7 @@ class Simulation:
                     min_stat = s.m
         return eligible, (min_dist if eligible else 0.), min_stat
     
-    def _step_breakdown_detection(self, t_c):
+    def _step_breakdown_detection(self, t_c, file):
 
         """Phase 1b — détecte les nouvelles pannes et gère la reprise."""
 
@@ -264,8 +262,8 @@ class Simulation:
                     and car.idx not in self._broken_cars):
                 self._broken_cars.add(car.idx)
                 self.breakdowns.record(car, t_c)
-                print(f"  [PANNE] car_{car.idx} tombe en panne "
-                    f"(soc={car.soc_m:.3f}) pos=({car.x:.0f},{car.y:.0f})")
+                print(f"\n  [PANNE] car_{car.idx} tombe en panne "
+                    f"(soc={car.soc_m:.3f}) pos=({car.x:.0f},{car.y:.0f})", file=file)
 
                 # Libère la réservation si elle existait
                 if car.reservation is not None:
@@ -283,4 +281,4 @@ class Simulation:
                     and car.soc_m > self.config.SOC_BREAKDOWN_THRESHOLD * 5):
                 car.set_state('DRIVING')
                 self._broken_cars.discard(car.idx)
-                print(f"  [REPRISE] car_{car.idx} redémarre (soc={car.soc_m:.3f})")
+                print(f"\n  [REPRISE] car_{car.idx} redémarre (soc={car.soc_m:.3f})", file=file)
