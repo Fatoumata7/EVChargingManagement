@@ -33,23 +33,24 @@ class Simulation:
         self._broken_cars = set()   # car.idx des voitures actuellement en panne
 
     # ------------------------------------------------------------------
-    def run(self, file):
+    def run(self, file, print_metrics=True):
         for t in range(self.t_max):
             self.current_t = t
             self.step(t, self.config.log_iter, file=file)
         print(f"\n\n=== Simulation terminée ({self.t_max} slots) ===", file=file)
-        self.metrics.print_report()
-        self.breakdowns.print_report()
-        #print(f"\n  Pannes sèches : {self.breakdowns.count} cars", file=file)
+        if print_metrics:
+            self.metrics.print_report()
+            self.breakdowns.print_report()
+            #print(f"\n  Pannes sèches : {self.breakdowns.count} cars", file=file)
     # ------------------------------------------------------------------
     
     def step(self, t_c: int, log_iter: int, file):
 
-        str_log_tmp = f'\n--------------------------------------------- INSTANT {t_c}/{self.config.TOTAL_TIME}' + \
+        str_log_tmp = f'\n--------------------------------------------- INSTANT {t_c}/{self.config.TOTAL_TIME} ' + \
             '---------------------------------------------\n'
         file.write(str_log_tmp)
-        if t_c % log_iter == 0: 
-            logger.info(str_log_tmp)
+        if (t_c % log_iter == 0) or (t_c == self.config.TOTAL_TIME): 
+            logger.info(f'INSTANT {t_c}/{self.config.TOTAL_TIME}')
             
         # 0. Déplacement vers station
         arrived = []
@@ -193,7 +194,7 @@ class Simulation:
 
         # 7. Mise à jour sociétés
         if t_c > 0 and t_c % self.config.SOCIETY_UPDATE_INTERVAL == 0:
-            logger.info('#### UPDATE SOCIETY STRATEGY', file=file)
+            logger.info('-> UPDATE SOCIETY STRATEGY', file=file)
             for society in self.societies:
                 society.update_strategy(file=file)
 
