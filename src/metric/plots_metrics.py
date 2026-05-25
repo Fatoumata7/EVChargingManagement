@@ -17,15 +17,25 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
+from matplotlib.patches import Rectangle
 
 
 # ============================================================
 # 0. Affichage de la grille 2D avec les stations
 # ============================================================
 
+import matplotlib.pyplot as plt
+
+from matplotlib.lines import Line2D
+from matplotlib.patches import Rectangle
+
+
 def plot_stations_2d(
     stations,
     sim_config,
+    scenario_name,
+    approach_name,
+    nb_car,
     figsize=(8, 8),
     padding=5
 ):
@@ -38,7 +48,9 @@ def plot_stations_2d(
     Parameters
     ----------
     stations : List[Station]
+
     sim_config : SimulationConfig
+
     padding : float
         Marge autour de la grille
     """
@@ -81,7 +93,8 @@ def plot_stations_2d(
             s.loc[1],
             s=180,
             color=color,
-            alpha=0.7
+            alpha=0.7,
+            edgecolors='black'
         )
 
         # Label station
@@ -94,27 +107,62 @@ def plot_stations_2d(
         )
 
     # --------------------------------------------------------
-    # Limites grille + padding
+    # Limites de la grille
+    # --------------------------------------------------------
+
+    grid_width = sim_config.C_GRID
+    grid_height = sim_config.C_GRID
+
+    grid_rect = Rectangle(
+        (0, 0),
+        grid_width,
+        grid_height,
+        linewidth=1,
+        edgecolor='black',
+        facecolor='none'
+    )
+
+    ax.add_patch(grid_rect)
+
+    # --------------------------------------------------------
+    # Axes
     # --------------------------------------------------------
 
     ax.set_xlim(
         -padding,
-        sim_config.C_GRID + padding
+        grid_width + padding
     )
 
     ax.set_ylim(
         -padding,
-        sim_config.C_GRID + padding
+        grid_height + padding
     )
 
     ax.set_aspect('equal')
 
+    # --------------------------------------------------------
+    # Title
+    # --------------------------------------------------------
+
+    scenario_tag = (
+        f"[{scenario_name[:3].upper()}-"
+        f"{approach_name.upper()}@{nb_car}]"
+    )
+
     ax.set_title(
-        "Charging Stations on 2D Grid",
+        f"{scenario_tag} Charging Stations on 2D Grid",
         fontweight='bold'
     )
 
-    ax.grid(True, linestyle='--', alpha=0.5)
+    # --------------------------------------------------------
+    # Grid
+    # --------------------------------------------------------
+
+    ax.grid(
+        True,
+        linestyle='--',
+        alpha=0.3
+    )
 
     # --------------------------------------------------------
     # Légende sociétés
@@ -141,13 +189,15 @@ def plot_stations_2d(
 
     plt.tight_layout()
     plt.show()
+    plt.close()
 
 
 # ============================================================
 # 1. Demande énergétique par station
 # ============================================================
 
-def plot_station_demand(metrics, societies, figsize=(10, 5)):
+def plot_station_demand(metrics, societies, scenario_name, \
+                        approach_name, nb_car, figsize=(10, 5)):
     """
     Affiche la demande énergétique (kWh) par station.
 
@@ -214,9 +264,10 @@ def plot_station_demand(metrics, societies, figsize=(10, 5)):
         color=colors,
         alpha=0.7
     )
+    scenario_tag = f"[{scenario_name[:3].upper()}-{approach_name.upper()}@{nb_car}]"
 
-    ax.set_title("Station Demand", fontweight='bold')
-    ax.set_xlabel("Station ID", fontweight='bold')
+    ax.set_title(f"{scenario_tag} Station Demand", fontweight='bold')
+    ax.set_xlabel("Station ID")
     ax.set_ylabel("Energy Demand (kWh)", fontweight='bold')
     ax.set_ylim(top=max(energies)*1.15)
 
@@ -256,7 +307,8 @@ def plot_station_demand(metrics, societies, figsize=(10, 5)):
 # 2. Satisfaction utilisateur
 # ============================================================
 
-def plot_user_satisfaction(metrics, figsize=(6, 5)):
+def plot_user_satisfaction(metrics, scenario_name, approach_name, nb_car,\
+                           figsize=(6, 5)):
     """
     Affiche les métriques de satisfaction utilisateur.
     """
@@ -276,10 +328,11 @@ def plot_user_satisfaction(metrics, figsize=(6, 5)):
     fig, ax = plt.subplots(figsize=figsize)
 
     bars = ax.bar(labels, values, color=['blue', 'green'], alpha=0.7)
+    scenario_tag = f"[{scenario_name[:3].upper()}-{approach_name.upper()}@{nb_car}]"
 
     ax.set_ylim(0, 100)
     ax.set_ylabel("Satisfaction (%)", fontweight='bold')
-    ax.set_title("User Request Satisfaction", fontweight='bold')
+    ax.set_title(f"{scenario_tag} User Request Satisfaction", fontweight='bold')
 
     for bar, val in zip(bars, values):
         ax.text(
@@ -300,7 +353,8 @@ def plot_user_satisfaction(metrics, figsize=(6, 5)):
 # 3. Distance & temps d'attente
 # ============================================================
 
-def plot_travel_waiting(metrics, bins=20, figsize=(12, 5)):
+def plot_travel_waiting(metrics, scenario_name, approach_name, nb_car, \
+                        bins=20, figsize=(12, 5)):
     """
     Histogrammes :
         - distances parcourues
@@ -322,18 +376,19 @@ def plot_travel_waiting(metrics, bins=20, figsize=(12, 5)):
     ]
 
     fig, axes = plt.subplots(1, 2, figsize=figsize)
+    scenario_tag = f"[{scenario_name[:3].upper()}-{approach_name.upper()}@{nb_car}]"
 
     # Distance
     axes[0].hist(distances, bins=bins)
-    axes[0].set_title("Travel Distance Distribution", fontweight='bold')
+    axes[0].set_title(f"{scenario_tag} Travel Distance Distribution", fontweight='bold')
     axes[0].set_xlabel("Distance (km)", fontweight='bold')
-    axes[0].set_ylabel("Count", fontweight='bold')
+    axes[0].set_ylabel("#Count")
 
     # Waiting
     axes[1].hist(waiting_times, bins=bins)
-    axes[1].set_title("Waiting Time Distribution", fontweight='bold')
+    axes[1].set_title(f"{scenario_tag} Waiting Time Distribution", fontweight='bold')
     axes[1].set_xlabel("Waiting Time (min)", fontweight='bold')
-    axes[1].set_ylabel("Count", fontweight='bold')
+    axes[1].set_ylabel("#Count")
 
     plt.tight_layout()
     plt.show()
@@ -343,7 +398,8 @@ def plot_travel_waiting(metrics, bins=20, figsize=(12, 5)):
 # 4. Temps de réponse des demandes
 # ============================================================
 
-def plot_response_times(metrics, figsize=(10, 5)):
+def plot_response_times(metrics, scenario_name, approach_name, \
+                        nb_car, figsize=(10, 5)):
     """
     Temps de réponse pour chaque demande.
     """
@@ -368,9 +424,10 @@ def plot_response_times(metrics, figsize=(10, 5)):
         marker='o'
     )
 
-    ax.set_title("Demand Response Times")
+    scenario_tag = f"[{scenario_name[:3].upper()}-{approach_name.upper()}@{nb_car}]"
+    ax.set_title(f"{scenario_tag} Demand Response Times", fontweight='bold')
     ax.set_xlabel("Demand ID")
-    ax.set_ylabel("Response Time (ms)")
+    ax.set_ylabel("Response Time (ms)", fontweight='bold')
 
     plt.tight_layout()
     plt.show()
@@ -380,7 +437,7 @@ def plot_response_times(metrics, figsize=(10, 5)):
 # 5. Temps de traitement par station
 # ============================================================
 
-def plot_processing_times(metrics, figsize=(10, 5)):
+def plot_processing_times(metrics, scenario_name, approach_name, nb_car, figsize=(10, 5)):
     """
     Temps moyen de traitement ILP par station.
     """
@@ -398,15 +455,16 @@ def plot_processing_times(metrics, figsize=(10, 5)):
 
     bars = ax.bar(station_ids, times)
 
-    ax.set_title("Mean Processing Time per Station")
+    scenario_tag = f"[{scenario_name[:3].upper()}-{approach_name.upper()}@{nb_car}]"
+    ax.set_title(f"{scenario_tag} Mean Processing Time per Station", fontweight='bold')
     ax.set_xlabel("Station ID")
-    ax.set_ylabel("Processing Time (ms)")
+    ax.set_ylabel("Processing Time (ms)", fontweight='bold')
 
     for bar, val in zip(bars, times):
         ax.text(
             bar.get_x() + bar.get_width() / 2,
             bar.get_height(),
-            f"{val:.2f}",
+            f"{val:.0f}",
             ha='center',
             va='bottom'
         )

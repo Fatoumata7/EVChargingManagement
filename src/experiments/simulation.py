@@ -49,8 +49,8 @@ class Simulation:
         str_log_tmp = f'\n--------------------------------------------- INSTANT {t_c}/{self.config.TOTAL_TIME} ' + \
             '---------------------------------------------\n'
         file.write(str_log_tmp)
-        if (t_c % log_iter == 0) or (t_c == self.config.TOTAL_TIME): 
-            logger.info(f'INSTANT {t_c}/{self.config.TOTAL_TIME}')
+        if (((t_c + 1) % log_iter) == 0) or ((t_c + 1) == self.config.TOTAL_TIME): 
+            logger.info(f'INSTANT {t_c + 1}/{self.config.TOTAL_TIME}')
             
         # 0. Déplacement vers station
         arrived = []
