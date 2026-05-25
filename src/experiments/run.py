@@ -70,7 +70,7 @@ if __name__ == "__main__":
 
     print(f"\nSimulation started with {len(cars)} cars and {len(stations)} stations.", file=summary_file)
 
-    print("=== Initialisation des agents ===")
+    print("=== Initialisation des agents ===", file=summary_file)
     cars, stations, societies = define_agents(config)
 
     # ----- AFFICHAGE DES AGENTS (sociétés, station et véhicules)

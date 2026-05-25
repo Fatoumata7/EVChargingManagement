@@ -57,7 +57,7 @@ class Station:
             return []
 
         solver = pywraplp.Solver.CreateSolver("SCIP")
-        solver.SetTimeLimit(200)
+        solver.SetTimeLimit(60000 * 5) # 60000 -> 1 min
 
         T = self.T
         n_list, cars = [], []
