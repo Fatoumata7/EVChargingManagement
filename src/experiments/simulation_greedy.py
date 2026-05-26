@@ -14,7 +14,7 @@ from loguru import logger
 import src.experiments.config as cfg
 
 from src.env.visualizer import Visualizer
-from src.env.metrics import MetricsCollector, BreakdownTracker
+from metrics.metrics import MetricsCollector, BreakdownTracker
 
 
 class SimulationGreedy:
