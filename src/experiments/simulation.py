@@ -8,9 +8,9 @@ import numpy as np
 from loguru import logger   
 
 import src.experiments.config as cfg
-from metric.metrics import MetricsCollector
+from src.metrics.metrics import MetricsCollector
 from src.env.visualizer import Visualizer
-from metric.metrics import MetricsCollector, BreakdownTracker
+from src.metrics.metrics import MetricsCollector, BreakdownTracker
 
 
 class Simulation:
