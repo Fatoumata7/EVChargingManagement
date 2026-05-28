@@ -23,7 +23,8 @@ class Station:
             config.NB_CHARG_SPOT['low'], config.NB_CHARG_SPOT['high'])
 
         self.strategy = None   # injecté par Society.add_station()
-        self.alpha = random.uniform(0.3, 0.9)  # poids profit vs risque
+        self.alpha = random.uniform(0.1, 0.9)  # poids profit vs risque
+        self.alpha_save = [self.alpha]
 
         self.T = config.TOTAL_TIME
         self.schedule = np.full((self.nb_charg_spot, self.T), -1, dtype=int)

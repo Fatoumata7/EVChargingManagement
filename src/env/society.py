@@ -15,6 +15,7 @@ class Society:
     def __init__(self, f_id: int, config: config.SimulationConfig):
         self.f_id = f_id
         self.loc = utils.init_pos(config)
+        self.config = config
         self.stations = []
 
         self.strategy = copy.deepcopy(config.BASE_POINTS_STRATEGY)
@@ -25,7 +26,7 @@ class Society:
                 v + np.random.uniform(-config.STRATEGY_NOISE * v, config.STRATEGY_NOISE * v)
             )
 
-        self.best_strategy = None
+        #self.best_strategy = None
 
     def add_station(self, s: station.Station):
         self.stations.append(s)
@@ -43,19 +44,24 @@ class Society:
         perf = [s.total_nb_allocated_slot() for s in self.stations]
         print(f'---> PERF (total_nb_allocated_slot): {perf}', file=file)
         best_idx = int(np.argmax(perf))
-        self.best_strategy = copy.deepcopy(self.stations[best_idx].strategy)
+        #self.best_strategy = copy.deepcopy(self.stations[best_idx].strategy)
         print(f'best_station perf: {perf[best_idx]} allocated_slots', file=file)
-        print(f'best_strategy = {self.best_strategy}', file=file)
+        #print(f'best_strategy = {self.best_strategy}', file=file)
 
         # Propagation à toutes les stations
-        for s in self.stations:
-            s.strategy = self.best_strategy
+        best_alpha = self.stations[best_idx].alpha
+        for idx, s in enumerate(self.stations):
+            if idx != best_idx:
+                prev_alpha = s.alpha
+                new_alpha = prev_alpha + self.config.GAMMA * (best_alpha - prev_alpha)
+                s.alpha = new_alpha
+                s.alpha_save.append(new_alpha)
 
-        self.strategy = self.best_strategy
+        #self.strategy = self.best_strategy
 
     def display_parameters(self, file):
         print('--- AGENT SOCIETY', file=file)
         print(f'  f_id          : {self.f_id}', file=file)
         print(f'  nb stations   : {len(self.stations)}', file=file)
         print(f'  strategy      : {self.strategy}', file=file)
-        print(f'  best_strategy : {self.best_strategy}', file=file)
+        #print(f'  best_strategy : {self.best_strategy}', file=file)

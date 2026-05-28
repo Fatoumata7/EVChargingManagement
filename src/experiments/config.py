@@ -17,6 +17,9 @@ class SimulationConfig:
     # ------------------------------------------------------------------ VISUALIZATION
     VIS_DELAY = 2 # 100ms entre chaque slot    
 
+    # ------------------------------------------------------------------ APPRENTISSAGE
+    GAMMA = 0.1
+
     # ------------------------------------------------------------------ VOITURE
     # SOC initial : entre 0.3 et 1.0 (pas de voiture quasi-vide au départ)
     CAR_INIT_SOC = {'low': 0.30, 'high': 0.80}
