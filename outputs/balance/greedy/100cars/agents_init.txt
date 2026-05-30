@@ -3,111 +3,111 @@
 --- 100 CAR ---
 --- AGENT CAR
   idx           : 0
-  loc           : (1118.2, 581.2)
-  soc           : 155.285km
-  soc threshold : 123.952km
-  autonomy      : 355.0km
+  loc           : (2696.6, 2840.8)
+  soc           : 289.840km
+  soc threshold : 125.507km
+  autonomy      : 415.0km
   state         : DRIVING
-  theta         : {'pres': 0.6024996940723635, 'abs': 0.19095579836806112, 'early': 0.12405256858856259, 'late': 0.08249193897101288}
-  pref          : {'energy': 0.287537918423322, 'dist': 0.38023489192526966, 'wait': 0.33222718965140824}
-  charging_power: 4 km/slot
-  score         : [0. 0. 0. 0.]
-  u_total       : 0.0000
-  nb_sessions   : 0
-
---- AGENT CAR
-  idx           : 1
-  loc           : (577.7, 2496.4)
-  soc           : 286.217km
-  soc threshold : 194.255km
-  autonomy      : 495.0km
-  state         : DRIVING
-  theta         : {'pres': 0.607836016525073, 'abs': 0.19284816681676017, 'early': 0.12277583065272259, 'late': 0.07653998600544423}
-  pref          : {'energy': 0.1361730894662595, 'dist': 0.2802291633255264, 'wait': 0.5835977472082141}
-  charging_power: 6 km/slot
-  score         : [0. 0. 0. 0.]
-  u_total       : 0.0000
-  nb_sessions   : 0
-
---- AGENT CAR
-  idx           : 2
-  loc           : (130.3, 1120.0)
-  soc           : 188.821km
-  soc threshold : 161.522km
-  autonomy      : 400.0km
-  state         : DRIVING
-  theta         : {'pres': 0.5914194725597477, 'abs': 0.20821212838882888, 'early': 0.12794561505441923, 'late': 0.07242278399700418}
-  pref          : {'energy': 0.337748309054297, 'dist': 0.2995807281390063, 'wait': 0.3626709628066967}
-  charging_power: 7 km/slot
-  score         : [0. 0. 0. 0.]
-  u_total       : 0.0000
-  nb_sessions   : 0
-
---- AGENT CAR
-  idx           : 3
-  loc           : (859.4, 1916.4)
-  soc           : 144.162km
-  soc threshold : 166.878km
-  autonomy      : 465.0km
-  state         : DRIVING
-  theta         : {'pres': 0.5805345283757881, 'abs': 0.21041994236610392, 'early': 0.12497612163886065, 'late': 0.0840694076192473}
-  pref          : {'energy': 0.6514466181750606, 'dist': 0.2609727980994419, 'wait': 0.0875805837254975}
+  theta         : {'pres': 0.6309544231566521, 'abs': 0.18056593646858973, 'early': 0.10806511826964005, 'late': 0.08041452210511808}
+  pref          : {'energy': 0.46086621409945605, 'dist': 0.32525935755255114, 'wait': 0.2138744283479928}
   charging_power: 8 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
   nb_sessions   : 0
 
 --- AGENT CAR
-  idx           : 4
-  loc           : (1068.4, 1615.3)
-  soc           : 185.129km
-  soc threshold : 190.854km
-  autonomy      : 485.0km
+  idx           : 1
+  loc           : (1714.7, 299.3)
+  soc           : 209.035km
+  soc threshold : 120.274km
+  autonomy      : 375.0km
   state         : DRIVING
-  theta         : {'pres': 0.6012904980392547, 'abs': 0.1928041618962875, 'early': 0.12730829516486697, 'late': 0.07859704489959085}
-  pref          : {'energy': 0.5023505414418922, 'dist': 0.38054780003622596, 'wait': 0.11710165852188183}
+  theta         : {'pres': 0.6186248272536806, 'abs': 0.18943935666275338, 'early': 0.1128241177724454, 'late': 0.07911169831112065}
+  pref          : {'energy': 0.45372950159630976, 'dist': 0.3263448629326003, 'wait': 0.2199256354710899}
   charging_power: 7 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
   nb_sessions   : 0
 
 --- AGENT CAR
-  idx           : 5
-  loc           : (187.9, 341.6)
-  soc           : 200.719km
-  soc threshold : 135.930km
-  autonomy      : 380.0km
+  idx           : 2
+  loc           : (1195.3, 273.8)
+  soc           : 135.839km
+  soc threshold : 154.160km
+  autonomy      : 430.0km
   state         : DRIVING
-  theta         : {'pres': 0.581859225714535, 'abs': 0.20485364426675656, 'early': 0.13212558257142953, 'late': 0.081161547447279}
-  pref          : {'energy': 0.36862149182117215, 'dist': 0.31832666313561786, 'wait': 0.31305184504321}
+  theta         : {'pres': 0.567050812106046, 'abs': 0.2210381184921205, 'early': 0.13316720870328616, 'late': 0.07874386069854732}
+  pref          : {'energy': 0.12818645954217353, 'dist': 0.3143219451848597, 'wait': 0.5574915952729668}
+  charging_power: 6 km/slot
+  score         : [0. 0. 0. 0.]
+  u_total       : 0.0000
+  nb_sessions   : 0
+
+--- AGENT CAR
+  idx           : 3
+  loc           : (444.8, 2842.3)
+  soc           : 133.909km
+  soc threshold : 76.300km
+  autonomy      : 300.0km
+  state         : DRIVING
+  theta         : {'pres': 0.5885442770655424, 'abs': 0.21299760200909545, 'early': 0.12180000836970035, 'late': 0.07665811255566181}
+  pref          : {'energy': 0.5513950041211935, 'dist': 0.025404746958748448, 'wait': 0.42320024892005803}
   charging_power: 4 km/slot
+  score         : [0. 0. 0. 0.]
+  u_total       : 0.0000
+  nb_sessions   : 0
+
+--- AGENT CAR
+  idx           : 4
+  loc           : (1901.9, 2037.9)
+  soc           : 186.658km
+  soc threshold : 101.727km
+  autonomy      : 355.0km
+  state         : DRIVING
+  theta         : {'pres': 0.5776684302102847, 'abs': 0.21177280269219265, 'early': 0.12448939464732021, 'late': 0.0860693724502024}
+  pref          : {'energy': 0.6473567184429029, 'dist': 0.30263192230988617, 'wait': 0.05001135924721091}
+  charging_power: 6 km/slot
+  score         : [0. 0. 0. 0.]
+  u_total       : 0.0000
+  nb_sessions   : 0
+
+--- AGENT CAR
+  idx           : 5
+  loc           : (1002.0, 2237.4)
+  soc           : 330.547km
+  soc threshold : 141.510km
+  autonomy      : 430.0km
+  state         : DRIVING
+  theta         : {'pres': 0.5748258425131354, 'abs': 0.2186451072091479, 'early': 0.11940880750011082, 'late': 0.0871202427776058}
+  pref          : {'energy': 0.2899104970071496, 'dist': 0.3245660515637366, 'wait': 0.38552345142911393}
+  charging_power: 6 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
   nb_sessions   : 0
 
 --- AGENT CAR
   idx           : 6
-  loc           : (864.9, 1669.0)
-  soc           : 254.590km
-  soc threshold : 128.139km
-  autonomy      : 365.0km
+  loc           : (1681.8, 953.2)
+  soc           : 246.307km
+  soc threshold : 130.775km
+  autonomy      : 460.0km
   state         : DRIVING
-  theta         : {'pres': 0.5983664351510324, 'abs': 0.2009387057200477, 'early': 0.12186342103857545, 'late': 0.07883143809034447}
-  pref          : {'energy': 0.25928513739143993, 'dist': 0.39870945801230806, 'wait': 0.342005404596252}
-  charging_power: 4 km/slot
+  theta         : {'pres': 0.6249774412204678, 'abs': 0.1879130541190208, 'early': 0.1072805344046021, 'late': 0.07982897025590924}
+  pref          : {'energy': 0.4830644788776511, 'dist': 0.058591423281925924, 'wait': 0.458344097840423}
+  charging_power: 7 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
   nb_sessions   : 0
 
 --- AGENT CAR
   idx           : 7
-  loc           : (2264.2, 97.5)
-  soc           : 126.988km
-  soc threshold : 196.819km
-  autonomy      : 385.0km
+  loc           : (741.3, 993.4)
+  soc           : 200.069km
+  soc threshold : 112.775km
+  autonomy      : 345.0km
   state         : DRIVING
-  theta         : {'pres': 0.5852127625531697, 'abs': 0.20621179061436568, 'early': 0.12350539532644025, 'late': 0.0850700515060244}
-  pref          : {'energy': 0.25932557673197726, 'dist': 0.378600751850443, 'wait': 0.36207367141757973}
+  theta         : {'pres': 0.6136892352461958, 'abs': 0.19614321620262065, 'early': 0.11540653132344625, 'late': 0.07476101722773736}
+  pref          : {'energy': 0.42301087929731346, 'dist': 0.2550936141038395, 'wait': 0.32189550659884697}
   charging_power: 7 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
@@ -115,41 +115,41 @@
 
 --- AGENT CAR
   idx           : 8
-  loc           : (1280.7, 76.0)
-  soc           : 137.490km
-  soc threshold : 140.629km
-  autonomy      : 430.0km
+  loc           : (799.6, 2450.6)
+  soc           : 227.873km
+  soc threshold : 104.055km
+  autonomy      : 355.0km
   state         : DRIVING
-  theta         : {'pres': 0.6084786783264373, 'abs': 0.188526144713628, 'early': 0.11623074228779144, 'late': 0.08676443467214319}
-  pref          : {'energy': 0.41112317997324893, 'dist': 0.5407407790744504, 'wait': 0.04813604095230061}
-  charging_power: 7 km/slot
+  theta         : {'pres': 0.6073932069099766, 'abs': 0.20136826326182788, 'early': 0.11796907181710442, 'late': 0.07326945801109119}
+  pref          : {'energy': 0.46060591996830547, 'dist': 0.40085290560248193, 'wait': 0.1385411744292126}
+  charging_power: 4 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
   nb_sessions   : 0
 
 --- AGENT CAR
   idx           : 9
-  loc           : (385.1, 1058.4)
-  soc           : 135.500km
-  soc threshold : 123.790km
-  autonomy      : 410.0km
+  loc           : (912.0, 830.3)
+  soc           : 288.096km
+  soc threshold : 155.894km
+  autonomy      : 430.0km
   state         : DRIVING
-  theta         : {'pres': 0.6088200143448056, 'abs': 0.2032190340356655, 'early': 0.1151215961994269, 'late': 0.07283935542010202}
-  pref          : {'energy': 0.29950243882047384, 'dist': 0.5929387074304845, 'wait': 0.10755885374904169}
-  charging_power: 5 km/slot
+  theta         : {'pres': 0.5798068183116138, 'abs': 0.20014522469096532, 'early': 0.1283021737008185, 'late': 0.09174578329660238}
+  pref          : {'energy': 0.20606080002167312, 'dist': 0.5828910337870659, 'wait': 0.21104816619126107}
+  charging_power: 8 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
   nb_sessions   : 0
 
 --- AGENT CAR
   idx           : 10
-  loc           : (1792.7, 1755.9)
-  soc           : 256.598km
-  soc threshold : 130.112km
-  autonomy      : 430.0km
+  loc           : (81.9, 7.8)
+  soc           : 165.635km
+  soc threshold : 120.293km
+  autonomy      : 310.0km
   state         : DRIVING
-  theta         : {'pres': 0.5975365488450733, 'abs': 0.20793309626561535, 'early': 0.11722529380524786, 'late': 0.07730506108406353}
-  pref          : {'energy': 0.3980106185317409, 'dist': 0.04593857052213494, 'wait': 0.5560508109461242}
+  theta         : {'pres': 0.6117789306590042, 'abs': 0.18317734849205208, 'early': 0.1324256122466963, 'late': 0.07261810860224743}
+  pref          : {'energy': 0.029090981827878445, 'dist': 0.6171247927299717, 'wait': 0.35378422544214994}
   charging_power: 7 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
@@ -157,27 +157,27 @@
 
 --- AGENT CAR
   idx           : 11
-  loc           : (2547.4, 2961.3)
-  soc           : 233.796km
-  soc threshold : 155.214km
-  autonomy      : 385.0km
+  loc           : (2601.5, 2256.7)
+  soc           : 243.994km
+  soc threshold : 101.266km
+  autonomy      : 365.0km
   state         : DRIVING
-  theta         : {'pres': 0.6318532265444927, 'abs': 0.18823750282055848, 'early': 0.10884097970893117, 'late': 0.07106829092601757}
-  pref          : {'energy': 0.6413737025482756, 'dist': 0.04248117617837973, 'wait': 0.3161451212733446}
-  charging_power: 4 km/slot
+  theta         : {'pres': 0.6110669657203288, 'abs': 0.19729770731103607, 'early': 0.1125352150519792, 'late': 0.07910011191665597}
+  pref          : {'energy': 0.23852578259995522, 'dist': 0.36064819861062297, 'wait': 0.4008260187894218}
+  charging_power: 6 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
   nb_sessions   : 0
 
 --- AGENT CAR
   idx           : 12
-  loc           : (2586.0, 569.1)
-  soc           : 165.514km
-  soc threshold : 126.405km
-  autonomy      : 320.0km
+  loc           : (1617.1, 381.3)
+  soc           : 220.713km
+  soc threshold : 122.250km
+  autonomy      : 410.0km
   state         : DRIVING
-  theta         : {'pres': 0.5935684016972184, 'abs': 0.20590282761815654, 'early': 0.1261901636003446, 'late': 0.0743386070842805}
-  pref          : {'energy': 0.40526718823645247, 'dist': 0.40334050354259127, 'wait': 0.19139230822095626}
+  theta         : {'pres': 0.6249113330375644, 'abs': 0.17538935515516893, 'early': 0.12622498323649842, 'late': 0.07347432857076826}
+  pref          : {'energy': 0.07137124723338097, 'dist': 0.44322034897178836, 'wait': 0.4854084037948307}
   charging_power: 6 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
@@ -185,97 +185,97 @@
 
 --- AGENT CAR
   idx           : 13
-  loc           : (148.8, 2801.4)
-  soc           : 306.006km
-  soc threshold : 193.793km
-  autonomy      : 430.0km
+  loc           : (681.7, 2455.5)
+  soc           : 172.217km
+  soc threshold : 113.961km
+  autonomy      : 375.0km
   state         : DRIVING
-  theta         : {'pres': 0.5730777650988581, 'abs': 0.22656951551756005, 'early': 0.1220700754979914, 'late': 0.07828264388559043}
-  pref          : {'energy': 0.9165077414428381, 'dist': 0.03455014792631775, 'wait': 0.04894211063084421}
-  charging_power: 8 km/slot
+  theta         : {'pres': 0.5980573663960012, 'abs': 0.20138575047034515, 'early': 0.1196359543309361, 'late': 0.08092092880271766}
+  pref          : {'energy': 0.5103627074013661, 'dist': 0.1400675444079562, 'wait': 0.34956974819067754}
+  charging_power: 6 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
   nb_sessions   : 0
 
 --- AGENT CAR
   idx           : 14
-  loc           : (287.8, 1870.8)
-  soc           : 170.905km
-  soc threshold : 167.562km
-  autonomy      : 415.0km
-  state         : DRIVING
-  theta         : {'pres': 0.6151643895459005, 'abs': 0.191916837152039, 'early': 0.10792793159961458, 'late': 0.084990841702446}
-  pref          : {'energy': 0.11016500616910752, 'dist': 0.534354229764555, 'wait': 0.35548076406633744}
-  charging_power: 8 km/slot
-  score         : [0. 0. 0. 0.]
-  u_total       : 0.0000
-  nb_sessions   : 0
-
---- AGENT CAR
-  idx           : 15
-  loc           : (2225.0, 290.9)
-  soc           : 113.310km
-  soc threshold : 105.308km
+  loc           : (1338.8, 668.1)
+  soc           : 170.309km
+  soc threshold : 141.619km
   autonomy      : 325.0km
   state         : DRIVING
-  theta         : {'pres': 0.5792911772075636, 'abs': 0.21256304385294797, 'early': 0.12507639114132396, 'late': 0.08306938779816446}
-  pref          : {'energy': 0.06996448739238632, 'dist': 0.5380665326267625, 'wait': 0.39196897998085123}
-  charging_power: 8 km/slot
-  score         : [0. 0. 0. 0.]
-  u_total       : 0.0000
-  nb_sessions   : 0
-
---- AGENT CAR
-  idx           : 16
-  loc           : (2972.1, 1855.7)
-  soc           : 340.762km
-  soc threshold : 140.325km
-  autonomy      : 450.0km
-  state         : DRIVING
-  theta         : {'pres': 0.6126107846113054, 'abs': 0.19960793318686196, 'early': 0.10738402771165703, 'late': 0.08039725449017572}
-  pref          : {'energy': 0.71988703601428, 'dist': 0.19537590114372952, 'wait': 0.08473706284199056}
-  charging_power: 7 km/slot
-  score         : [0. 0. 0. 0.]
-  u_total       : 0.0000
-  nb_sessions   : 0
-
---- AGENT CAR
-  idx           : 17
-  loc           : (183.0, 374.5)
-  soc           : 305.077km
-  soc threshold : 139.115km
-  autonomy      : 385.0km
-  state         : DRIVING
-  theta         : {'pres': 0.575347416092475, 'abs': 0.21737542581057062, 'early': 0.12377146556062825, 'late': 0.08350569253632616}
-  pref          : {'energy': 0.07591348653832612, 'dist': 0.47919883076992725, 'wait': 0.4448876826917467}
-  charging_power: 8 km/slot
-  score         : [0. 0. 0. 0.]
-  u_total       : 0.0000
-  nb_sessions   : 0
-
---- AGENT CAR
-  idx           : 18
-  loc           : (2297.9, 2253.1)
-  soc           : 342.991km
-  soc threshold : 197.861km
-  autonomy      : 480.0km
-  state         : DRIVING
-  theta         : {'pres': 0.5692260917510406, 'abs': 0.22440724774597035, 'early': 0.1260589411776243, 'late': 0.0803077193253648}
-  pref          : {'energy': 0.33001030850339474, 'dist': 0.23557792407003583, 'wait': 0.4344117674265694}
+  theta         : {'pres': 0.5763442057506889, 'abs': 0.20662643589533713, 'early': 0.12775137090093644, 'late': 0.08927798745303749}
+  pref          : {'energy': 0.6462167571920552, 'dist': 0.1972710248196946, 'wait': 0.15651221798825016}
   charging_power: 4 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
   nb_sessions   : 0
 
 --- AGENT CAR
-  idx           : 19
-  loc           : (864.2, 2664.3)
-  soc           : 331.620km
-  soc threshold : 158.328km
-  autonomy      : 460.0km
+  idx           : 15
+  loc           : (1081.9, 704.7)
+  soc           : 197.112km
+  soc threshold : 152.788km
+  autonomy      : 350.0km
   state         : DRIVING
-  theta         : {'pres': 0.5778195845223856, 'abs': 0.22680126265269301, 'early': 0.1170963495166086, 'late': 0.07828280330831276}
-  pref          : {'energy': 0.12734341114372114, 'dist': 0.41073407069914636, 'wait': 0.4619225181571324}
+  theta         : {'pres': 0.6085166352917784, 'abs': 0.19967557553257845, 'early': 0.11872628976013731, 'late': 0.07308149941550585}
+  pref          : {'energy': 0.3021683181034901, 'dist': 0.35171659752409085, 'wait': 0.34611508437241917}
+  charging_power: 5 km/slot
+  score         : [0. 0. 0. 0.]
+  u_total       : 0.0000
+  nb_sessions   : 0
+
+--- AGENT CAR
+  idx           : 16
+  loc           : (1481.9, 2178.9)
+  soc           : 165.870km
+  soc threshold : 134.095km
+  autonomy      : 365.0km
+  state         : DRIVING
+  theta         : {'pres': 0.5878657701693863, 'abs': 0.2056641618042844, 'early': 0.11778869558424694, 'late': 0.08868137244208231}
+  pref          : {'energy': 0.333585091242286, 'dist': 0.23638680069596213, 'wait': 0.43002810806175185}
+  charging_power: 5 km/slot
+  score         : [0. 0. 0. 0.]
+  u_total       : 0.0000
+  nb_sessions   : 0
+
+--- AGENT CAR
+  idx           : 17
+  loc           : (191.7, 2188.8)
+  soc           : 239.077km
+  soc threshold : 126.084km
+  autonomy      : 400.0km
+  state         : DRIVING
+  theta         : {'pres': 0.6018451733402461, 'abs': 0.20701176217914868, 'early': 0.1174073276171163, 'late': 0.07373573686348893}
+  pref          : {'energy': 0.18634032826539432, 'dist': 0.2091242614373221, 'wait': 0.6045354102972836}
+  charging_power: 6 km/slot
+  score         : [0. 0. 0. 0.]
+  u_total       : 0.0000
+  nb_sessions   : 0
+
+--- AGENT CAR
+  idx           : 18
+  loc           : (330.2, 1522.9)
+  soc           : 239.993km
+  soc threshold : 160.475km
+  autonomy      : 475.0km
+  state         : DRIVING
+  theta         : {'pres': 0.5932392553457556, 'abs': 0.21009642407434007, 'early': 0.12102271917841201, 'late': 0.07564160140149229}
+  pref          : {'energy': 0.5033350105805874, 'dist': 0.09614102580327087, 'wait': 0.40052396361614184}
+  charging_power: 5 km/slot
+  score         : [0. 0. 0. 0.]
+  u_total       : 0.0000
+  nb_sessions   : 0
+
+--- AGENT CAR
+  idx           : 19
+  loc           : (2682.8, 1324.4)
+  soc           : 176.471km
+  soc threshold : 141.039km
+  autonomy      : 390.0km
+  state         : DRIVING
+  theta         : {'pres': 0.5837732285649714, 'abs': 0.22436470592190672, 'early': 0.11775242692899542, 'late': 0.07410963858412659}
+  pref          : {'energy': 0.5309081083941805, 'dist': 0.23900132662395795, 'wait': 0.2300905649818616}
   charging_power: 8 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
@@ -283,27 +283,27 @@
 
 --- AGENT CAR
   idx           : 20
-  loc           : (2075.3, 2902.0)
-  soc           : 253.978km
-  soc threshold : 112.087km
-  autonomy      : 385.0km
+  loc           : (230.2, 1643.4)
+  soc           : 187.425km
+  soc threshold : 151.332km
+  autonomy      : 455.0km
   state         : DRIVING
-  theta         : {'pres': 0.6044499193327145, 'abs': 0.1941058826603884, 'early': 0.12273584821897718, 'late': 0.07870834978791989}
-  pref          : {'energy': 0.4249840964299865, 'dist': 0.37834412555126046, 'wait': 0.1966717780187531}
-  charging_power: 5 km/slot
+  theta         : {'pres': 0.5916508523178652, 'abs': 0.21162079641014897, 'early': 0.12069571314550041, 'late': 0.07603263812648535}
+  pref          : {'energy': 0.12011711129303555, 'dist': 0.3014493652789303, 'wait': 0.5784335234280342}
+  charging_power: 7 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
   nb_sessions   : 0
 
 --- AGENT CAR
   idx           : 21
-  loc           : (2803.0, 2925.8)
-  soc           : 186.631km
-  soc threshold : 151.368km
-  autonomy      : 425.0km
+  loc           : (8.4, 587.0)
+  soc           : 192.877km
+  soc threshold : 172.199km
+  autonomy      : 405.0km
   state         : DRIVING
-  theta         : {'pres': 0.5913250783099127, 'abs': 0.20366480769174386, 'early': 0.11982347230286262, 'late': 0.08518664169548078}
-  pref          : {'energy': 0.36431110493793656, 'dist': 0.1466893603047675, 'wait': 0.4889995347572959}
+  theta         : {'pres': 0.5741235393726172, 'abs': 0.2103212062977209, 'early': 0.13051516696777163, 'late': 0.08504008736189028}
+  pref          : {'energy': 0.10941889161116895, 'dist': 0.6629907703274045, 'wait': 0.22759033806142653}
   charging_power: 7 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
@@ -311,27 +311,27 @@
 
 --- AGENT CAR
   idx           : 22
-  loc           : (672.2, 2933.5)
-  soc           : 171.192km
-  soc threshold : 205.008km
-  autonomy      : 480.0km
+  loc           : (149.0, 409.6)
+  soc           : 193.198km
+  soc threshold : 151.011km
+  autonomy      : 415.0km
   state         : DRIVING
-  theta         : {'pres': 0.5868278938776572, 'abs': 0.21301756537484087, 'early': 0.12079598688777853, 'late': 0.07935855385972335}
-  pref          : {'energy': 0.43393298601410396, 'dist': 0.2748645729621246, 'wait': 0.29120244102377146}
-  charging_power: 8 km/slot
+  theta         : {'pres': 0.6220746657696975, 'abs': 0.1790958699593967, 'early': 0.11887247125017539, 'late': 0.07995699302073038}
+  pref          : {'energy': 0.5175754606989823, 'dist': 0.20603236030990293, 'wait': 0.27639217899111485}
+  charging_power: 4 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
   nb_sessions   : 0
 
 --- AGENT CAR
   idx           : 23
-  loc           : (2415.1, 749.1)
-  soc           : 141.216km
-  soc threshold : 167.565km
-  autonomy      : 470.0km
+  loc           : (2978.2, 1888.2)
+  soc           : 288.768km
+  soc threshold : 161.595km
+  autonomy      : 420.0km
   state         : DRIVING
-  theta         : {'pres': 0.5863801407528438, 'abs': 0.21329456405235483, 'early': 0.12612714925708926, 'late': 0.07419814593771215}
-  pref          : {'energy': 0.4308289050186115, 'dist': 0.47636559050282695, 'wait': 0.09280550447856159}
+  theta         : {'pres': 0.6078060904748259, 'abs': 0.19533673785864963, 'early': 0.11828291363463012, 'late': 0.07857425803189438}
+  pref          : {'energy': 0.43765181715968454, 'dist': 0.44088610728296823, 'wait': 0.12146207555734707}
   charging_power: 4 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
@@ -339,13 +339,13 @@
 
 --- AGENT CAR
   idx           : 24
-  loc           : (9.2, 2689.4)
-  soc           : 262.574km
-  soc threshold : 97.616km
-  autonomy      : 350.0km
+  loc           : (373.1, 2264.2)
+  soc           : 160.389km
+  soc threshold : 141.593km
+  autonomy      : 395.0km
   state         : DRIVING
-  theta         : {'pres': 0.5814145970389067, 'abs': 0.2052401851926843, 'early': 0.13024936767084516, 'late': 0.08309585009756383}
-  pref          : {'energy': 0.34608951606769295, 'dist': 0.6270501700899446, 'wait': 0.026860313842362454}
+  theta         : {'pres': 0.5730170692419726, 'abs': 0.2049493114640405, 'early': 0.1304008999545034, 'late': 0.09163271933948344}
+  pref          : {'energy': 0.49307936396711755, 'dist': 0.29329785887537396, 'wait': 0.21362277715750852}
   charging_power: 4 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
@@ -353,69 +353,69 @@
 
 --- AGENT CAR
   idx           : 25
-  loc           : (97.3, 1410.0)
-  soc           : 137.052km
-  soc threshold : 150.835km
-  autonomy      : 320.0km
+  loc           : (1122.0, 1865.9)
+  soc           : 196.055km
+  soc threshold : 122.838km
+  autonomy      : 385.0km
   state         : DRIVING
-  theta         : {'pres': 0.6275191632928624, 'abs': 0.17631395649005394, 'early': 0.11290845296292255, 'late': 0.08325842725416119}
-  pref          : {'energy': 0.27624707699000917, 'dist': 0.4029573290060742, 'wait': 0.3207955940039166}
-  charging_power: 7 km/slot
-  score         : [0. 0. 0. 0.]
-  u_total       : 0.0000
-  nb_sessions   : 0
-
---- AGENT CAR
-  idx           : 26
-  loc           : (1804.9, 2730.0)
-  soc           : 289.770km
-  soc threshold : 108.757km
-  autonomy      : 375.0km
-  state         : DRIVING
-  theta         : {'pres': 0.597228252186839, 'abs': 0.1982608644268561, 'early': 0.12520134182426015, 'late': 0.07930954156204474}
-  pref          : {'energy': 0.26246214864589956, 'dist': 0.018473841752669667, 'wait': 0.7190640096014308}
+  theta         : {'pres': 0.6209744291338203, 'abs': 0.1775470104551336, 'early': 0.11960344006913833, 'late': 0.08187512034190782}
+  pref          : {'energy': 0.17132930818459752, 'dist': 0.18821513564621767, 'wait': 0.6404555561691847}
   charging_power: 8 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
   nb_sessions   : 0
 
 --- AGENT CAR
-  idx           : 27
-  loc           : (1541.9, 2452.6)
-  soc           : 303.270km
-  soc threshold : 180.377km
-  autonomy      : 475.0km
+  idx           : 26
+  loc           : (2490.6, 2452.2)
+  soc           : 338.404km
+  soc threshold : 176.397km
+  autonomy      : 430.0km
   state         : DRIVING
-  theta         : {'pres': 0.5730738122437217, 'abs': 0.2226940081237583, 'early': 0.11542803351957914, 'late': 0.08880414611294091}
-  pref          : {'energy': 0.06643472420246971, 'dist': 0.36228217336580043, 'wait': 0.5712831024317299}
-  charging_power: 7 km/slot
+  theta         : {'pres': 0.5911065824319157, 'abs': 0.20262402476735095, 'early': 0.13196309795066055, 'late': 0.07430629485007281}
+  pref          : {'energy': 0.8234853508277428, 'dist': 7.105837778338304e-05, 'wait': 0.17644359079447386}
+  charging_power: 6 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
   nb_sessions   : 0
 
 --- AGENT CAR
-  idx           : 28
-  loc           : (1727.3, 2361.0)
-  soc           : 165.006km
-  soc threshold : 148.151km
+  idx           : 27
+  loc           : (2936.9, 2725.2)
+  soc           : 202.687km
+  soc threshold : 135.910km
   autonomy      : 405.0km
   state         : DRIVING
-  theta         : {'pres': 0.6091530878410713, 'abs': 0.1904868459941854, 'early': 0.12311615114125007, 'late': 0.07724391502349331}
-  pref          : {'energy': 0.6487685879551408, 'dist': 0.2571709633717478, 'wait': 0.09406044867311136}
+  theta         : {'pres': 0.6298359282467589, 'abs': 0.17400951757660899, 'early': 0.1144422813579644, 'late': 0.08171227281866773}
+  pref          : {'energy': 0.6612924479884214, 'dist': 0.14217908869191023, 'wait': 0.1965284633196683}
   charging_power: 4 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
   nb_sessions   : 0
 
 --- AGENT CAR
-  idx           : 29
-  loc           : (625.9, 1851.2)
-  soc           : 254.583km
-  soc threshold : 180.242km
-  autonomy      : 485.0km
+  idx           : 28
+  loc           : (2182.4, 1141.2)
+  soc           : 202.438km
+  soc threshold : 221.686km
+  autonomy      : 490.0km
   state         : DRIVING
-  theta         : {'pres': 0.6319587153374772, 'abs': 0.17910749604162945, 'early': 0.11116636454882674, 'late': 0.07776742407206658}
-  pref          : {'energy': 0.5708451870600569, 'dist': 0.003115371411202216, 'wait': 0.4260394415287408}
+  theta         : {'pres': 0.576296979614453, 'abs': 0.21389452025199934, 'early': 0.12344105257292756, 'late': 0.08636744756062}
+  pref          : {'energy': 0.39853297878848865, 'dist': 0.4139404217000165, 'wait': 0.18752659951149475}
+  charging_power: 5 km/slot
+  score         : [0. 0. 0. 0.]
+  u_total       : 0.0000
+  nb_sessions   : 0
+
+--- AGENT CAR
+  idx           : 29
+  loc           : (2620.0, 692.4)
+  soc           : 264.441km
+  soc threshold : 169.444km
+  autonomy      : 480.0km
+  state         : DRIVING
+  theta         : {'pres': 0.5806816379699197, 'abs': 0.2030590358688067, 'early': 0.12944267235703166, 'late': 0.08681665380424192}
+  pref          : {'energy': 0.26034425097352637, 'dist': 0.5619730779104047, 'wait': 0.17768267111606884}
   charging_power: 5 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
@@ -423,55 +423,55 @@
 
 --- AGENT CAR
   idx           : 30
-  loc           : (179.7, 276.8)
-  soc           : 169.984km
-  soc threshold : 102.677km
-  autonomy      : 350.0km
+  loc           : (621.2, 79.7)
+  soc           : 260.878km
+  soc threshold : 122.877km
+  autonomy      : 400.0km
   state         : DRIVING
-  theta         : {'pres': 0.5818650782321533, 'abs': 0.20708068982869587, 'early': 0.12443686989320682, 'late': 0.08661736204594413}
-  pref          : {'energy': 0.3789944017171792, 'dist': 0.00048126911194960187, 'wait': 0.6205243291708711}
-  charging_power: 8 km/slot
+  theta         : {'pres': 0.5824356867510998, 'abs': 0.22199198101449402, 'early': 0.11918835066245259, 'late': 0.07638398157195359}
+  pref          : {'energy': 0.27224159986132135, 'dist': 0.33011698574297876, 'wait': 0.3976414143956998}
+  charging_power: 7 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
   nb_sessions   : 0
 
 --- AGENT CAR
   idx           : 31
-  loc           : (2788.1, 1595.9)
-  soc           : 298.822km
-  soc threshold : 129.879km
-  autonomy      : 375.0km
+  loc           : (1141.6, 2785.5)
+  soc           : 232.276km
+  soc threshold : 158.344km
+  autonomy      : 440.0km
   state         : DRIVING
-  theta         : {'pres': 0.6010683110472392, 'abs': 0.199050256969348, 'early': 0.1199774843219983, 'late': 0.07990394766141447}
-  pref          : {'energy': 0.3088491102055947, 'dist': 0.09804105891008583, 'wait': 0.5931098308843195}
-  charging_power: 8 km/slot
+  theta         : {'pres': 0.6108553410556867, 'abs': 0.20322314075600903, 'early': 0.10599296353657801, 'late': 0.07992855465172617}
+  pref          : {'energy': 0.48964992040609456, 'dist': 0.038065695977798575, 'wait': 0.47228438361610686}
+  charging_power: 4 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
   nb_sessions   : 0
 
 --- AGENT CAR
   idx           : 32
-  loc           : (1733.7, 729.7)
-  soc           : 156.853km
-  soc threshold : 186.482km
-  autonomy      : 445.0km
+  loc           : (1915.2, 2065.0)
+  soc           : 142.709km
+  soc threshold : 76.055km
+  autonomy      : 300.0km
   state         : DRIVING
-  theta         : {'pres': 0.5815765908336343, 'abs': 0.2071602942516018, 'early': 0.1297773380692555, 'late': 0.08148577684550831}
-  pref          : {'energy': 0.48300053610865884, 'dist': 0.19926055209397195, 'wait': 0.3177389117973692}
-  charging_power: 6 km/slot
+  theta         : {'pres': 0.6027111991842601, 'abs': 0.19999977271773964, 'early': 0.11859627908112037, 'late': 0.07869274901687986}
+  pref          : {'energy': 0.21454161225739257, 'dist': 0.7685189984375961, 'wait': 0.016939389305011304}
+  charging_power: 7 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
   nb_sessions   : 0
 
 --- AGENT CAR
   idx           : 33
-  loc           : (1028.2, 1795.5)
-  soc           : 229.737km
-  soc threshold : 163.712km
-  autonomy      : 415.0km
+  loc           : (2988.0, 2557.5)
+  soc           : 294.738km
+  soc threshold : 182.413km
+  autonomy      : 430.0km
   state         : DRIVING
-  theta         : {'pres': 0.6213391125893911, 'abs': 0.19752757010263794, 'early': 0.10920711160289029, 'late': 0.07192620570508068}
-  pref          : {'energy': 0.3748370788124593, 'dist': 0.22337262722746637, 'wait': 0.4017902939600744}
+  theta         : {'pres': 0.6083003845004209, 'abs': 0.18447773547707508, 'early': 0.12391438362980409, 'late': 0.08330749639269999}
+  pref          : {'energy': 0.6285624760049817, 'dist': 0.16637228022622336, 'wait': 0.20506524376879495}
   charging_power: 7 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
@@ -479,41 +479,41 @@
 
 --- AGENT CAR
   idx           : 34
-  loc           : (2154.4, 2335.2)
-  soc           : 138.960km
-  soc threshold : 135.517km
-  autonomy      : 340.0km
+  loc           : (1722.7, 1868.4)
+  soc           : 219.804km
+  soc threshold : 152.991km
+  autonomy      : 410.0km
   state         : DRIVING
-  theta         : {'pres': 0.5900750143601097, 'abs': 0.1994200183081284, 'early': 0.12992091141385456, 'late': 0.08058405591790735}
-  pref          : {'energy': 0.3221493445151577, 'dist': 0.1502957400234538, 'wait': 0.5275549154613884}
-  charging_power: 7 km/slot
+  theta         : {'pres': 0.5728392625475557, 'abs': 0.20921784695517837, 'early': 0.1313064988064847, 'late': 0.0866363916907813}
+  pref          : {'energy': 0.35885128384978193, 'dist': 0.42751890486732624, 'wait': 0.21362981128289193}
+  charging_power: 8 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
   nb_sessions   : 0
 
 --- AGENT CAR
   idx           : 35
-  loc           : (1078.1, 218.6)
-  soc           : 248.718km
-  soc threshold : 122.924km
-  autonomy      : 380.0km
+  loc           : (1237.4, 1862.4)
+  soc           : 350.464km
+  soc threshold : 154.928km
+  autonomy      : 445.0km
   state         : DRIVING
-  theta         : {'pres': 0.6145013924386639, 'abs': 0.2029837875026308, 'early': 0.10834667156555251, 'late': 0.07416814849315284}
-  pref          : {'energy': 0.21488934104517157, 'dist': 0.18546479333046312, 'wait': 0.5996458656243653}
-  charging_power: 4 km/slot
+  theta         : {'pres': 0.5915856875984413, 'abs': 0.19839337792965073, 'early': 0.12661536981814012, 'late': 0.08340556465376776}
+  pref          : {'energy': 0.43829881514086017, 'dist': 0.2876161883227325, 'wait': 0.27408499653640744}
+  charging_power: 7 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
   nb_sessions   : 0
 
 --- AGENT CAR
   idx           : 36
-  loc           : (2814.5, 1684.7)
-  soc           : 277.442km
-  soc threshold : 127.851km
-  autonomy      : 390.0km
+  loc           : (2539.4, 17.1)
+  soc           : 342.961km
+  soc threshold : 113.677km
+  autonomy      : 445.0km
   state         : DRIVING
-  theta         : {'pres': 0.5980757162325163, 'abs': 0.18862106540323442, 'early': 0.1288405601581014, 'late': 0.08446265820614787}
-  pref          : {'energy': 0.427505106935426, 'dist': 0.3724326401856569, 'wait': 0.2000622528789171}
+  theta         : {'pres': 0.6028343950394446, 'abs': 0.19972499549091458, 'early': 0.11710820189202616, 'late': 0.08033240757761466}
+  pref          : {'energy': 0.1011548041668511, 'dist': 0.4991051824888516, 'wait': 0.39974001334429726}
   charging_power: 4 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
@@ -521,83 +521,83 @@
 
 --- AGENT CAR
   idx           : 37
-  loc           : (88.1, 1736.6)
-  soc           : 164.120km
-  soc threshold : 119.049km
-  autonomy      : 325.0km
+  loc           : (1552.8, 204.6)
+  soc           : 311.922km
+  soc threshold : 157.841km
+  autonomy      : 465.0km
   state         : DRIVING
-  theta         : {'pres': 0.5841412015041261, 'abs': 0.201039704955575, 'early': 0.1303383700365036, 'late': 0.08448072350379536}
-  pref          : {'energy': 0.6063519759073086, 'dist': 0.36029692081090814, 'wait': 0.033351103281783256}
-  charging_power: 7 km/slot
+  theta         : {'pres': 0.5959678374713067, 'abs': 0.1955212729598574, 'early': 0.11956516776638226, 'late': 0.08894572180245373}
+  pref          : {'energy': 0.2525552924028961, 'dist': 0.29639712241574906, 'wait': 0.45104758518135485}
+  charging_power: 4 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
   nb_sessions   : 0
 
 --- AGENT CAR
   idx           : 38
-  loc           : (1269.2, 145.8)
-  soc           : 204.090km
-  soc threshold : 155.305km
-  autonomy      : 330.0km
+  loc           : (842.0, 1204.7)
+  soc           : 215.722km
+  soc threshold : 157.296km
+  autonomy      : 490.0km
   state         : DRIVING
-  theta         : {'pres': 0.5880882395779077, 'abs': 0.2171612235993935, 'early': 0.12096356501633942, 'late': 0.07378697180635936}
-  pref          : {'energy': 0.08986012964179252, 'dist': 0.6316319353141217, 'wait': 0.2785079350440858}
-  charging_power: 5 km/slot
+  theta         : {'pres': 0.5984057075266589, 'abs': 0.19834841476078618, 'early': 0.12245966117069637, 'late': 0.08078621654185848}
+  pref          : {'energy': 0.4401981646224496, 'dist': 0.34762498979598677, 'wait': 0.21217684558156352}
+  charging_power: 8 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
   nb_sessions   : 0
 
 --- AGENT CAR
   idx           : 39
-  loc           : (2435.7, 948.2)
-  soc           : 305.355km
-  soc threshold : 102.776km
-  autonomy      : 410.0km
+  loc           : (438.1, 1999.1)
+  soc           : 178.216km
+  soc threshold : 176.667km
+  autonomy      : 370.0km
   state         : DRIVING
-  theta         : {'pres': 0.6085312128281531, 'abs': 0.20397025079832948, 'early': 0.11313864273693874, 'late': 0.07435989363657868}
-  pref          : {'energy': 0.44746963219538555, 'dist': 0.20075556221925406, 'wait': 0.35177480558536045}
-  charging_power: 6 km/slot
+  theta         : {'pres': 0.6069755233916538, 'abs': 0.1892709472696391, 'early': 0.11654582016633817, 'late': 0.08720770917236882}
+  pref          : {'energy': 0.375895515590488, 'dist': 0.19678105359175677, 'wait': 0.4273234308177553}
+  charging_power: 8 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
   nb_sessions   : 0
 
 --- AGENT CAR
   idx           : 40
-  loc           : (252.9, 260.0)
-  soc           : 192.759km
-  soc threshold : 151.849km
-  autonomy      : 320.0km
+  loc           : (60.8, 2454.1)
+  soc           : 192.074km
+  soc threshold : 169.626km
+  autonomy      : 480.0km
   state         : DRIVING
-  theta         : {'pres': 0.6126928113937469, 'abs': 0.20720434499898913, 'early': 0.1101744570155486, 'late': 0.06992838659171542}
-  pref          : {'energy': 0.1725934167921669, 'dist': 0.25446499883856916, 'wait': 0.5729415843692639}
-  charging_power: 7 km/slot
+  theta         : {'pres': 0.5752065209975988, 'abs': 0.21968944361427545, 'early': 0.13201280001570928, 'late': 0.0730912353724165}
+  pref          : {'energy': 0.24549938962853932, 'dist': 0.4023413742193364, 'wait': 0.35215923615212424}
+  charging_power: 4 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
   nb_sessions   : 0
 
 --- AGENT CAR
   idx           : 41
-  loc           : (953.8, 19.4)
-  soc           : 292.968km
-  soc threshold : 98.415km
-  autonomy      : 380.0km
+  loc           : (553.0, 1221.2)
+  soc           : 204.162km
+  soc threshold : 116.218km
+  autonomy      : 340.0km
   state         : DRIVING
-  theta         : {'pres': 0.5762090076263617, 'abs': 0.21568907207612223, 'early': 0.126420755695753, 'late': 0.081681164601763}
-  pref          : {'energy': 0.1640700229747542, 'dist': 0.5420890038500079, 'wait': 0.2938409731752378}
-  charging_power: 7 km/slot
+  theta         : {'pres': 0.5658563190834778, 'abs': 0.22312586090418113, 'early': 0.12378003098232213, 'late': 0.08723778903001894}
+  pref          : {'energy': 0.5671627779937305, 'dist': 0.18684981102169365, 'wait': 0.2459874109845758}
+  charging_power: 5 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
   nb_sessions   : 0
 
 --- AGENT CAR
   idx           : 42
-  loc           : (231.7, 821.2)
-  soc           : 269.083km
-  soc threshold : 159.124km
-  autonomy      : 475.0km
+  loc           : (1128.0, 2293.5)
+  soc           : 137.759km
+  soc threshold : 169.646km
+  autonomy      : 445.0km
   state         : DRIVING
-  theta         : {'pres': 0.6044611479328652, 'abs': 0.1928390338589555, 'early': 0.12562999250786533, 'late': 0.07706982570031394}
-  pref          : {'energy': 0.36819452104716704, 'dist': 0.3366647744031721, 'wait': 0.2951407045496609}
+  theta         : {'pres': 0.6019257321074085, 'abs': 0.20279406458071586, 'early': 0.1135711702855207, 'late': 0.08170903302635499}
+  pref          : {'energy': 0.6045549638072072, 'dist': 0.00030012422776223423, 'wait': 0.3951449119650306}
   charging_power: 4 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
@@ -605,167 +605,167 @@
 
 --- AGENT CAR
   idx           : 43
-  loc           : (1011.0, 1848.8)
-  soc           : 164.434km
-  soc threshold : 116.242km
-  autonomy      : 340.0km
+  loc           : (174.3, 2006.3)
+  soc           : 292.342km
+  soc threshold : 126.025km
+  autonomy      : 405.0km
   state         : DRIVING
-  theta         : {'pres': 0.5826050045331347, 'abs': 0.20500852572292663, 'early': 0.12621827123934934, 'late': 0.08616819850458932}
-  pref          : {'energy': 0.3536122751971521, 'dist': 0.4692115377364522, 'wait': 0.17717618706639576}
-  charging_power: 8 km/slot
+  theta         : {'pres': 0.5980530239383627, 'abs': 0.20094426179997987, 'early': 0.11459947542041844, 'late': 0.08640323884123897}
+  pref          : {'energy': 0.2853291601092767, 'dist': 0.36621171147568127, 'wait': 0.348459128415042}
+  charging_power: 7 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
   nb_sessions   : 0
 
 --- AGENT CAR
   idx           : 44
-  loc           : (1470.9, 2850.1)
-  soc           : 173.408km
-  soc threshold : 130.581km
-  autonomy      : 360.0km
+  loc           : (612.4, 2320.9)
+  soc           : 336.124km
+  soc threshold : 197.725km
+  autonomy      : 455.0km
   state         : DRIVING
-  theta         : {'pres': 0.6356178823379806, 'abs': 0.17606678446977633, 'early': 0.11060497371498032, 'late': 0.07771035947726276}
-  pref          : {'energy': 0.026779506081508603, 'dist': 0.8130175015078518, 'wait': 0.1602029924106397}
-  charging_power: 7 km/slot
+  theta         : {'pres': 0.5920769223065967, 'abs': 0.21124499494445215, 'early': 0.12111474460909341, 'late': 0.0755633381398577}
+  pref          : {'energy': 0.6242465357432437, 'dist': 0.37295757533777424, 'wait': 0.002795888918982004}
+  charging_power: 8 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
   nb_sessions   : 0
 
 --- AGENT CAR
   idx           : 45
-  loc           : (1788.3, 1266.4)
-  soc           : 240.788km
-  soc threshold : 148.900km
-  autonomy      : 345.0km
+  loc           : (2620.2, 1633.5)
+  soc           : 251.490km
+  soc threshold : 129.627km
+  autonomy      : 455.0km
   state         : DRIVING
-  theta         : {'pres': 0.6185869794188815, 'abs': 0.18396756921324978, 'early': 0.11739427356783058, 'late': 0.0800511778000381}
-  pref          : {'energy': 0.05274735877571546, 'dist': 0.15514093379953806, 'wait': 0.7921117074247463}
-  charging_power: 4 km/slot
+  theta         : {'pres': 0.6266423202876329, 'abs': 0.1763891196921449, 'early': 0.11894137896042095, 'late': 0.07802718105980132}
+  pref          : {'energy': 0.39604841582429307, 'dist': 0.10042541836858043, 'wait': 0.5035261658071265}
+  charging_power: 6 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
   nb_sessions   : 0
 
 --- AGENT CAR
   idx           : 46
-  loc           : (552.8, 563.2)
-  soc           : 299.266km
-  soc threshold : 135.923km
+  loc           : (2061.7, 250.8)
+  soc           : 298.431km
+  soc threshold : 141.205km
   autonomy      : 400.0km
   state         : DRIVING
-  theta         : {'pres': 0.6166872338763749, 'abs': 0.2005623244905702, 'early': 0.10879673159209728, 'late': 0.07395371004095751}
-  pref          : {'energy': 0.27829205943217816, 'dist': 0.3495745769339177, 'wait': 0.3721333636339041}
-  charging_power: 8 km/slot
+  theta         : {'pres': 0.6212061996110722, 'abs': 0.19194675551566084, 'early': 0.11222933615445092, 'late': 0.07461770871881608}
+  pref          : {'energy': 0.6531245077713587, 'dist': 0.21013943697928555, 'wait': 0.13673605524935575}
+  charging_power: 4 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
   nb_sessions   : 0
 
 --- AGENT CAR
   idx           : 47
-  loc           : (1327.8, 854.6)
-  soc           : 243.140km
-  soc threshold : 90.508km
-  autonomy      : 320.0km
+  loc           : (1930.9, 2396.7)
+  soc           : 319.983km
+  soc threshold : 154.087km
+  autonomy      : 405.0km
   state         : DRIVING
-  theta         : {'pres': 0.5945169714920592, 'abs': 0.1960833542672258, 'early': 0.11759465696518384, 'late': 0.09180501727553114}
-  pref          : {'energy': 0.3275875528350149, 'dist': 0.3560107504640519, 'wait': 0.31640169670093315}
-  charging_power: 7 km/slot
-  score         : [0. 0. 0. 0.]
-  u_total       : 0.0000
-  nb_sessions   : 0
-
---- AGENT CAR
-  idx           : 48
-  loc           : (1476.8, 2266.1)
-  soc           : 302.805km
-  soc threshold : 114.510km
-  autonomy      : 385.0km
-  state         : DRIVING
-  theta         : {'pres': 0.6248775649334265, 'abs': 0.17899008287383947, 'early': 0.11886223008037887, 'late': 0.07727012211235525}
-  pref          : {'energy': 0.25701394069962713, 'dist': 0.205652967274873, 'wait': 0.5373330920254998}
+  theta         : {'pres': 0.611466146067297, 'abs': 0.20060718874390115, 'early': 0.109196016108877, 'late': 0.07873064907992484}
+  pref          : {'energy': 0.3979056158893936, 'dist': 0.5422190048470424, 'wait': 0.05987537926356401}
   charging_power: 5 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
   nb_sessions   : 0
 
 --- AGENT CAR
-  idx           : 49
-  loc           : (1028.2, 2167.3)
-  soc           : 260.915km
-  soc threshold : 202.577km
-  autonomy      : 450.0km
+  idx           : 48
+  loc           : (1201.3, 1274.4)
+  soc           : 152.751km
+  soc threshold : 129.379km
+  autonomy      : 300.0km
   state         : DRIVING
-  theta         : {'pres': 0.5919910589664884, 'abs': 0.21595875921427068, 'early': 0.1123960071787736, 'late': 0.07965417464046727}
-  pref          : {'energy': 0.4170386771874608, 'dist': 0.5627996933916697, 'wait': 0.020161629420869506}
-  charging_power: 7 km/slot
-  score         : [0. 0. 0. 0.]
-  u_total       : 0.0000
-  nb_sessions   : 0
-
---- AGENT CAR
-  idx           : 50
-  loc           : (1745.1, 976.8)
-  soc           : 325.546km
-  soc threshold : 170.079km
-  autonomy      : 420.0km
-  state         : DRIVING
-  theta         : {'pres': 0.5904468858938613, 'abs': 0.19755810482253952, 'early': 0.12907730277086812, 'late': 0.08291770651273105}
-  pref          : {'energy': 0.05429194159837176, 'dist': 0.4561125575087676, 'wait': 0.4895955008928605}
-  charging_power: 6 km/slot
-  score         : [0. 0. 0. 0.]
-  u_total       : 0.0000
-  nb_sessions   : 0
-
---- AGENT CAR
-  idx           : 51
-  loc           : (231.8, 1434.1)
-  soc           : 223.381km
-  soc threshold : 138.178km
-  autonomy      : 385.0km
-  state         : DRIVING
-  theta         : {'pres': 0.6291172742452328, 'abs': 0.18588005667469057, 'early': 0.11446724576820173, 'late': 0.07053542331187483}
-  pref          : {'energy': 0.3894554950819451, 'dist': 0.277197936847093, 'wait': 0.3333465680709618}
+  theta         : {'pres': 0.5727311927491504, 'abs': 0.21079085342416334, 'early': 0.1309211919487071, 'late': 0.08555676187797916}
+  pref          : {'energy': 0.4392952145888952, 'dist': 0.3537708176121726, 'wait': 0.20693396779893233}
   charging_power: 8 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
   nb_sessions   : 0
 
 --- AGENT CAR
-  idx           : 52
-  loc           : (1824.2, 1926.3)
-  soc           : 265.075km
-  soc threshold : 118.245km
-  autonomy      : 340.0km
+  idx           : 49
+  loc           : (419.9, 523.2)
+  soc           : 299.336km
+  soc threshold : 211.446km
+  autonomy      : 480.0km
   state         : DRIVING
-  theta         : {'pres': 0.6097907850218658, 'abs': 0.20729158547761067, 'early': 0.10760219599979856, 'late': 0.07531543350072498}
-  pref          : {'energy': 0.7485293841099048, 'dist': 0.11086672616209751, 'wait': 0.14060388972799776}
+  theta         : {'pres': 0.6118939695354784, 'abs': 0.1824322574747528, 'early': 0.12635724072887114, 'late': 0.07931653226089773}
+  pref          : {'energy': 0.37886501528835936, 'dist': 0.21552994162391942, 'wait': 0.4056050430877213}
+  charging_power: 5 km/slot
+  score         : [0. 0. 0. 0.]
+  u_total       : 0.0000
+  nb_sessions   : 0
+
+--- AGENT CAR
+  idx           : 50
+  loc           : (2437.4, 1232.1)
+  soc           : 366.699km
+  soc threshold : 136.480km
+  autonomy      : 460.0km
+  state         : DRIVING
+  theta         : {'pres': 0.6131707205870838, 'abs': 0.18805212407426602, 'early': 0.117933326468959, 'late': 0.08084382886969116}
+  pref          : {'energy': 0.33408478687268056, 'dist': 0.1419275409181497, 'wait': 0.5239876722091698}
+  charging_power: 5 km/slot
+  score         : [0. 0. 0. 0.]
+  u_total       : 0.0000
+  nb_sessions   : 0
+
+--- AGENT CAR
+  idx           : 51
+  loc           : (851.2, 1317.1)
+  soc           : 300.425km
+  soc threshold : 178.301km
+  autonomy      : 420.0km
+  state         : DRIVING
+  theta         : {'pres': 0.5919381426115556, 'abs': 0.20771880453647545, 'early': 0.11988426280139462, 'late': 0.08045879005057431}
+  pref          : {'energy': 0.18421747973075686, 'dist': 0.6558437499363436, 'wait': 0.15993877033289955}
   charging_power: 6 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
   nb_sessions   : 0
 
 --- AGENT CAR
+  idx           : 52
+  loc           : (319.8, 1820.6)
+  soc           : 222.852km
+  soc threshold : 166.781km
+  autonomy      : 465.0km
+  state         : DRIVING
+  theta         : {'pres': 0.5752064183657741, 'abs': 0.2181105362182024, 'early': 0.12624822521680104, 'late': 0.08043482019922243}
+  pref          : {'energy': 0.31238148522118236, 'dist': 0.34790082213649487, 'wait': 0.33971769264232277}
+  charging_power: 5 km/slot
+  score         : [0. 0. 0. 0.]
+  u_total       : 0.0000
+  nb_sessions   : 0
+
+--- AGENT CAR
   idx           : 53
-  loc           : (2531.9, 418.2)
-  soc           : 176.196km
-  soc threshold : 166.284km
+  loc           : (2460.4, 914.4)
+  soc           : 212.870km
+  soc threshold : 154.227km
   autonomy      : 395.0km
   state         : DRIVING
-  theta         : {'pres': 0.5942336930662815, 'abs': 0.2150605656951342, 'early': 0.11286004602193248, 'late': 0.07784569521665184}
-  pref          : {'energy': 0.24775223001688432, 'dist': 0.28668095698664614, 'wait': 0.46556681299646957}
-  charging_power: 7 km/slot
+  theta         : {'pres': 0.6021256251600898, 'abs': 0.19467091955364332, 'early': 0.12420702143718579, 'late': 0.078996433849081}
+  pref          : {'energy': 0.26150908279143187, 'dist': 0.3145231473330033, 'wait': 0.4239677698755648}
+  charging_power: 6 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
   nb_sessions   : 0
 
 --- AGENT CAR
   idx           : 54
-  loc           : (2469.3, 277.0)
-  soc           : 292.331km
-  soc threshold : 146.738km
-  autonomy      : 400.0km
+  loc           : (2037.2, 2808.6)
+  soc           : 253.723km
+  soc threshold : 110.343km
+  autonomy      : 355.0km
   state         : DRIVING
-  theta         : {'pres': 0.5927414275089058, 'abs': 0.21688416715420192, 'early': 0.11043365286855451, 'late': 0.07994075246833789}
-  pref          : {'energy': 0.55313639421458, 'dist': 0.14426251878395338, 'wait': 0.3026010870014666}
+  theta         : {'pres': 0.6159928528428982, 'abs': 0.19539456019981702, 'early': 0.11522811047552624, 'late': 0.07338447648175862}
+  pref          : {'energy': 0.4335146954584218, 'dist': 0.002105444747944554, 'wait': 0.5643798597936337}
   charging_power: 4 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
@@ -773,41 +773,41 @@
 
 --- AGENT CAR
   idx           : 55
-  loc           : (435.3, 960.6)
-  soc           : 253.725km
-  soc threshold : 166.136km
-  autonomy      : 405.0km
+  loc           : (206.7, 2943.1)
+  soc           : 176.081km
+  soc threshold : 170.460km
+  autonomy      : 395.0km
   state         : DRIVING
-  theta         : {'pres': 0.5986251491999891, 'abs': 0.19529154045889657, 'early': 0.12848752838720418, 'late': 0.07759578195391023}
-  pref          : {'energy': 0.13581176277793422, 'dist': 0.3768520244872988, 'wait': 0.487336212734767}
-  charging_power: 5 km/slot
+  theta         : {'pres': 0.6094937956144918, 'abs': 0.19237262261303925, 'early': 0.12352020766841987, 'late': 0.07461337410404906}
+  pref          : {'energy': 0.44011509068502713, 'dist': 0.3578271446876439, 'wait': 0.20205776462732894}
+  charging_power: 4 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
   nb_sessions   : 0
 
 --- AGENT CAR
   idx           : 56
-  loc           : (1187.5, 238.4)
-  soc           : 370.154km
-  soc threshold : 164.928km
-  autonomy      : 480.0km
+  loc           : (377.8, 1191.3)
+  soc           : 161.941km
+  soc threshold : 104.203km
+  autonomy      : 330.0km
   state         : DRIVING
-  theta         : {'pres': 0.6278317899493412, 'abs': 0.18662666151752405, 'early': 0.11101087702804138, 'late': 0.07453067150509331}
-  pref          : {'energy': 0.46236791254620246, 'dist': 0.36930008146959414, 'wait': 0.16833200598420334}
-  charging_power: 8 km/slot
+  theta         : {'pres': 0.5958125638859592, 'abs': 0.1922085398229531, 'early': 0.13609264754002368, 'late': 0.07588624875106398}
+  pref          : {'energy': 0.30741133224447653, 'dist': 0.18027727950792918, 'wait': 0.5123113882475943}
+  charging_power: 6 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
   nb_sessions   : 0
 
 --- AGENT CAR
   idx           : 57
-  loc           : (1256.8, 984.0)
-  soc           : 169.896km
-  soc threshold : 132.186km
-  autonomy      : 335.0km
+  loc           : (2914.4, 2790.2)
+  soc           : 186.664km
+  soc threshold : 187.557km
+  autonomy      : 495.0km
   state         : DRIVING
-  theta         : {'pres': 0.6092874951545338, 'abs': 0.20157224959927617, 'early': 0.11452192437952066, 'late': 0.07461833086666934}
-  pref          : {'energy': 0.04403040881862149, 'dist': 0.488053025333364, 'wait': 0.4679165658480145}
+  theta         : {'pres': 0.6050029540230893, 'abs': 0.19391723751544765, 'early': 0.12206441788427395, 'late': 0.07901539057718902}
+  pref          : {'energy': 0.674485365184118, 'dist': 0.3013808879851318, 'wait': 0.024133746830750383}
   charging_power: 4 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
@@ -815,41 +815,41 @@
 
 --- AGENT CAR
   idx           : 58
-  loc           : (1805.5, 433.2)
-  soc           : 260.406km
-  soc threshold : 166.798km
-  autonomy      : 410.0km
+  loc           : (65.5, 1201.1)
+  soc           : 131.783km
+  soc threshold : 146.491km
+  autonomy      : 425.0km
   state         : DRIVING
-  theta         : {'pres': 0.6157383105757124, 'abs': 0.18812656154380808, 'early': 0.11729785590766807, 'late': 0.0788372719728114}
-  pref          : {'energy': 0.49071901507578036, 'dist': 0.21410797247089686, 'wait': 0.2951730124533228}
-  charging_power: 5 km/slot
+  theta         : {'pres': 0.5966071156543088, 'abs': 0.19572614834179553, 'early': 0.1265743944072307, 'late': 0.08109234159666502}
+  pref          : {'energy': 0.2807167297472917, 'dist': 0.24713158191812165, 'wait': 0.47215168833458665}
+  charging_power: 4 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
   nb_sessions   : 0
 
 --- AGENT CAR
   idx           : 59
-  loc           : (1596.9, 1556.3)
-  soc           : 196.441km
-  soc threshold : 120.901km
-  autonomy      : 335.0km
+  loc           : (2965.4, 1262.0)
+  soc           : 301.974km
+  soc threshold : 180.616km
+  autonomy      : 445.0km
   state         : DRIVING
-  theta         : {'pres': 0.5993651808433998, 'abs': 0.1903985163780912, 'early': 0.12726284104881158, 'late': 0.08297346172969745}
-  pref          : {'energy': 0.39084777073129173, 'dist': 0.4922386376471931, 'wait': 0.11691359162151506}
-  charging_power: 7 km/slot
+  theta         : {'pres': 0.572377750136084, 'abs': 0.22003249333724204, 'early': 0.11983702756004806, 'late': 0.08775272896662582}
+  pref          : {'energy': 0.39153444685539823, 'dist': 0.5942837371899242, 'wait': 0.014181815954677575}
+  charging_power: 6 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
   nb_sessions   : 0
 
 --- AGENT CAR
   idx           : 60
-  loc           : (942.4, 53.3)
-  soc           : 270.898km
-  soc threshold : 163.634km
-  autonomy      : 400.0km
+  loc           : (2560.7, 2813.8)
+  soc           : 220.458km
+  soc threshold : 103.494km
+  autonomy      : 340.0km
   state         : DRIVING
-  theta         : {'pres': 0.6125444251392238, 'abs': 0.18856747080251884, 'early': 0.12097628825901878, 'late': 0.07791181579923849}
-  pref          : {'energy': 0.22107110282219092, 'dist': 0.20122124862243515, 'wait': 0.5777076485553739}
+  theta         : {'pres': 0.6000107228090974, 'abs': 0.20710540456950283, 'early': 0.11032038529797969, 'late': 0.08256348732342017}
+  pref          : {'energy': 0.3590401045731157, 'dist': 0.3868397605609264, 'wait': 0.2541201348659579}
   charging_power: 5 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
@@ -857,139 +857,139 @@
 
 --- AGENT CAR
   idx           : 61
-  loc           : (2803.4, 2723.5)
-  soc           : 229.266km
-  soc threshold : 105.098km
-  autonomy      : 360.0km
+  loc           : (1053.6, 2058.9)
+  soc           : 231.346km
+  soc threshold : 95.916km
+  autonomy      : 340.0km
   state         : DRIVING
-  theta         : {'pres': 0.5912975220387509, 'abs': 0.20644396171911003, 'early': 0.12383732882440181, 'late': 0.07842118741773725}
-  pref          : {'energy': 0.47324250945998436, 'dist': 0.39884277144326125, 'wait': 0.12791471909675436}
-  charging_power: 5 km/slot
+  theta         : {'pres': 0.6068100882336359, 'abs': 0.20273127508294328, 'early': 0.11045071389931133, 'late': 0.08000792278410955}
+  pref          : {'energy': 0.07178524840513216, 'dist': 0.12488935763638415, 'wait': 0.8033253939584837}
+  charging_power: 6 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
   nb_sessions   : 0
 
 --- AGENT CAR
   idx           : 62
-  loc           : (2457.1, 1206.9)
-  soc           : 211.493km
-  soc threshold : 113.009km
-  autonomy      : 400.0km
+  loc           : (476.9, 1066.0)
+  soc           : 189.018km
+  soc threshold : 123.320km
+  autonomy      : 365.0km
   state         : DRIVING
-  theta         : {'pres': 0.5893624783632908, 'abs': 0.19314861216616702, 'early': 0.13138982030527083, 'late': 0.08609908916527127}
-  pref          : {'energy': 0.3839169798815256, 'dist': 0.06042552918809639, 'wait': 0.555657490930378}
-  charging_power: 4 km/slot
+  theta         : {'pres': 0.596738936098847, 'abs': 0.2107845148648468, 'early': 0.10759532774262695, 'late': 0.08488122129367918}
+  pref          : {'energy': 0.3412517046295399, 'dist': 0.4544249651586067, 'wait': 0.20432333021185342}
+  charging_power: 7 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
   nb_sessions   : 0
 
 --- AGENT CAR
   idx           : 63
-  loc           : (2532.6, 1905.2)
-  soc           : 217.091km
-  soc threshold : 184.478km
-  autonomy      : 480.0km
+  loc           : (2564.5, 1319.1)
+  soc           : 124.876km
+  soc threshold : 153.347km
+  autonomy      : 400.0km
   state         : DRIVING
-  theta         : {'pres': 0.603607428610972, 'abs': 0.1930910939588434, 'early': 0.12535054738307166, 'late': 0.07795093004711284}
-  pref          : {'energy': 0.5371256616963854, 'dist': 0.37263555041102664, 'wait': 0.09023878789258791}
-  charging_power: 5 km/slot
+  theta         : {'pres': 0.6225393910094137, 'abs': 0.18399708347651333, 'early': 0.10924532712267374, 'late': 0.08421819839139924}
+  pref          : {'energy': 0.6333107858316419, 'dist': 0.18701363567524212, 'wait': 0.1796755784931159}
+  charging_power: 4 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
   nb_sessions   : 0
 
 --- AGENT CAR
   idx           : 64
-  loc           : (309.5, 2058.9)
-  soc           : 311.185km
-  soc threshold : 132.836km
-  autonomy      : 465.0km
+  loc           : (2371.7, 148.5)
+  soc           : 223.532km
+  soc threshold : 123.092km
+  autonomy      : 445.0km
   state         : DRIVING
-  theta         : {'pres': 0.602379781909235, 'abs': 0.20169478478541847, 'early': 0.11321312220376516, 'late': 0.08271231110158135}
-  pref          : {'energy': 0.39347134675664, 'dist': 0.3140668660587387, 'wait': 0.29246178718462146}
-  charging_power: 4 km/slot
+  theta         : {'pres': 0.5677674613053717, 'abs': 0.21880464438863317, 'early': 0.135078407263262, 'late': 0.07834948704273306}
+  pref          : {'energy': 0.08368339970830642, 'dist': 0.5052591863587327, 'wait': 0.411057413932961}
+  charging_power: 8 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
   nb_sessions   : 0
 
 --- AGENT CAR
   idx           : 65
-  loc           : (1679.8, 1213.0)
-  soc           : 189.420km
-  soc threshold : 98.250km
-  autonomy      : 315.0km
+  loc           : (699.9, 1175.9)
+  soc           : 255.083km
+  soc threshold : 131.586km
+  autonomy      : 390.0km
   state         : DRIVING
-  theta         : {'pres': 0.5712819699841988, 'abs': 0.22661635479013673, 'early': 0.12681561626303492, 'late': 0.07528605896262955}
-  pref          : {'energy': 0.2582210678358669, 'dist': 0.48881052572174816, 'wait': 0.25296840644238494}
-  charging_power: 7 km/slot
+  theta         : {'pres': 0.5938725838466933, 'abs': 0.20991447158386797, 'early': 0.11973182246324385, 'late': 0.07648112210619482}
+  pref          : {'energy': 0.5461169309640077, 'dist': 0.00832046032993211, 'wait': 0.4455626087060602}
+  charging_power: 5 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
   nb_sessions   : 0
 
 --- AGENT CAR
   idx           : 66
-  loc           : (1080.2, 915.0)
-  soc           : 211.551km
-  soc threshold : 140.327km
-  autonomy      : 415.0km
+  loc           : (1280.4, 1031.0)
+  soc           : 311.380km
+  soc threshold : 135.642km
+  autonomy      : 445.0km
   state         : DRIVING
-  theta         : {'pres': 0.6080363710800252, 'abs': 0.20596678692448303, 'early': 0.11058637825510553, 'late': 0.0754104637403863}
-  pref          : {'energy': 0.22157787632213774, 'dist': 0.4396939751150519, 'wait': 0.3387281485628104}
-  charging_power: 8 km/slot
+  theta         : {'pres': 0.6288787391658821, 'abs': 0.1827961868888761, 'early': 0.10643215452685895, 'late': 0.08189291941838277}
+  pref          : {'energy': 0.21695565945357193, 'dist': 0.3291888337288974, 'wait': 0.4538555068175307}
+  charging_power: 5 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
   nb_sessions   : 0
 
 --- AGENT CAR
   idx           : 67
-  loc           : (201.2, 2868.9)
-  soc           : 163.697km
-  soc threshold : 143.779km
-  autonomy      : 440.0km
+  loc           : (2376.8, 2233.7)
+  soc           : 302.531km
+  soc threshold : 163.955km
+  autonomy      : 400.0km
   state         : DRIVING
-  theta         : {'pres': 0.5826714740739768, 'abs': 0.19881199723428417, 'early': 0.12628782320295853, 'late': 0.09222870548878044}
-  pref          : {'energy': 0.3067598633826915, 'dist': 0.30369596099372587, 'wait': 0.38954417562358257}
-  charging_power: 7 km/slot
-  score         : [0. 0. 0. 0.]
-  u_total       : 0.0000
-  nb_sessions   : 0
-
---- AGENT CAR
-  idx           : 68
-  loc           : (2967.4, 19.8)
-  soc           : 190.548km
-  soc threshold : 128.124km
-  autonomy      : 375.0km
-  state         : DRIVING
-  theta         : {'pres': 0.5661399411332603, 'abs': 0.22711293772221264, 'early': 0.11681781055268124, 'late': 0.08992931059184588}
-  pref          : {'energy': 0.3872698313431739, 'dist': 0.3152952140998784, 'wait': 0.29743495455694763}
+  theta         : {'pres': 0.5740427585474758, 'abs': 0.22112993379932153, 'early': 0.12561463257478445, 'late': 0.07921267507841835}
+  pref          : {'energy': 0.055299436884910506, 'dist': 0.1610412653756036, 'wait': 0.783659297739486}
   charging_power: 8 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
   nb_sessions   : 0
 
 --- AGENT CAR
-  idx           : 69
-  loc           : (108.1, 320.7)
-  soc           : 240.485km
-  soc threshold : 155.566km
-  autonomy      : 390.0km
+  idx           : 68
+  loc           : (213.3, 944.4)
+  soc           : 125.637km
+  soc threshold : 98.071km
+  autonomy      : 305.0km
   state         : DRIVING
-  theta         : {'pres': 0.5968137545662213, 'abs': 0.19356141639799682, 'early': 0.12437561079936771, 'late': 0.08524921823641424}
-  pref          : {'energy': 0.4754108240194902, 'dist': 0.06323757103612111, 'wait': 0.4613516049443887}
-  charging_power: 4 km/slot
+  theta         : {'pres': 0.5995889351854656, 'abs': 0.20139386824134048, 'early': 0.12089376333050492, 'late': 0.078123433242689}
+  pref          : {'energy': 0.28426058544540644, 'dist': 0.14382678393443502, 'wait': 0.5719126306201586}
+  charging_power: 5 km/slot
+  score         : [0. 0. 0. 0.]
+  u_total       : 0.0000
+  nb_sessions   : 0
+
+--- AGENT CAR
+  idx           : 69
+  loc           : (790.1, 1175.9)
+  soc           : 258.749km
+  soc threshold : 150.191km
+  autonomy      : 415.0km
+  state         : DRIVING
+  theta         : {'pres': 0.590447913229246, 'abs': 0.19140700293569593, 'early': 0.1262666572040354, 'late': 0.09187842663102266}
+  pref          : {'energy': 0.22605349115001258, 'dist': 0.4676930517704886, 'wait': 0.3062534570794988}
+  charging_power: 8 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
   nb_sessions   : 0
 
 --- AGENT CAR
   idx           : 70
-  loc           : (2292.9, 2240.9)
-  soc           : 269.884km
-  soc threshold : 153.590km
-  autonomy      : 400.0km
+  loc           : (894.5, 2825.9)
+  soc           : 133.594km
+  soc threshold : 119.112km
+  autonomy      : 350.0km
   state         : DRIVING
-  theta         : {'pres': 0.5938127555142441, 'abs': 0.21138548890810108, 'early': 0.11030987425301617, 'late': 0.08449188132463867}
-  pref          : {'energy': 0.7833452535860145, 'dist': 0.16538824915859596, 'wait': 0.05126649725538963}
+  theta         : {'pres': 0.5902203017711048, 'abs': 0.20002989272710076, 'early': 0.12237819886440388, 'late': 0.08737160663739052}
+  pref          : {'energy': 0.38855283064148033, 'dist': 0.4597226375031231, 'wait': 0.15172453185539664}
   charging_power: 8 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
@@ -997,13 +997,13 @@
 
 --- AGENT CAR
   idx           : 71
-  loc           : (637.0, 265.5)
-  soc           : 260.558km
-  soc threshold : 139.611km
-  autonomy      : 420.0km
+  loc           : (1807.4, 1471.2)
+  soc           : 168.199km
+  soc threshold : 94.750km
+  autonomy      : 335.0km
   state         : DRIVING
-  theta         : {'pres': 0.6147698924597013, 'abs': 0.18648903254826182, 'early': 0.11941930576469376, 'late': 0.07932176922734319}
-  pref          : {'energy': 0.3350655936984045, 'dist': 0.2385204918983946, 'wait': 0.42641391440320087}
+  theta         : {'pres': 0.6129427888330045, 'abs': 0.19292926822891557, 'early': 0.11512542904917875, 'late': 0.07900251388890125}
+  pref          : {'energy': 0.4386662749835222, 'dist': 0.1700620556725804, 'wait': 0.3912716693438974}
   charging_power: 7 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
@@ -1011,41 +1011,41 @@
 
 --- AGENT CAR
   idx           : 72
-  loc           : (768.2, 2566.3)
-  soc           : 141.959km
-  soc threshold : 173.822km
-  autonomy      : 460.0km
+  loc           : (1279.6, 2610.0)
+  soc           : 277.005km
+  soc threshold : 120.532km
+  autonomy      : 440.0km
   state         : DRIVING
-  theta         : {'pres': 0.5717534784156375, 'abs': 0.2008931907942902, 'early': 0.13891598852728182, 'late': 0.08843734226279049}
-  pref          : {'energy': 0.2943105506821063, 'dist': 0.26180335314250763, 'wait': 0.44388609617538605}
-  charging_power: 4 km/slot
+  theta         : {'pres': 0.5962044971385261, 'abs': 0.21627316108413047, 'early': 0.10907190327487257, 'late': 0.0784504385024709}
+  pref          : {'energy': 0.3736316841608123, 'dist': 0.3665109291475859, 'wait': 0.2598573866916018}
+  charging_power: 7 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
   nb_sessions   : 0
 
 --- AGENT CAR
   idx           : 73
-  loc           : (2995.0, 1754.9)
-  soc           : 224.123km
-  soc threshold : 170.766km
-  autonomy      : 430.0km
+  loc           : (2407.1, 299.8)
+  soc           : 202.584km
+  soc threshold : 100.905km
+  autonomy      : 335.0km
   state         : DRIVING
-  theta         : {'pres': 0.6043038201647468, 'abs': 0.20138063582505003, 'early': 0.12211373582247362, 'late': 0.07220180818772948}
-  pref          : {'energy': 0.12542834369119404, 'dist': 0.37902923643363484, 'wait': 0.49554241987517106}
-  charging_power: 4 km/slot
+  theta         : {'pres': 0.6203801135518263, 'abs': 0.18098072489431297, 'early': 0.11422514603157422, 'late': 0.08441401552228651}
+  pref          : {'energy': 0.2979144377159768, 'dist': 0.22157112704061724, 'wait': 0.48051443524340587}
+  charging_power: 7 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
   nb_sessions   : 0
 
 --- AGENT CAR
   idx           : 74
-  loc           : (1230.4, 889.7)
-  soc           : 210.200km
-  soc threshold : 188.665km
-  autonomy      : 455.0km
+  loc           : (447.4, 2715.4)
+  soc           : 165.939km
+  soc threshold : 159.841km
+  autonomy      : 430.0km
   state         : DRIVING
-  theta         : {'pres': 0.5742081312063503, 'abs': 0.21885862042424967, 'early': 0.12965639293654793, 'late': 0.07727685543285213}
-  pref          : {'energy': 0.2685456449006813, 'dist': 0.336506445950644, 'wait': 0.3949479091486747}
+  theta         : {'pres': 0.5866023935570769, 'abs': 0.19559754255669617, 'early': 0.12823132845400456, 'late': 0.08956873543222246}
+  pref          : {'energy': 0.24042427921345946, 'dist': 0.14488370304856055, 'wait': 0.61469201773798}
   charging_power: 4 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
@@ -1053,27 +1053,27 @@
 
 --- AGENT CAR
   idx           : 75
-  loc           : (1487.7, 1428.0)
-  soc           : 287.234km
-  soc threshold : 155.489km
-  autonomy      : 410.0km
+  loc           : (1849.0, 983.0)
+  soc           : 124.275km
+  soc threshold : 143.914km
+  autonomy      : 350.0km
   state         : DRIVING
-  theta         : {'pres': 0.6125828949156623, 'abs': 0.19659236582527007, 'early': 0.1083550585133253, 'late': 0.08246968074574233}
-  pref          : {'energy': 0.3769617182941706, 'dist': 0.24390151198577853, 'wait': 0.37913676972005095}
-  charging_power: 6 km/slot
+  theta         : {'pres': 0.5849792586187847, 'abs': 0.21332960987261648, 'early': 0.11770529186572713, 'late': 0.08398583964287164}
+  pref          : {'energy': 0.3103135532643702, 'dist': 0.2793661117501457, 'wait': 0.41032033498548415}
+  charging_power: 5 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
   nb_sessions   : 0
 
 --- AGENT CAR
   idx           : 76
-  loc           : (2841.5, 2464.8)
-  soc           : 207.759km
-  soc threshold : 184.342km
-  autonomy      : 480.0km
+  loc           : (617.9, 1617.8)
+  soc           : 213.809km
+  soc threshold : 140.643km
+  autonomy      : 375.0km
   state         : DRIVING
-  theta         : {'pres': 0.6097744400084643, 'abs': 0.18441506196952176, 'early': 0.1292822759065507, 'late': 0.07652822211546327}
-  pref          : {'energy': 0.4450122897314826, 'dist': 0.16043672691016017, 'wait': 0.3945509833583573}
+  theta         : {'pres': 0.5840790395576384, 'abs': 0.21015453196098013, 'early': 0.12382432020954164, 'late': 0.0819421082718399}
+  pref          : {'energy': 0.6443958649768922, 'dist': 0.24998747720634235, 'wait': 0.10561665781676549}
   charging_power: 6 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
@@ -1081,27 +1081,27 @@
 
 --- AGENT CAR
   idx           : 77
-  loc           : (861.0, 34.2)
-  soc           : 157.803km
-  soc threshold : 106.897km
-  autonomy      : 370.0km
+  loc           : (750.3, 1810.7)
+  soc           : 245.288km
+  soc threshold : 131.802km
+  autonomy      : 430.0km
   state         : DRIVING
-  theta         : {'pres': 0.6323468516212267, 'abs': 0.18338343224444684, 'early': 0.11209536842338462, 'late': 0.07217434771094178}
-  pref          : {'energy': 0.3996697783818375, 'dist': 0.4280499779425489, 'wait': 0.17228024367561362}
-  charging_power: 6 km/slot
+  theta         : {'pres': 0.5684132513073674, 'abs': 0.21812269846446206, 'early': 0.13138398995600298, 'late': 0.08208006027216751}
+  pref          : {'energy': 0.42220040072290543, 'dist': 0.12194693666178698, 'wait': 0.4558526626153076}
+  charging_power: 5 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
   nb_sessions   : 0
 
 --- AGENT CAR
   idx           : 78
-  loc           : (2957.3, 1378.5)
-  soc           : 312.159km
-  soc threshold : 129.452km
-  autonomy      : 425.0km
+  loc           : (2908.0, 2549.0)
+  soc           : 136.272km
+  soc threshold : 131.982km
+  autonomy      : 450.0km
   state         : DRIVING
-  theta         : {'pres': 0.61055563657191, 'abs': 0.18618703567350198, 'early': 0.11814570304421089, 'late': 0.08511162471037706}
-  pref          : {'energy': 0.7434488923343416, 'dist': 0.059515782729090416, 'wait': 0.19703532493656792}
+  theta         : {'pres': 0.6017270411055728, 'abs': 0.19767382347882562, 'early': 0.11793821049461876, 'late': 0.08266092492098279}
+  pref          : {'energy': 0.2965825092987929, 'dist': 0.6561860179813397, 'wait': 0.04723147271986736}
   charging_power: 7 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
@@ -1109,195 +1109,195 @@
 
 --- AGENT CAR
   idx           : 79
-  loc           : (2183.9, 2016.5)
-  soc           : 212.759km
-  soc threshold : 192.472km
-  autonomy      : 400.0km
+  loc           : (19.8, 784.4)
+  soc           : 242.198km
+  soc threshold : 158.390km
+  autonomy      : 475.0km
   state         : DRIVING
-  theta         : {'pres': 0.587818294878034, 'abs': 0.21682094032243424, 'early': 0.11379347262337082, 'late': 0.08156729217616084}
-  pref          : {'energy': 0.4815718538956034, 'dist': 0.28442021732129835, 'wait': 0.23400792878309817}
-  charging_power: 6 km/slot
+  theta         : {'pres': 0.5813891420791389, 'abs': 0.21823919072103604, 'early': 0.11088024778413888, 'late': 0.0894914194156862}
+  pref          : {'energy': 0.397099254259306, 'dist': 0.22969589268170804, 'wait': 0.373204853058986}
+  charging_power: 5 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
   nb_sessions   : 0
 
 --- AGENT CAR
   idx           : 80
-  loc           : (198.2, 1257.9)
-  soc           : 150.638km
-  soc threshold : 177.787km
-  autonomy      : 420.0km
+  loc           : (1639.0, 959.2)
+  soc           : 352.033km
+  soc threshold : 192.629km
+  autonomy      : 455.0km
   state         : DRIVING
-  theta         : {'pres': 0.5904446968864361, 'abs': 0.1969722201658024, 'early': 0.1237570756069299, 'late': 0.08882600734083163}
-  pref          : {'energy': 0.20967357050980145, 'dist': 0.44302151001543916, 'wait': 0.3473049194747595}
-  charging_power: 7 km/slot
+  theta         : {'pres': 0.6202457008644792, 'abs': 0.1997822719515703, 'early': 0.10904440381562969, 'late': 0.07092762336832086}
+  pref          : {'energy': 0.4248774071234505, 'dist': 0.2620115327400768, 'wait': 0.31311106013647266}
+  charging_power: 4 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
   nb_sessions   : 0
 
 --- AGENT CAR
   idx           : 81
-  loc           : (711.3, 2442.8)
-  soc           : 236.651km
-  soc threshold : 114.650km
-  autonomy      : 365.0km
+  loc           : (788.5, 1745.4)
+  soc           : 249.930km
+  soc threshold : 121.743km
+  autonomy      : 350.0km
   state         : DRIVING
-  theta         : {'pres': 0.6078420804880139, 'abs': 0.19050118480511563, 'early': 0.1197162159837209, 'late': 0.0819405187231496}
-  pref          : {'energy': 0.2691705458893629, 'dist': 0.08778905230309648, 'wait': 0.6430404018075405}
-  charging_power: 5 km/slot
-  score         : [0. 0. 0. 0.]
-  u_total       : 0.0000
-  nb_sessions   : 0
-
---- AGENT CAR
-  idx           : 82
-  loc           : (2611.5, 2348.2)
-  soc           : 140.150km
-  soc threshold : 145.202km
-  autonomy      : 395.0km
-  state         : DRIVING
-  theta         : {'pres': 0.587912391369258, 'abs': 0.20380431899977927, 'early': 0.12448306967406407, 'late': 0.08380021995689875}
-  pref          : {'energy': 0.7537512540460047, 'dist': 0.16330934079958517, 'wait': 0.08293940515440996}
-  charging_power: 5 km/slot
-  score         : [0. 0. 0. 0.]
-  u_total       : 0.0000
-  nb_sessions   : 0
-
---- AGENT CAR
-  idx           : 83
-  loc           : (2508.9, 415.3)
-  soc           : 187.634km
-  soc threshold : 184.179km
-  autonomy      : 450.0km
-  state         : DRIVING
-  theta         : {'pres': 0.6050567269831795, 'abs': 0.19730406317414545, 'early': 0.11640470146842968, 'late': 0.08123450837424541}
-  pref          : {'energy': 0.04094289870651459, 'dist': 0.5099673548747709, 'wait': 0.44908974641871463}
-  charging_power: 4 km/slot
-  score         : [0. 0. 0. 0.]
-  u_total       : 0.0000
-  nb_sessions   : 0
-
---- AGENT CAR
-  idx           : 84
-  loc           : (1652.9, 1907.0)
-  soc           : 215.682km
-  soc threshold : 125.806km
-  autonomy      : 305.0km
-  state         : DRIVING
-  theta         : {'pres': 0.6037936941877874, 'abs': 0.18673469235104337, 'early': 0.12140291873593376, 'late': 0.08806869472523542}
-  pref          : {'energy': 0.4490510624627658, 'dist': 0.13090171007748783, 'wait': 0.4200472274597465}
-  charging_power: 8 km/slot
-  score         : [0. 0. 0. 0.]
-  u_total       : 0.0000
-  nb_sessions   : 0
-
---- AGENT CAR
-  idx           : 85
-  loc           : (1279.6, 2872.2)
-  soc           : 271.518km
-  soc threshold : 139.733km
-  autonomy      : 380.0km
-  state         : DRIVING
-  theta         : {'pres': 0.5958974362289401, 'abs': 0.19884688341124904, 'early': 0.12706389061573986, 'late': 0.0781917897440711}
-  pref          : {'energy': 0.2373682943504683, 'dist': 0.4022722217074916, 'wait': 0.3603594839420401}
-  charging_power: 8 km/slot
-  score         : [0. 0. 0. 0.]
-  u_total       : 0.0000
-  nb_sessions   : 0
-
---- AGENT CAR
-  idx           : 86
-  loc           : (1911.8, 1013.9)
-  soc           : 120.056km
-  soc threshold : 131.698km
-  autonomy      : 380.0km
-  state         : DRIVING
-  theta         : {'pres': 0.5759668945064356, 'abs': 0.22427476854840667, 'early': 0.11965599481896685, 'late': 0.08010234212619097}
-  pref          : {'energy': 0.11578998029836124, 'dist': 0.4695720946486494, 'wait': 0.4146379250529894}
-  charging_power: 4 km/slot
-  score         : [0. 0. 0. 0.]
-  u_total       : 0.0000
-  nb_sessions   : 0
-
---- AGENT CAR
-  idx           : 87
-  loc           : (873.9, 2818.9)
-  soc           : 236.053km
-  soc threshold : 144.394km
-  autonomy      : 450.0km
-  state         : DRIVING
-  theta         : {'pres': 0.5972417965010985, 'abs': 0.2021459860113709, 'early': 0.11629558010001179, 'late': 0.08431663738751868}
-  pref          : {'energy': 0.04984480874516491, 'dist': 0.4781448207716329, 'wait': 0.4720103704832022}
-  charging_power: 8 km/slot
-  score         : [0. 0. 0. 0.]
-  u_total       : 0.0000
-  nb_sessions   : 0
-
---- AGENT CAR
-  idx           : 88
-  loc           : (1965.5, 2489.3)
-  soc           : 168.908km
-  soc threshold : 105.869km
-  autonomy      : 325.0km
-  state         : DRIVING
-  theta         : {'pres': 0.5823656572395431, 'abs': 0.21329614060424218, 'early': 0.12634491376291326, 'late': 0.07799328839330144}
-  pref          : {'energy': 0.618024013807116, 'dist': 0.3610619487514206, 'wait': 0.020914037441463355}
+  theta         : {'pres': 0.616686040625481, 'abs': 0.20450852026185892, 'early': 0.10957286996629068, 'late': 0.06923256914636941}
+  pref          : {'energy': 0.5389603769362631, 'dist': 0.19937818676287417, 'wait': 0.26166143630086286}
   charging_power: 7 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
   nb_sessions   : 0
 
 --- AGENT CAR
-  idx           : 89
-  loc           : (2140.5, 1249.0)
-  soc           : 119.323km
-  soc threshold : 184.530km
-  autonomy      : 395.0km
+  idx           : 82
+  loc           : (1541.6, 1331.2)
+  soc           : 293.500km
+  soc threshold : 118.722km
+  autonomy      : 390.0km
   state         : DRIVING
-  theta         : {'pres': 0.5920488355453719, 'abs': 0.18646518023058606, 'early': 0.13237490079028502, 'late': 0.08911108343375694}
-  pref          : {'energy': 0.24109707131802538, 'dist': 0.48349387477611155, 'wait': 0.27540905390586307}
-  charging_power: 6 km/slot
+  theta         : {'pres': 0.5874701780139432, 'abs': 0.20702729477472892, 'early': 0.12527547198179703, 'late': 0.08022705522953089}
+  pref          : {'energy': 0.3536682995534112, 'dist': 0.16613674902020345, 'wait': 0.48019495142638535}
+  charging_power: 7 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
   nb_sessions   : 0
 
 --- AGENT CAR
-  idx           : 90
-  loc           : (36.5, 493.2)
-  soc           : 225.694km
-  soc threshold : 126.955km
-  autonomy      : 315.0km
+  idx           : 83
+  loc           : (2004.7, 2610.1)
+  soc           : 131.419km
+  soc threshold : 173.498km
+  autonomy      : 355.0km
   state         : DRIVING
-  theta         : {'pres': 0.5724369881317745, 'abs': 0.19909360755669314, 'early': 0.1392035575456329, 'late': 0.0892658467658995}
-  pref          : {'energy': 0.4771339532769468, 'dist': 0.4866252515230776, 'wait': 0.036240795199975646}
+  theta         : {'pres': 0.6132230184737645, 'abs': 0.1933888039152281, 'early': 0.11615941458129792, 'late': 0.07722876302970938}
+  pref          : {'energy': 0.270828125241784, 'dist': 0.4561039263820444, 'wait': 0.27306794837617154}
   charging_power: 8 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
   nb_sessions   : 0
 
 --- AGENT CAR
-  idx           : 91
-  loc           : (1876.2, 294.1)
-  soc           : 346.357km
-  soc threshold : 185.059km
-  autonomy      : 455.0km
+  idx           : 84
+  loc           : (2649.2, 1692.3)
+  soc           : 330.242km
+  soc threshold : 113.525km
+  autonomy      : 415.0km
   state         : DRIVING
-  theta         : {'pres': 0.5859155593906649, 'abs': 0.20822709615697343, 'early': 0.11935869852989071, 'late': 0.08649864592247097}
-  pref          : {'energy': 0.31018055567449987, 'dist': 0.18668748799678403, 'wait': 0.5031319563287161}
+  theta         : {'pres': 0.6188776714812095, 'abs': 0.19494602241820716, 'early': 0.11584511453454482, 'late': 0.07033119156603852}
+  pref          : {'energy': 0.1531640194356262, 'dist': 0.5444633571054579, 'wait': 0.30237262345891586}
+  charging_power: 5 km/slot
+  score         : [0. 0. 0. 0.]
+  u_total       : 0.0000
+  nb_sessions   : 0
+
+--- AGENT CAR
+  idx           : 85
+  loc           : (655.6, 411.8)
+  soc           : 126.638km
+  soc threshold : 156.296km
+  autonomy      : 415.0km
+  state         : DRIVING
+  theta         : {'pres': 0.5937542848728149, 'abs': 0.20464102795043568, 'early': 0.12069994943339421, 'late': 0.08090473774335519}
+  pref          : {'energy': 0.22161410437509424, 'dist': 0.6201601219855737, 'wait': 0.1582257736393321}
+  charging_power: 4 km/slot
+  score         : [0. 0. 0. 0.]
+  u_total       : 0.0000
+  nb_sessions   : 0
+
+--- AGENT CAR
+  idx           : 86
+  loc           : (638.1, 1265.9)
+  soc           : 233.573km
+  soc threshold : 118.665km
+  autonomy      : 370.0km
+  state         : DRIVING
+  theta         : {'pres': 0.5822749517025473, 'abs': 0.21167775402509553, 'early': 0.1238739835487868, 'late': 0.0821733107235704}
+  pref          : {'energy': 0.23183144425739455, 'dist': 0.5298077880647033, 'wait': 0.23836076767790207}
   charging_power: 6 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
   nb_sessions   : 0
 
 --- AGENT CAR
-  idx           : 92
-  loc           : (2518.5, 2724.8)
-  soc           : 159.992km
-  soc threshold : 133.649km
-  autonomy      : 345.0km
+  idx           : 87
+  loc           : (953.2, 2070.0)
+  soc           : 298.764km
+  soc threshold : 150.189km
+  autonomy      : 410.0km
   state         : DRIVING
-  theta         : {'pres': 0.5988692894983293, 'abs': 0.19548495086636863, 'early': 0.11480566408681402, 'late': 0.09084009554848799}
-  pref          : {'energy': 0.23475487684037816, 'dist': 0.6422722467931046, 'wait': 0.12297287636651733}
+  theta         : {'pres': 0.5744772066171452, 'abs': 0.22904347808656222, 'early': 0.12122516459484708, 'late': 0.07525415070144545}
+  pref          : {'energy': 0.2907242878133634, 'dist': 0.292632969526271, 'wait': 0.4166427426603656}
+  charging_power: 7 km/slot
+  score         : [0. 0. 0. 0.]
+  u_total       : 0.0000
+  nb_sessions   : 0
+
+--- AGENT CAR
+  idx           : 88
+  loc           : (2986.8, 23.6)
+  soc           : 298.104km
+  soc threshold : 145.749km
+  autonomy      : 400.0km
+  state         : DRIVING
+  theta         : {'pres': 0.5804756091237245, 'abs': 0.20967770137367575, 'early': 0.12285317429845258, 'late': 0.08699351520414715}
+  pref          : {'energy': 0.2650516514993789, 'dist': 0.5262510398176422, 'wait': 0.20869730868297887}
+  charging_power: 5 km/slot
+  score         : [0. 0. 0. 0.]
+  u_total       : 0.0000
+  nb_sessions   : 0
+
+--- AGENT CAR
+  idx           : 89
+  loc           : (447.7, 1415.0)
+  soc           : 269.052km
+  soc threshold : 171.551km
+  autonomy      : 480.0km
+  state         : DRIVING
+  theta         : {'pres': 0.5924140231342861, 'abs': 0.19237126722371767, 'early': 0.1327190261729677, 'late': 0.08249568346902834}
+  pref          : {'energy': 0.061413855853492454, 'dist': 0.25085849178296205, 'wait': 0.6877276523635456}
+  charging_power: 4 km/slot
+  score         : [0. 0. 0. 0.]
+  u_total       : 0.0000
+  nb_sessions   : 0
+
+--- AGENT CAR
+  idx           : 90
+  loc           : (1790.9, 850.7)
+  soc           : 140.170km
+  soc threshold : 122.222km
+  autonomy      : 355.0km
+  state         : DRIVING
+  theta         : {'pres': 0.594796839801541, 'abs': 0.20753377940422674, 'early': 0.1151937147053747, 'late': 0.0824756660888576}
+  pref          : {'energy': 0.21229056533335014, 'dist': 0.14328678589965343, 'wait': 0.6444226487669964}
+  charging_power: 6 km/slot
+  score         : [0. 0. 0. 0.]
+  u_total       : 0.0000
+  nb_sessions   : 0
+
+--- AGENT CAR
+  idx           : 91
+  loc           : (2460.5, 959.3)
+  soc           : 220.281km
+  soc threshold : 96.035km
+  autonomy      : 340.0km
+  state         : DRIVING
+  theta         : {'pres': 0.5899539262531676, 'abs': 0.21371895190502938, 'early': 0.11846289862766594, 'late': 0.07786422321413707}
+  pref          : {'energy': 0.409796436161006, 'dist': 0.48134957169747794, 'wait': 0.10885399214151603}
+  charging_power: 7 km/slot
+  score         : [0. 0. 0. 0.]
+  u_total       : 0.0000
+  nb_sessions   : 0
+
+--- AGENT CAR
+  idx           : 92
+  loc           : (1587.6, 161.3)
+  soc           : 257.018km
+  soc threshold : 111.216km
+  autonomy      : 365.0km
+  state         : DRIVING
+  theta         : {'pres': 0.6078701525431144, 'abs': 0.2056970174952169, 'early': 0.10774215096088685, 'late': 0.07869067900078178}
+  pref          : {'energy': 0.4501655159983713, 'dist': 0.18494935264462525, 'wait': 0.36488513135700334}
   charging_power: 6 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
@@ -1305,41 +1305,41 @@
 
 --- AGENT CAR
   idx           : 93
-  loc           : (2930.8, 1268.7)
-  soc           : 235.995km
-  soc threshold : 124.822km
-  autonomy      : 420.0km
+  loc           : (1580.7, 1500.8)
+  soc           : 158.532km
+  soc threshold : 120.406km
+  autonomy      : 355.0km
   state         : DRIVING
-  theta         : {'pres': 0.5759656176184526, 'abs': 0.2117864918487897, 'early': 0.12672893311559175, 'late': 0.08551895741716597}
-  pref          : {'energy': 0.06057716188757008, 'dist': 0.3750007935191723, 'wait': 0.5644220445932576}
-  charging_power: 7 km/slot
-  score         : [0. 0. 0. 0.]
-  u_total       : 0.0000
-  nb_sessions   : 0
-
---- AGENT CAR
-  idx           : 94
-  loc           : (135.4, 621.2)
-  soc           : 264.072km
-  soc threshold : 151.647km
-  autonomy      : 440.0km
-  state         : DRIVING
-  theta         : {'pres': 0.5704347734910109, 'abs': 0.2111168953516712, 'early': 0.12943550297049167, 'late': 0.08901282818682615}
-  pref          : {'energy': 0.1614630946884048, 'dist': 0.39870559617388485, 'wait': 0.43983130913771035}
+  theta         : {'pres': 0.6225641523182007, 'abs': 0.20052901552201163, 'early': 0.1060251456614968, 'late': 0.07088168649829087}
+  pref          : {'energy': 0.4714003359791347, 'dist': 0.360835488130498, 'wait': 0.16776417589036718}
   charging_power: 8 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
   nb_sessions   : 0
 
 --- AGENT CAR
-  idx           : 95
-  loc           : (886.9, 1122.4)
-  soc           : 200.038km
-  soc threshold : 125.257km
-  autonomy      : 340.0km
+  idx           : 94
+  loc           : (171.7, 2654.5)
+  soc           : 190.024km
+  soc threshold : 171.343km
+  autonomy      : 430.0km
   state         : DRIVING
-  theta         : {'pres': 0.614682331866156, 'abs': 0.18468639646672327, 'early': 0.12468631505231807, 'late': 0.07594495661480276}
-  pref          : {'energy': 0.41581779044857003, 'dist': 0.24319559466983637, 'wait': 0.3409866148815936}
+  theta         : {'pres': 0.5901630150466276, 'abs': 0.20632675915782692, 'early': 0.12557231698335417, 'late': 0.07793790881219134}
+  pref          : {'energy': 0.0372685327914611, 'dist': 0.4876027715267957, 'wait': 0.4751286956817432}
+  charging_power: 6 km/slot
+  score         : [0. 0. 0. 0.]
+  u_total       : 0.0000
+  nb_sessions   : 0
+
+--- AGENT CAR
+  idx           : 95
+  loc           : (2818.5, 759.8)
+  soc           : 131.048km
+  soc threshold : 104.634km
+  autonomy      : 395.0km
+  state         : DRIVING
+  theta         : {'pres': 0.6000476239529068, 'abs': 0.20224812744808782, 'early': 0.1248423421156913, 'late': 0.07286190648331414}
+  pref          : {'energy': 0.16318255284224667, 'dist': 0.4152471942443456, 'wait': 0.4215702529134077}
   charging_power: 6 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
@@ -1347,56 +1347,56 @@
 
 --- AGENT CAR
   idx           : 96
-  loc           : (998.0, 2855.0)
-  soc           : 260.886km
-  soc threshold : 134.752km
-  autonomy      : 410.0km
+  loc           : (1432.9, 2364.7)
+  soc           : 252.391km
+  soc threshold : 166.672km
+  autonomy      : 400.0km
   state         : DRIVING
-  theta         : {'pres': 0.5954435770193337, 'abs': 0.20466584118898445, 'early': 0.11679843973419006, 'late': 0.08309214205749174}
-  pref          : {'energy': 0.15712731813897776, 'dist': 0.3620375002134053, 'wait': 0.48083518164761685}
-  charging_power: 4 km/slot
+  theta         : {'pres': 0.6135690235595567, 'abs': 0.20451946553477582, 'early': 0.10925743563575264, 'late': 0.07265407526991494}
+  pref          : {'energy': 0.12525257772405263, 'dist': 0.6273479764062494, 'wait': 0.247399445869698}
+  charging_power: 7 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
   nb_sessions   : 0
 
 --- AGENT CAR
   idx           : 97
-  loc           : (2670.2, 2514.1)
-  soc           : 318.088km
-  soc threshold : 172.444km
-  autonomy      : 400.0km
+  loc           : (1286.3, 747.6)
+  soc           : 315.181km
+  soc threshold : 137.853km
+  autonomy      : 465.0km
   state         : DRIVING
-  theta         : {'pres': 0.6233166359586166, 'abs': 0.1918629900633233, 'early': 0.11044526999755112, 'late': 0.07437510398050898}
-  pref          : {'energy': 0.6501945691290261, 'dist': 0.2695389964102839, 'wait': 0.0802664344606901}
-  charging_power: 4 km/slot
+  theta         : {'pres': 0.618459712051118, 'abs': 0.1814873436286385, 'early': 0.11699058269645161, 'late': 0.08306236162379177}
+  pref          : {'energy': 0.32518556652603653, 'dist': 0.3209610955893794, 'wait': 0.353853337884584}
+  charging_power: 8 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
   nb_sessions   : 0
 
 --- AGENT CAR
   idx           : 98
-  loc           : (1525.2, 768.4)
-  soc           : 159.865km
-  soc threshold : 165.133km
-  autonomy      : 430.0km
+  loc           : (2743.7, 2059.8)
+  soc           : 232.914km
+  soc threshold : 192.855km
+  autonomy      : 445.0km
   state         : DRIVING
-  theta         : {'pres': 0.6225732945641141, 'abs': 0.18410961682840227, 'early': 0.10993778985808693, 'late': 0.0833792987493966}
-  pref          : {'energy': 0.22894645085561613, 'dist': 0.4123274816290307, 'wait': 0.35872606751535324}
-  charging_power: 4 km/slot
+  theta         : {'pres': 0.5977078321157908, 'abs': 0.20189503057528432, 'early': 0.11773724791454093, 'late': 0.08265988939438394}
+  pref          : {'energy': 0.4179718090344961, 'dist': 0.11430446456757794, 'wait': 0.46772372639792587}
+  charging_power: 6 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
   nb_sessions   : 0
 
 --- AGENT CAR
   idx           : 99
-  loc           : (2895.3, 574.5)
-  soc           : 242.097km
-  soc threshold : 93.680km
-  autonomy      : 370.0km
+  loc           : (1749.6, 1457.6)
+  soc           : 118.165km
+  soc threshold : 128.985km
+  autonomy      : 360.0km
   state         : DRIVING
-  theta         : {'pres': 0.604848852050489, 'abs': 0.20605925750827941, 'early': 0.11326928472259726, 'late': 0.07582260571863438}
-  pref          : {'energy': 0.35368050833368475, 'dist': 0.2557174510866762, 'wait': 0.39060204057963904}
-  charging_power: 8 km/slot
+  theta         : {'pres': 0.6287277353473112, 'abs': 0.17981083498631703, 'early': 0.11621471788798673, 'late': 0.07524671177838499}
+  pref          : {'energy': 0.1989413579607899, 'dist': 0.7112486005394829, 'wait': 0.08981004149972728}
+  charging_power: 7 km/slot
   score         : [0. 0. 0. 0.]
   u_total       : 0.0000
   nb_sessions   : 0
@@ -1404,386 +1404,386 @@
 --- 4 SOCIETIES ---
  --------------- SOCIETY 1/4 ------------------ AGENT SOCIETY
   f_id          : 0
-  nb stations   : 12
-  strategy      : {'pres': 3.7497478595975693, 'abs': 2.4902794112312088, 'late': 0.6821549548448036, 'early': 0.5174925941307142}
+  nb stations   : 6
+  strategy      : {'pres': 5.868667246166433, 'abs': 1.641499248263199, 'late': 1.4440375006378499, 'early': 0.4028653529596063}
 
  -------- ATTACHED STATIONS:
 --- AGENT STATION
-  m             : 0
-  loc           : [2502.13  876.84]
-  society_id    : 0
-  nb_charg_spot : 4
-  alpha         : 0.304
-  strategy      : {'pres': 3.7497478595975693, 'abs': 2.4902794112312088, 'late': 0.6821549548448036, 'early': 0.5174925941307142}
-  schedule shape: (4, 1440)
-
---- AGENT STATION
-  m             : 1
-  loc           : [846.43 197.09]
-  society_id    : 0
-  nb_charg_spot : 4
-  alpha         : 0.294
-  strategy      : {'pres': 3.7497478595975693, 'abs': 2.4902794112312088, 'late': 0.6821549548448036, 'early': 0.5174925941307142}
-  schedule shape: (4, 1440)
-
---- AGENT STATION
-  m             : 2
-  loc           : [1622.37  542.98]
+  m             : 4
+  loc           : [1617.59  947.57]
   society_id    : 0
   nb_charg_spot : 6
-  alpha         : 0.677
-  strategy      : {'pres': 3.7497478595975693, 'abs': 2.4902794112312088, 'late': 0.6821549548448036, 'early': 0.5174925941307142}
+  alpha         : 0.549
+  strategy      : {'pres': 5.868667246166433, 'abs': 1.641499248263199, 'late': 1.4440375006378499, 'early': 0.4028653529596063}
   schedule shape: (6, 1440)
 
 --- AGENT STATION
   m             : 7
-  loc           : [131.91 206.45]
+  loc           : [2012.14 1901.99]
   society_id    : 0
-  nb_charg_spot : 5
-  alpha         : 0.651
-  strategy      : {'pres': 3.7497478595975693, 'abs': 2.4902794112312088, 'late': 0.6821549548448036, 'early': 0.5174925941307142}
-  schedule shape: (5, 1440)
+  nb_charg_spot : 4
+  alpha         : 0.370
+  strategy      : {'pres': 5.868667246166433, 'abs': 1.641499248263199, 'late': 1.4440375006378499, 'early': 0.4028653529596063}
+  schedule shape: (4, 1440)
 
 --- AGENT STATION
   m             : 10
-  loc           : [1598.06   32.54]
-  society_id    : 0
-  nb_charg_spot : 6
-  alpha         : 0.126
-  strategy      : {'pres': 3.7497478595975693, 'abs': 2.4902794112312088, 'late': 0.6821549548448036, 'early': 0.5174925941307142}
-  schedule shape: (6, 1440)
-
---- AGENT STATION
-  m             : 12
-  loc           : [2752.43   31.92]
+  loc           : [2619.17 1856.68]
   society_id    : 0
   nb_charg_spot : 5
-  alpha         : 0.679
-  strategy      : {'pres': 3.7497478595975693, 'abs': 2.4902794112312088, 'late': 0.6821549548448036, 'early': 0.5174925941307142}
+  alpha         : 0.286
+  strategy      : {'pres': 5.868667246166433, 'abs': 1.641499248263199, 'late': 1.4440375006378499, 'early': 0.4028653529596063}
   schedule shape: (5, 1440)
-
---- AGENT STATION
-  m             : 16
-  loc           : [1076.2 2038.3]
-  society_id    : 0
-  nb_charg_spot : 5
-  alpha         : 0.429
-  strategy      : {'pres': 3.7497478595975693, 'abs': 2.4902794112312088, 'late': 0.6821549548448036, 'early': 0.5174925941307142}
-  schedule shape: (5, 1440)
-
---- AGENT STATION
-  m             : 18
-  loc           : [2603.08 1334.93]
-  society_id    : 0
-  nb_charg_spot : 6
-  alpha         : 0.403
-  strategy      : {'pres': 3.7497478595975693, 'abs': 2.4902794112312088, 'late': 0.6821549548448036, 'early': 0.5174925941307142}
-  schedule shape: (6, 1440)
-
---- AGENT STATION
-  m             : 22
-  loc           : [ 984.9  1760.39]
-  society_id    : 0
-  nb_charg_spot : 5
-  alpha         : 0.156
-  strategy      : {'pres': 3.7497478595975693, 'abs': 2.4902794112312088, 'late': 0.6821549548448036, 'early': 0.5174925941307142}
-  schedule shape: (5, 1440)
-
---- AGENT STATION
-  m             : 23
-  loc           : [1360.22  727.53]
-  society_id    : 0
-  nb_charg_spot : 4
-  alpha         : 0.146
-  strategy      : {'pres': 3.7497478595975693, 'abs': 2.4902794112312088, 'late': 0.6821549548448036, 'early': 0.5174925941307142}
-  schedule shape: (4, 1440)
-
---- AGENT STATION
-  m             : 32
-  loc           : [1667.29 2108.71]
-  society_id    : 0
-  nb_charg_spot : 4
-  alpha         : 0.622
-  strategy      : {'pres': 3.7497478595975693, 'abs': 2.4902794112312088, 'late': 0.6821549548448036, 'early': 0.5174925941307142}
-  schedule shape: (4, 1440)
-
---- AGENT STATION
-  m             : 33
-  loc           : [2005.62  774.6 ]
-  society_id    : 0
-  nb_charg_spot : 6
-  alpha         : 0.625
-  strategy      : {'pres': 3.7497478595975693, 'abs': 2.4902794112312088, 'late': 0.6821549548448036, 'early': 0.5174925941307142}
-  schedule shape: (6, 1440)
-
- --------------- SOCIETY 2/4 ------------------ AGENT SOCIETY
-  f_id          : 1
-  nb stations   : 10
-  strategy      : {'pres': 3.4561895801121882, 'abs': 2.621038514421751, 'late': 0.9449192772856236, 'early': 0.44816599791051076}
-
- -------- ATTACHED STATIONS:
---- AGENT STATION
-  m             : 8
-  loc           : [ 805.76 2813.92]
-  society_id    : 1
-  nb_charg_spot : 6
-  alpha         : 0.537
-  strategy      : {'pres': 3.4561895801121882, 'abs': 2.621038514421751, 'late': 0.9449192772856236, 'early': 0.44816599791051076}
-  schedule shape: (6, 1440)
-
---- AGENT STATION
-  m             : 9
-  loc           : [185.86 356.46]
-  society_id    : 1
-  nb_charg_spot : 5
-  alpha         : 0.845
-  strategy      : {'pres': 3.4561895801121882, 'abs': 2.621038514421751, 'late': 0.9449192772856236, 'early': 0.44816599791051076}
-  schedule shape: (5, 1440)
-
---- AGENT STATION
-  m             : 13
-  loc           : [ 731.78 2850.62]
-  society_id    : 1
-  nb_charg_spot : 4
-  alpha         : 0.634
-  strategy      : {'pres': 3.4561895801121882, 'abs': 2.621038514421751, 'late': 0.9449192772856236, 'early': 0.44816599791051076}
-  schedule shape: (4, 1440)
-
---- AGENT STATION
-  m             : 20
-  loc           : [1210.54 2801.74]
-  society_id    : 1
-  nb_charg_spot : 5
-  alpha         : 0.848
-  strategy      : {'pres': 3.4561895801121882, 'abs': 2.621038514421751, 'late': 0.9449192772856236, 'early': 0.44816599791051076}
-  schedule shape: (5, 1440)
-
---- AGENT STATION
-  m             : 24
-  loc           : [2635.94 2776.04]
-  society_id    : 1
-  nb_charg_spot : 4
-  alpha         : 0.401
-  strategy      : {'pres': 3.4561895801121882, 'abs': 2.621038514421751, 'late': 0.9449192772856236, 'early': 0.44816599791051076}
-  schedule shape: (4, 1440)
-
---- AGENT STATION
-  m             : 27
-  loc           : [2561.12 2208.78]
-  society_id    : 1
-  nb_charg_spot : 6
-  alpha         : 0.107
-  strategy      : {'pres': 3.4561895801121882, 'abs': 2.621038514421751, 'late': 0.9449192772856236, 'early': 0.44816599791051076}
-  schedule shape: (6, 1440)
-
---- AGENT STATION
-  m             : 34
-  loc           : [1316.81  760.4 ]
-  society_id    : 1
-  nb_charg_spot : 5
-  alpha         : 0.414
-  strategy      : {'pres': 3.4561895801121882, 'abs': 2.621038514421751, 'late': 0.9449192772856236, 'early': 0.44816599791051076}
-  schedule shape: (5, 1440)
-
---- AGENT STATION
-  m             : 37
-  loc           : [1026.06 1499.27]
-  society_id    : 1
-  nb_charg_spot : 5
-  alpha         : 0.468
-  strategy      : {'pres': 3.4561895801121882, 'abs': 2.621038514421751, 'late': 0.9449192772856236, 'early': 0.44816599791051076}
-  schedule shape: (5, 1440)
-
---- AGENT STATION
-  m             : 38
-  loc           : [ 193.79 2575.36]
-  society_id    : 1
-  nb_charg_spot : 4
-  alpha         : 0.831
-  strategy      : {'pres': 3.4561895801121882, 'abs': 2.621038514421751, 'late': 0.9449192772856236, 'early': 0.44816599791051076}
-  schedule shape: (4, 1440)
-
---- AGENT STATION
-  m             : 39
-  loc           : [936.54  51.79]
-  society_id    : 1
-  nb_charg_spot : 4
-  alpha         : 0.671
-  strategy      : {'pres': 3.4561895801121882, 'abs': 2.621038514421751, 'late': 0.9449192772856236, 'early': 0.44816599791051076}
-  schedule shape: (4, 1440)
-
- --------------- SOCIETY 3/4 ------------------ AGENT SOCIETY
-  f_id          : 2
-  nb stations   : 12
-  strategy      : {'pres': 4.451772414270417, 'abs': 2.444837342542167, 'late': 1.1504523490671987, 'early': 0.5632707582924815}
-
- -------- ATTACHED STATIONS:
---- AGENT STATION
-  m             : 3
-  loc           : [1258.51 1455.8 ]
-  society_id    : 2
-  nb_charg_spot : 4
-  alpha         : 0.786
-  strategy      : {'pres': 4.451772414270417, 'abs': 2.444837342542167, 'late': 1.1504523490671987, 'early': 0.5632707582924815}
-  schedule shape: (4, 1440)
-
---- AGENT STATION
-  m             : 4
-  loc           : [1586.06 1187.22]
-  society_id    : 2
-  nb_charg_spot : 6
-  alpha         : 0.259
-  strategy      : {'pres': 4.451772414270417, 'abs': 2.444837342542167, 'late': 1.1504523490671987, 'early': 0.5632707582924815}
-  schedule shape: (6, 1440)
-
---- AGENT STATION
-  m             : 11
-  loc           : [2368.07  459.7 ]
-  society_id    : 2
-  nb_charg_spot : 4
-  alpha         : 0.496
-  strategy      : {'pres': 4.451772414270417, 'abs': 2.444837342542167, 'late': 1.1504523490671987, 'early': 0.5632707582924815}
-  schedule shape: (4, 1440)
 
 --- AGENT STATION
   m             : 14
-  loc           : [1221.09 1500.3 ]
-  society_id    : 2
-  nb_charg_spot : 6
-  alpha         : 0.845
-  strategy      : {'pres': 4.451772414270417, 'abs': 2.444837342542167, 'late': 1.1504523490671987, 'early': 0.5632707582924815}
-  schedule shape: (6, 1440)
-
---- AGENT STATION
-  m             : 17
-  loc           : [1459.12 1460.1 ]
-  society_id    : 2
-  nb_charg_spot : 6
-  alpha         : 0.403
-  strategy      : {'pres': 4.451772414270417, 'abs': 2.444837342542167, 'late': 1.1504523490671987, 'early': 0.5632707582924815}
-  schedule shape: (6, 1440)
-
---- AGENT STATION
-  m             : 21
-  loc           : [2834.16 2903.04]
-  society_id    : 2
-  nb_charg_spot : 4
-  alpha         : 0.443
-  strategy      : {'pres': 4.451772414270417, 'abs': 2.444837342542167, 'late': 1.1504523490671987, 'early': 0.5632707582924815}
-  schedule shape: (4, 1440)
-
---- AGENT STATION
-  m             : 25
-  loc           : [856.59 753.1 ]
-  society_id    : 2
+  loc           : [1048.83  392.9 ]
+  society_id    : 0
   nb_charg_spot : 5
-  alpha         : 0.122
-  strategy      : {'pres': 4.451772414270417, 'abs': 2.444837342542167, 'late': 1.1504523490671987, 'early': 0.5632707582924815}
+  alpha         : 0.137
+  strategy      : {'pres': 5.868667246166433, 'abs': 1.641499248263199, 'late': 1.4440375006378499, 'early': 0.4028653529596063}
   schedule shape: (5, 1440)
-
---- AGENT STATION
-  m             : 26
-  loc           : [1861.23  638.72]
-  society_id    : 2
-  nb_charg_spot : 5
-  alpha         : 0.105
-  strategy      : {'pres': 4.451772414270417, 'abs': 2.444837342542167, 'late': 1.1504523490671987, 'early': 0.5632707582924815}
-  schedule shape: (5, 1440)
-
---- AGENT STATION
-  m             : 28
-  loc           : [ 137.82 2673.92]
-  society_id    : 2
-  nb_charg_spot : 5
-  alpha         : 0.194
-  strategy      : {'pres': 4.451772414270417, 'abs': 2.444837342542167, 'late': 1.1504523490671987, 'early': 0.5632707582924815}
-  schedule shape: (5, 1440)
-
---- AGENT STATION
-  m             : 29
-  loc           : [1346.66 2345.23]
-  society_id    : 2
-  nb_charg_spot : 6
-  alpha         : 0.570
-  strategy      : {'pres': 4.451772414270417, 'abs': 2.444837342542167, 'late': 1.1504523490671987, 'early': 0.5632707582924815}
-  schedule shape: (6, 1440)
 
 --- AGENT STATION
   m             : 31
-  loc           : [987.85 149.7 ]
-  society_id    : 2
-  nb_charg_spot : 6
-  alpha         : 0.305
-  strategy      : {'pres': 4.451772414270417, 'abs': 2.444837342542167, 'late': 1.1504523490671987, 'early': 0.5632707582924815}
-  schedule shape: (6, 1440)
+  loc           : [2907.   2031.28]
+  society_id    : 0
+  nb_charg_spot : 5
+  alpha         : 0.762
+  strategy      : {'pres': 5.868667246166433, 'abs': 1.641499248263199, 'late': 1.4440375006378499, 'early': 0.4028653529596063}
+  schedule shape: (5, 1440)
 
 --- AGENT STATION
-  m             : 36
-  loc           : [ 743.67 2103.25]
-  society_id    : 2
-  nb_charg_spot : 4
-  alpha         : 0.397
-  strategy      : {'pres': 4.451772414270417, 'abs': 2.444837342542167, 'late': 1.1504523490671987, 'early': 0.5632707582924815}
-  schedule shape: (4, 1440)
+  m             : 34
+  loc           : [598.6  627.73]
+  society_id    : 0
+  nb_charg_spot : 5
+  alpha         : 0.162
+  strategy      : {'pres': 5.868667246166433, 'abs': 1.641499248263199, 'late': 1.4440375006378499, 'early': 0.4028653529596063}
+  schedule shape: (5, 1440)
 
- --------------- SOCIETY 4/4 ------------------ AGENT SOCIETY
-  f_id          : 3
-  nb stations   : 6
-  strategy      : {'pres': 2.65000798348272, 'abs': 2.8155280448852804, 'late': 0.5135426857169821, 'early': 0.7486717519230269}
+ --------------- SOCIETY 2/4 ------------------ AGENT SOCIETY
+  f_id          : 1
+  nb stations   : 15
+  strategy      : {'pres': 2.06194433724524, 'abs': 3.001270576509249, 'late': 1.285477418571414, 'early': 0.6926765984013654}
 
  -------- ATTACHED STATIONS:
 --- AGENT STATION
-  m             : 5
-  loc           : [2609.68  609.01]
-  society_id    : 3
+  m             : 0
+  loc           : [ 236.74 1475.9 ]
+  society_id    : 1
+  nb_charg_spot : 4
+  alpha         : 0.887
+  strategy      : {'pres': 2.06194433724524, 'abs': 3.001270576509249, 'late': 1.285477418571414, 'early': 0.6926765984013654}
+  schedule shape: (4, 1440)
+
+--- AGENT STATION
+  m             : 3
+  loc           : [2997.68  351.09]
+  society_id    : 1
   nb_charg_spot : 6
-  alpha         : 0.379
-  strategy      : {'pres': 2.65000798348272, 'abs': 2.8155280448852804, 'late': 0.5135426857169821, 'early': 0.7486717519230269}
+  alpha         : 0.373
+  strategy      : {'pres': 2.06194433724524, 'abs': 3.001270576509249, 'late': 1.285477418571414, 'early': 0.6926765984013654}
+  schedule shape: (6, 1440)
+
+--- AGENT STATION
+  m             : 5
+  loc           : [  73.61 2774.85]
+  society_id    : 1
+  nb_charg_spot : 6
+  alpha         : 0.837
+  strategy      : {'pres': 2.06194433724524, 'abs': 3.001270576509249, 'late': 1.285477418571414, 'early': 0.6926765984013654}
   schedule shape: (6, 1440)
 
 --- AGENT STATION
   m             : 6
-  loc           : [886.29 515.44]
-  society_id    : 3
+  loc           : [1892.6  1276.86]
+  society_id    : 1
   nb_charg_spot : 4
-  alpha         : 0.232
-  strategy      : {'pres': 2.65000798348272, 'abs': 2.8155280448852804, 'late': 0.5135426857169821, 'early': 0.7486717519230269}
+  alpha         : 0.132
+  strategy      : {'pres': 2.06194433724524, 'abs': 3.001270576509249, 'late': 1.285477418571414, 'early': 0.6926765984013654}
   schedule shape: (4, 1440)
 
 --- AGENT STATION
-  m             : 15
-  loc           : [2132.9  1777.03]
-  society_id    : 3
-  nb_charg_spot : 4
-  alpha         : 0.501
-  strategy      : {'pres': 2.65000798348272, 'abs': 2.8155280448852804, 'late': 0.5135426857169821, 'early': 0.7486717519230269}
-  schedule shape: (4, 1440)
-
---- AGENT STATION
-  m             : 19
-  loc           : [2218.39  352.63]
-  society_id    : 3
+  m             : 8
+  loc           : [1523.12 2313.41]
+  society_id    : 1
   nb_charg_spot : 6
-  alpha         : 0.373
-  strategy      : {'pres': 2.65000798348272, 'abs': 2.8155280448852804, 'late': 0.5135426857169821, 'early': 0.7486717519230269}
+  alpha         : 0.810
+  strategy      : {'pres': 2.06194433724524, 'abs': 3.001270576509249, 'late': 1.285477418571414, 'early': 0.6926765984013654}
   schedule shape: (6, 1440)
 
 --- AGENT STATION
-  m             : 30
-  loc           : [1131.1  2312.27]
-  society_id    : 3
+  m             : 11
+  loc           : [410.02 521.53]
+  society_id    : 1
+  nb_charg_spot : 6
+  alpha         : 0.405
+  strategy      : {'pres': 2.06194433724524, 'abs': 3.001270576509249, 'late': 1.285477418571414, 'early': 0.6926765984013654}
+  schedule shape: (6, 1440)
+
+--- AGENT STATION
+  m             : 13
+  loc           : [2520.78 1314.73]
+  society_id    : 1
+  nb_charg_spot : 6
+  alpha         : 0.428
+  strategy      : {'pres': 2.06194433724524, 'abs': 3.001270576509249, 'late': 1.285477418571414, 'early': 0.6926765984013654}
+  schedule shape: (6, 1440)
+
+--- AGENT STATION
+  m             : 15
+  loc           : [793.24 521.71]
+  society_id    : 1
   nb_charg_spot : 4
-  alpha         : 0.190
-  strategy      : {'pres': 2.65000798348272, 'abs': 2.8155280448852804, 'late': 0.5135426857169821, 'early': 0.7486717519230269}
+  alpha         : 0.422
+  strategy      : {'pres': 2.06194433724524, 'abs': 3.001270576509249, 'late': 1.285477418571414, 'early': 0.6926765984013654}
   schedule shape: (4, 1440)
 
 --- AGENT STATION
+  m             : 16
+  loc           : [2324.15 1289.98]
+  society_id    : 1
+  nb_charg_spot : 5
+  alpha         : 0.402
+  strategy      : {'pres': 2.06194433724524, 'abs': 3.001270576509249, 'late': 1.285477418571414, 'early': 0.6926765984013654}
+  schedule shape: (5, 1440)
+
+--- AGENT STATION
+  m             : 17
+  loc           : [430.12 452.25]
+  society_id    : 1
+  nb_charg_spot : 5
+  alpha         : 0.602
+  strategy      : {'pres': 2.06194433724524, 'abs': 3.001270576509249, 'late': 1.285477418571414, 'early': 0.6926765984013654}
+  schedule shape: (5, 1440)
+
+--- AGENT STATION
+  m             : 20
+  loc           : [ 190.   1704.49]
+  society_id    : 1
+  nb_charg_spot : 6
+  alpha         : 0.187
+  strategy      : {'pres': 2.06194433724524, 'abs': 3.001270576509249, 'late': 1.285477418571414, 'early': 0.6926765984013654}
+  schedule shape: (6, 1440)
+
+--- AGENT STATION
+  m             : 24
+  loc           : [1413.86 2405.86]
+  society_id    : 1
+  nb_charg_spot : 5
+  alpha         : 0.653
+  strategy      : {'pres': 2.06194433724524, 'abs': 3.001270576509249, 'late': 1.285477418571414, 'early': 0.6926765984013654}
+  schedule shape: (5, 1440)
+
+--- AGENT STATION
+  m             : 27
+  loc           : [2529.25  222.92]
+  society_id    : 1
+  nb_charg_spot : 6
+  alpha         : 0.203
+  strategy      : {'pres': 2.06194433724524, 'abs': 3.001270576509249, 'late': 1.285477418571414, 'early': 0.6926765984013654}
+  schedule shape: (6, 1440)
+
+--- AGENT STATION
   m             : 35
-  loc           : [ 118.36 2376.6 ]
+  loc           : [602.76 371.52]
+  society_id    : 1
+  nb_charg_spot : 4
+  alpha         : 0.386
+  strategy      : {'pres': 2.06194433724524, 'abs': 3.001270576509249, 'late': 1.285477418571414, 'early': 0.6926765984013654}
+  schedule shape: (4, 1440)
+
+--- AGENT STATION
+  m             : 39
+  loc           : [2514.72  541.5 ]
+  society_id    : 1
+  nb_charg_spot : 4
+  alpha         : 0.729
+  strategy      : {'pres': 2.06194433724524, 'abs': 3.001270576509249, 'late': 1.285477418571414, 'early': 0.6926765984013654}
+  schedule shape: (4, 1440)
+
+ --------------- SOCIETY 3/4 ------------------ AGENT SOCIETY
+  f_id          : 2
+  nb stations   : 14
+  strategy      : {'pres': 2.3236013977390457, 'abs': 3.4736405783871565, 'late': 0.7311562299157308, 'early': 0.650967033621445}
+
+ -------- ATTACHED STATIONS:
+--- AGENT STATION
+  m             : 2
+  loc           : [1972.32 2399.76]
+  society_id    : 2
+  nb_charg_spot : 4
+  alpha         : 0.680
+  strategy      : {'pres': 2.3236013977390457, 'abs': 3.4736405783871565, 'late': 0.7311562299157308, 'early': 0.650967033621445}
+  schedule shape: (4, 1440)
+
+--- AGENT STATION
+  m             : 9
+  loc           : [ 953.9 2238.6]
+  society_id    : 2
+  nb_charg_spot : 5
+  alpha         : 0.488
+  strategy      : {'pres': 2.3236013977390457, 'abs': 3.4736405783871565, 'late': 0.7311562299157308, 'early': 0.650967033621445}
+  schedule shape: (5, 1440)
+
+--- AGENT STATION
+  m             : 12
+  loc           : [2071.73 2861.92]
+  society_id    : 2
+  nb_charg_spot : 5
+  alpha         : 0.833
+  strategy      : {'pres': 2.3236013977390457, 'abs': 3.4736405783871565, 'late': 0.7311562299157308, 'early': 0.650967033621445}
+  schedule shape: (5, 1440)
+
+--- AGENT STATION
+  m             : 19
+  loc           : [1146.37 1070.35]
+  society_id    : 2
+  nb_charg_spot : 4
+  alpha         : 0.520
+  strategy      : {'pres': 2.3236013977390457, 'abs': 3.4736405783871565, 'late': 0.7311562299157308, 'early': 0.650967033621445}
+  schedule shape: (4, 1440)
+
+--- AGENT STATION
+  m             : 21
+  loc           : [706.46  16.22]
+  society_id    : 2
+  nb_charg_spot : 6
+  alpha         : 0.867
+  strategy      : {'pres': 2.3236013977390457, 'abs': 3.4736405783871565, 'late': 0.7311562299157308, 'early': 0.650967033621445}
+  schedule shape: (6, 1440)
+
+--- AGENT STATION
+  m             : 22
+  loc           : [2612.78 2576.38]
+  society_id    : 2
+  nb_charg_spot : 5
+  alpha         : 0.132
+  strategy      : {'pres': 2.3236013977390457, 'abs': 3.4736405783871565, 'late': 0.7311562299157308, 'early': 0.650967033621445}
+  schedule shape: (5, 1440)
+
+--- AGENT STATION
+  m             : 23
+  loc           : [1344.33 1098.07]
+  society_id    : 2
+  nb_charg_spot : 4
+  alpha         : 0.225
+  strategy      : {'pres': 2.3236013977390457, 'abs': 3.4736405783871565, 'late': 0.7311562299157308, 'early': 0.650967033621445}
+  schedule shape: (4, 1440)
+
+--- AGENT STATION
+  m             : 25
+  loc           : [2658.23  143.47]
+  society_id    : 2
+  nb_charg_spot : 6
+  alpha         : 0.293
+  strategy      : {'pres': 2.3236013977390457, 'abs': 3.4736405783871565, 'late': 0.7311562299157308, 'early': 0.650967033621445}
+  schedule shape: (6, 1440)
+
+--- AGENT STATION
+  m             : 26
+  loc           : [803.1  667.44]
+  society_id    : 2
+  nb_charg_spot : 4
+  alpha         : 0.864
+  strategy      : {'pres': 2.3236013977390457, 'abs': 3.4736405783871565, 'late': 0.7311562299157308, 'early': 0.650967033621445}
+  schedule shape: (4, 1440)
+
+--- AGENT STATION
+  m             : 29
+  loc           : [1901.07 1052.82]
+  society_id    : 2
+  nb_charg_spot : 5
+  alpha         : 0.469
+  strategy      : {'pres': 2.3236013977390457, 'abs': 3.4736405783871565, 'late': 0.7311562299157308, 'early': 0.650967033621445}
+  schedule shape: (5, 1440)
+
+--- AGENT STATION
+  m             : 32
+  loc           : [2754.8   332.23]
+  society_id    : 2
+  nb_charg_spot : 4
+  alpha         : 0.165
+  strategy      : {'pres': 2.3236013977390457, 'abs': 3.4736405783871565, 'late': 0.7311562299157308, 'early': 0.650967033621445}
+  schedule shape: (4, 1440)
+
+--- AGENT STATION
+  m             : 33
+  loc           : [1078.58  227.12]
+  society_id    : 2
+  nb_charg_spot : 6
+  alpha         : 0.166
+  strategy      : {'pres': 2.3236013977390457, 'abs': 3.4736405783871565, 'late': 0.7311562299157308, 'early': 0.650967033621445}
+  schedule shape: (6, 1440)
+
+--- AGENT STATION
+  m             : 36
+  loc           : [2604.38 2742.77]
+  society_id    : 2
+  nb_charg_spot : 5
+  alpha         : 0.759
+  strategy      : {'pres': 2.3236013977390457, 'abs': 3.4736405783871565, 'late': 0.7311562299157308, 'early': 0.650967033621445}
+  schedule shape: (5, 1440)
+
+--- AGENT STATION
+  m             : 38
+  loc           : [1941.67 1291.11]
+  society_id    : 2
+  nb_charg_spot : 4
+  alpha         : 0.769
+  strategy      : {'pres': 2.3236013977390457, 'abs': 3.4736405783871565, 'late': 0.7311562299157308, 'early': 0.650967033621445}
+  schedule shape: (4, 1440)
+
+ --------------- SOCIETY 4/4 ------------------ AGENT SOCIETY
+  f_id          : 3
+  nb stations   : 5
+  strategy      : {'pres': 4.634020496218321, 'abs': 2.647917621145345, 'late': 1.2394901877348117, 'early': 0.7361951386716737}
+
+ -------- ATTACHED STATIONS:
+--- AGENT STATION
+  m             : 1
+  loc           : [1761.25  840.04]
   society_id    : 3
   nb_charg_spot : 4
   alpha         : 0.386
-  strategy      : {'pres': 2.65000798348272, 'abs': 2.8155280448852804, 'late': 0.5135426857169821, 'early': 0.7486717519230269}
+  strategy      : {'pres': 4.634020496218321, 'abs': 2.647917621145345, 'late': 1.2394901877348117, 'early': 0.7361951386716737}
   schedule shape: (4, 1440)
+
+--- AGENT STATION
+  m             : 18
+  loc           : [2379.59 1692.45]
+  society_id    : 3
+  nb_charg_spot : 5
+  alpha         : 0.631
+  strategy      : {'pres': 4.634020496218321, 'abs': 2.647917621145345, 'late': 1.2394901877348117, 'early': 0.7361951386716737}
+  schedule shape: (5, 1440)
+
+--- AGENT STATION
+  m             : 28
+  loc           : [1534.48 2185.66]
+  society_id    : 3
+  nb_charg_spot : 4
+  alpha         : 0.351
+  strategy      : {'pres': 4.634020496218321, 'abs': 2.647917621145345, 'late': 1.2394901877348117, 'early': 0.7361951386716737}
+  schedule shape: (4, 1440)
+
+--- AGENT STATION
+  m             : 30
+  loc           : [1107.09   95.53]
+  society_id    : 3
+  nb_charg_spot : 6
+  alpha         : 0.468
+  strategy      : {'pres': 4.634020496218321, 'abs': 2.647917621145345, 'late': 1.2394901877348117, 'early': 0.7361951386716737}
+  schedule shape: (6, 1440)
+
+--- AGENT STATION
+  m             : 37
+  loc           : [1788.91 1632.23]
+  society_id    : 3
+  nb_charg_spot : 6
+  alpha         : 0.622
+  strategy      : {'pres': 4.634020496218321, 'abs': 2.647917621145345, 'late': 1.2394901877348117, 'early': 0.7361951386716737}
+  schedule shape: (6, 1440)
 
 === Simulation started with 100 cars and 40 stations. ===

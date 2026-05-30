@@ -56,6 +56,8 @@ class Society:
                 new_alpha = prev_alpha + self.config.GAMMA * (best_alpha - prev_alpha)
                 s.alpha = new_alpha
                 s.alpha_save.append(new_alpha)
+            else:
+                s.alpha_save.append(best_alpha)
 
         #self.strategy = self.best_strategy
 

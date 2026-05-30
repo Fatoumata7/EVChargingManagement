@@ -13,6 +13,7 @@ Utilisation :
 """
 
 import numpy as np
+import math
 import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
 import matplotlib.pyplot as plt
@@ -277,7 +278,7 @@ def plot_station_demand(metrics, societies, scenario_name, \
             ax.text(
                 bar.get_x() + bar.get_width() / 2,
                 bar.get_height(),
-                f"{val:.1f}",
+                f"{val:.0f}",
                 ha='center',
                 va='bottom'
             )
@@ -510,6 +511,75 @@ def plot_breakdowns(breakdown_tracker, figsize=(7, 7)):
 
     plt.tight_layout()
     plt.show()
+
+# ============================================================
+# 7. Stratégie des stations (alpha_m)
+# ============================================================
+
+def plot_station_strategies(societies, sim_config, scenario_name, approach_name, nb_car):
+
+    total_time = sim_config.TOTAL_TIME
+    update_time = sim_config.SOCIETY_UPDATE_INTERVAL
+
+    n_societies = len(societies)
+
+    ncols = 2
+    nrows = math.ceil(n_societies / ncols)
+
+    fig, axs = plt.subplots(
+        nrows,
+        ncols,
+        figsize=(10, 4 * nrows)
+    )
+
+    axs = np.array(axs).flatten()
+
+    for idx, society in enumerate(societies):
+
+        ax = axs[idx]
+
+        for st in society.stations:
+
+            alpha_values = st.alpha_save
+
+            x_values = [
+                (i * (update_time / 12))
+                for i in range(len(alpha_values))
+            ]
+
+            ax.plot(
+                x_values,
+                alpha_values,
+                marker='o',
+                linewidth=2,
+                markersize=5,
+                label=f"S{st.m}"
+            )
+
+        ax.set_title(
+            f"Society {society.f_id}",
+            fontweight="bold"
+        )
+
+        ax.set_xlabel("Time (h)")
+        ax.set_ylabel(r"$\alpha_m$")
+
+        ax.legend()
+
+    # cacher les axes inutilisés
+    for idx in range(n_societies, len(axs)):
+        axs[idx].set_visible(False)
+
+    scenario_tag = f"[{scenario_name[:3].upper()}-{approach_name.upper()}@{nb_car}]"
+    fig.suptitle(
+        f"{scenario_tag} Station Strategy Evolution ($\\alpha_m$)",
+        fontsize=14,
+        fontweight="bold"
+    )
+
+    plt.tight_layout()
+    plt.show()
+    plt.close()
 
 
 # ============================================================
