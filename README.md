@@ -212,8 +212,8 @@ Companies:
 All simulations presented in the accompanying report can be reproduced using:
 
 * the notebooks contained in `results/`;
-* the default simulation launcher `src.experiments.run`;
-* the configuration file `src.experiments.config.py`.
+* the default simulation launcher `src/experiments/run.py`;
+* the configuration file `src/experiments/config.py`.
 
 Simulation logs are stored in the `outputs/` directory.
 
