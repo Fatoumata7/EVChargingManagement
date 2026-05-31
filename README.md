@@ -1,4 +1,4 @@
-# EV Charging Optimization - ehavior and Reputation-Aware Multi-Agent EV Charging (BRAM-EV)
+# Behavior and Reputation-Aware Multi-Agent EV Charging (BRAM-EV)
 
 **BRAM-EV (Behavior and Reputation-Aware Multi-Agent EV Charging)** is a multi-agent system for electric vehicle charging reservation management. The approach combines:
 
