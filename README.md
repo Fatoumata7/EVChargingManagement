@@ -36,28 +36,38 @@ The goal is to jointly optimize charging allocation, user satisfaction, and oper
 
 ```text
 .
-├── results/                  # Experimental notebooks and analysis
+├── src
+│   ├── env
+│   │   ├── car.py                  # Electric vehicle agent
+│   │   ├── offer.py                # Charging offer representation
+│   │   ├── society.py              # Charging company agent
+│   │   ├── station.py              # Charging station agent
+│   │   ├── utils.py                # Shared utility functions
+│   │   └── visualizer.py           # Real-time simulation visualizer
+│   │
+│   ├── experiments
+│   │   ├── config.py              # Simulation parameters
+│   │   ├── run.py                 # Main entry point
+│   │   ├── simulation.py          # BRAM-EV simulation
+│   │   └── simulation_greedy.py   # Greedy baseline simulation
+│   │
+│   └── metrics
+│       ├── metrics.py                     # Metrics computation
+│       ├── plots_metrics.py               # Metric visualization
+│       └── plots_metrics_comparison.py    # BRAM-EV vs Greedy comparison plots
+│
+├── notebooks/                     # Experimental notebooks
 │   ├── Optimistic.ipynb
 │   ├── Balanced.ipynb
 │   └── Pessimistic.ipynb
 │
-├── outputs/                    # Simulation logs and exported results
+├── outputs/                       # Simulation outputs and logs
 │   ├── optimistic/
 │   ├── balanced/
 │   └── pessimistic/
 │
-├── src/
-│   ├── agents/                 # Vehicle, station and company agents
-│   ├── optimization/           # Station optimization models
-│   ├── simulation/             # Simulation engine
-│   ├── visualization/          # Real-time visualizer
-│   ├── experiments/
-│   │   ├── config.py           # Experiment configuration
-│   │   └── run.py              # Main simulation entry point
-│   └── ...
-│
-├── pyproject.toml
-├── uv.lock
+├── pyproject.toml                 # Project dependencies
+├── uv.lock                        # Locked dependency versions
 └── README.md
 ```
 
@@ -85,9 +95,9 @@ uv sync
 
 Open and execute:
 
-* `notebooks/Optimistic.ipynb`
-* `notebooks/Balanced.ipynb`
-* `notebooks/Pessimistic.ipynb`
+* `results/Optimistic.ipynb`
+* `results/Balance.ipynb`
+* `results/Pessimistic.ipynb`
 
 These notebooks reproduce all simulations, figures and metrics presented in the report.
 
@@ -201,7 +211,7 @@ Companies:
 
 All simulations presented in the accompanying report can be reproduced using:
 
-* the notebooks contained in `notebooks/`;
+* the notebooks contained in `results/`;
 * the default simulation launcher `src.experiments.run`;
 * the configuration file `src.experiments.config.py`.
 
