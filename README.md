@@ -36,7 +36,7 @@ The goal is to jointly optimize charging allocation, user satisfaction, and oper
 
 ```text
 .
-├── notebooks/                  # Experimental notebooks and analysis
+├── results/                  # Experimental notebooks and analysis
 │   ├── Optimistic.ipynb
 │   ├── Balanced.ipynb
 │   └── Pessimistic.ipynb
