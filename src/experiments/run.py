@@ -48,6 +48,9 @@ if __name__ == "__main__":
 
     summary_file = open(f'{ROOT_PATH}/{OUTPUT_DIR}/summary_agents_{SIM_ID}.txt', 'w', 
                         encoding='utf-8') # init file: init state of agents
+    
+    outputs_file = open(f'{ROOT_PATH}/{OUTPUT_DIR}/outputs_{SIM_ID}.txt', 'w', 
+                        encoding='utf-8') # init file: init state of agents
 
     print('\n--------- AGENTS DEFINITION', file=summary_file)
 
@@ -93,4 +96,4 @@ if __name__ == "__main__":
         t_max=config.TOTAL_TIME,
         config=config
     )
-    simulation.run()
+    simulation.run(outputs_file)
