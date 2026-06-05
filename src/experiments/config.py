@@ -15,7 +15,7 @@ class SimulationConfig:
     NB_SLOTS_IN_ONE_HOUR = 12       # 60 / SLOT_DURATION
 
     # ------------------------------------------------------------------ VISUALIZATION
-    VIS_DELAY = 2 # 100ms entre chaque slot    
+    VIS_DELAY = 0.4
 
     # ------------------------------------------------------------------ APPRENTISSAGE
     GAMMA = 0.1
@@ -56,7 +56,7 @@ class SimulationConfig:
 
     def __init__(self):
 
-        self.TOTAL_TIME = 12 #* 24 * 1        # 12 slots de 5min dans une heure, 4 heures
+        self.TOTAL_TIME = 12 * 4 # 12 * 24 * 5        # 12 slots de 5min dans une heure, 4 heures
 
         self.VISUALIZE = True
 
