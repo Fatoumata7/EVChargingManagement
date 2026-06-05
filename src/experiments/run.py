@@ -45,11 +45,12 @@ if __name__ == "__main__":
     os.makedirs(f'{ROOT_PATH}/{OUTPUT_DIR}', exist_ok=True)
 
     # ---- OPEN LOG FILES
-
-    summary_file = open(f'{ROOT_PATH}/{OUTPUT_DIR}/summary_agents_{SIM_ID}.txt', 'w', 
+    LOG_DIR = f'{ROOT_PATH}/{OUTPUT_DIR}/viz_run'
+    os.makedirs(LOG_DIR, exist_ok=True)
+    summary_file = open(f'{LOG_DIR}/summary_agents_{SIM_ID}.txt', 'w', 
                         encoding='utf-8') # init file: init state of agents
     
-    outputs_file = open(f'{ROOT_PATH}/{OUTPUT_DIR}/outputs_{SIM_ID}.txt', 'w', 
+    outputs_file = open(f'{LOG_DIR}/outputs_{SIM_ID}.txt', 'w', 
                         encoding='utf-8') # init file: init state of agents
 
     print('\n--------- AGENTS DEFINITION', file=summary_file)

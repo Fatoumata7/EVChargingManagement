@@ -1,0 +1,709 @@
+
+--------------------------------------------- INSTANT 0/48 ---------------------------------------------
+
+car_0 NEED CHARGING (soc:134.98km < 139.99km)
+
+-> REQUEST 0 | DURATION: 26 slots -> 2H 10min | RAY: 1.00km | PATIENCE: 45.00min
+
+-> MIN_DIST = 0.16km, station 15
+
+-> 6 ELIGIBLE STATION
+
+car_20 NEED CHARGING (soc:131.57km < 181.40km)
+
+-> REQUEST 0 | DURATION: 46 slots -> 3H 50min | RAY: 1.00km | PATIENCE: 75.00min
+
+-> MIN_DIST = 0.11km, station 24
+
+-> 4 ELIGIBLE STATION
+
+car_23 NEED CHARGING (soc:120.00km < 153.00km)
+
+-> REQUEST 0 | DURATION: 43 slots -> 3H 35min | RAY: 1.00km | PATIENCE: 80.00min
+
+-> MIN_DIST = 0.23km, station 20
+
+-> 7 ELIGIBLE STATION
+
+car_31 NEED CHARGING (soc:146.31km < 250.89km)
+
+-> REQUEST 0 | DURATION: 77 slots -> 6H 25min | RAY: 0.43km | PATIENCE: 35.00min
+
+-> MIN_DIST = 0.29km, station 27
+
+-> 2 ELIGIBLE STATION
+
+car_38 NEED CHARGING (soc:156.10km < 183.49km)
+
+-> REQUEST 0 | DURATION: 57 slots -> 4H 45min | RAY: 1.00km | PATIENCE: 50.00min
+
+-> MIN_DIST = 0.36km, station 17
+
+-> 8 ELIGIBLE STATION
+
+car_39 NEED CHARGING (soc:172.26km < 184.84km)
+
+-> REQUEST 0 | DURATION: 26 slots -> 2H 10min | RAY: 1.00km | PATIENCE: 60.00min
+
+-> MIN_DIST = 0.10km, station 21
+
+-> 16 ELIGIBLE STATION
+
+car_48 NEED CHARGING (soc:120.79km < 124.73km)
+
+-> REQUEST 0 | DURATION: 35 slots -> 2H 55min | RAY: 1.00km | PATIENCE: 95.00min
+
+-> MIN_DIST = 0.59km, station 27
+
+-> 6 ELIGIBLE STATION
+
+----- CHOOSEN OFFER:
+station_id = 24
+charger_id = 0
+t_arr = 0
+t_dep = 46
+d_prop = 46
+distance = 0.11km
+
+----- CHOOSEN OFFER:
+station_id = 20
+charger_id = 0
+t_arr = 0
+t_dep = 43
+d_prop = 43
+distance = 0.23km
+
+----- CHOOSEN OFFER:
+station_id = 39
+charger_id = 0
+t_arr = 0
+t_dep = 48
+d_prop = 48
+distance = 0.95km
+
+----- CHOOSEN OFFER:
+station_id = 21
+charger_id = 0
+t_arr = 0
+t_dep = 26
+d_prop = 26
+distance = 0.10km
+
+----- CHOOSEN OFFER:
+station_id = 25
+charger_id = 0
+t_arr = 0
+t_dep = 35
+d_prop = 35
+distance = 0.84km
+
+--------------------------------------------- INSTANT 1/48 ---------------------------------------------
+
+car_20 (soc: 131574.43 -> 32.09km) DRIVING_TO_STATION station_24 REMAINING DISTANCE 2.14km
+
+car_23 (soc: 120002.75 -> 33.33km) DRIVING_TO_STATION station_20 REMAINING DISTANCE 1.01km
+
+car_38 (soc: 156096.82 -> 32.52km) DRIVING_TO_STATION station_39 REMAINING DISTANCE 0.73km
+
+car_39 (soc: 172261.62 -> 37.05km) DRIVING_TO_STATION station_21 REMAINING DISTANCE 0.83km
+
+car_48 (soc: 120790.80 -> 33.09km) DRIVING_TO_STATION station_25 REMAINING DISTANCE 0.67km
+
+car_0 NEED CHARGING (soc:132.39km < 139.99km)
+
+-> REQUEST 50 | DURATION: 29 slots -> 2H 25min | RAY: 1.00km | PATIENCE: 30.00min
+
+-> MIN_DIST = 0.49km, station 9
+
+-> 3 ELIGIBLE STATION
+
+car_31 NEED CHARGING (soc:146.31km < 250.89km)
+
+-> REQUEST 50 | DURATION: 77 slots -> 6H 25min | RAY: 1.00km | PATIENCE: 70.00min
+
+-> MIN_DIST = 0.29km, station 27
+
+-> 4 ELIGIBLE STATION
+
+----- CHOOSEN OFFER:
+station_id = 9
+charger_id = 0
+t_arr = 1
+t_dep = 30
+d_prop = 29
+distance = 0.49km
+
+----- CHOOSEN OFFER:
+station_id = 27
+charger_id = 0
+t_arr = 1
+t_dep = 48
+d_prop = 47
+distance = 0.29km
+
+--------------------------------------------- INSTANT 2/48 ---------------------------------------------
+
+car_20 (soc: 131469.51 -> 32.07km) DRIVING_TO_STATION station_24 REMAINING DISTANCE 2.14km
+
+car_20 ARRIVED station_24
+
+car_23 (soc: 119807.19 -> 33.28km) DRIVING_TO_STATION station_20 REMAINING DISTANCE 1.01km
+
+car_23 ARRIVED station_20
+
+car_38 (soc: 155367.32 -> 32.37km) DRIVING_TO_STATION station_39 REMAINING DISTANCE 0.73km
+
+car_38 ARRIVED station_39
+
+car_39 (soc: 172199.26 -> 37.03km) DRIVING_TO_STATION station_21 REMAINING DISTANCE 0.83km
+
+car_48 (soc: 119989.49 -> 32.87km) DRIVING_TO_STATION station_25 REMAINING DISTANCE 0.67km
+
+car_48 ARRIVED station_25
+
+car_31 (soc: 146305.65 -> 31.46km) DRIVING_TO_STATION station_27 REMAINING DISTANCE 2.03km
+
+car_0 NEED CHARGING (soc:132.39km < 139.99km)
+
+-> REQUEST 100 | DURATION: 26 slots -> 2H 10min | RAY: 1.00km | PATIENCE: 80.00min
+
+-> MIN_DIST = 0.49km, station 9
+
+-> 3 ELIGIBLE STATION
+
+car_13 NEED CHARGING (soc:117.49km < 118.24km)
+
+-> REQUEST 100 | DURATION: 29 slots -> 2H 25min | RAY: 1.00km | PATIENCE: 95.00min
+
+-> MIN_DIST = 0.17km, station 22
+
+-> 15 ELIGIBLE STATION
+
+----- CHOOSEN OFFER:
+station_id = 24
+charger_id = 1
+t_arr = 2
+t_dep = 28
+d_prop = 26
+distance = 0.66km
+
+----- CHOOSEN OFFER:
+station_id = 22
+charger_id = 0
+t_arr = 2
+t_dep = 31
+d_prop = 29
+distance = 0.17km
+
+--------------------------------------------- INSTANT 3/48 ---------------------------------------------
+
+car_39 (soc: 172144.07 -> 37.02km) DRIVING_TO_STATION station_21 REMAINING DISTANCE 0.83km
+
+car_39 ARRIVED station_21
+
+car_31 (soc: 146067.56 -> 31.41km) DRIVING_TO_STATION station_27 REMAINING DISTANCE 2.03km
+
+car_31 ARRIVED station_27
+
+car_0 (soc: 132389.97 -> 36.27km) DRIVING_TO_STATION station_24 REMAINING DISTANCE 3.25km
+
+car_13 (soc: 117485.07 -> 36.15km) DRIVING_TO_STATION station_22 REMAINING DISTANCE 0.48km
+
+car_27 NEED CHARGING (soc:113.98km < 114.90km)
+
+-> REQUEST 150 | DURATION: 54 slots -> 4H 30min | RAY: 1.00km | PATIENCE: 35.00min
+
+-> MIN_DIST = 0.46km, station 4
+
+-> 8 ELIGIBLE STATION
+
+----- CHOOSEN OFFER:
+station_id = 4
+charger_id = 0
+t_arr = 3
+t_dep = 48
+d_prop = 45
+distance = 0.46km
+
+--------------------------------------------- INSTANT 4/48 ---------------------------------------------
+
+car_0 (soc: 131742.88 -> 36.09km) DRIVING_TO_STATION station_24 REMAINING DISTANCE 3.25km
+
+car_0 ARRIVED station_24
+
+car_13 (soc: 117338.09 -> 36.10km) DRIVING_TO_STATION station_22 REMAINING DISTANCE 0.48km
+
+car_13 ARRIVED station_22
+
+car_27 NEED CHARGING (soc:113.98km < 114.90km)
+
+-> REQUEST 200 | DURATION: 56 slots -> 4H 40min | RAY: 1.00km | PATIENCE: 115.00min
+
+-> MIN_DIST = 0.46km, station 4
+
+-> 8 ELIGIBLE STATION
+
+----- CHOOSEN OFFER:
+station_id = 32
+charger_id = 0
+t_arr = 4
+t_dep = 48
+d_prop = 44
+distance = 0.52km
+
+--------------------------------------------- INSTANT 5/48 ---------------------------------------------
+
+car_27 (soc: 113980.67 -> 33.52km) DRIVING_TO_STATION station_32 REMAINING DISTANCE 0.98km
+
+--------------------------------------------- INSTANT 6/48 ---------------------------------------------
+
+car_27 (soc: 113459.07 -> 33.37km) DRIVING_TO_STATION station_32 REMAINING DISTANCE 0.98km
+
+car_27 ARRIVED station_32
+
+car_47 NEED CHARGING (soc:176.74km < 176.95km)
+
+-> REQUEST 300 | DURATION: 74 slots -> 6H 10min | RAY: 1.00km | PATIENCE: 30.00min
+
+-> MIN_DIST = 0.60km, station 20
+
+-> 6 ELIGIBLE STATION
+
+----- CHOOSEN OFFER:
+station_id = 20
+charger_id = 1
+t_arr = 6
+t_dep = 48
+d_prop = 42
+distance = 0.60km
+
+--------------------------------------------- INSTANT 7/48 ---------------------------------------------
+
+car_47 (soc: 176741.10 -> 36.44km) DRIVING_TO_STATION station_20 REMAINING DISTANCE 2.22km
+
+--------------------------------------------- INSTANT 8/48 ---------------------------------------------
+
+car_47 (soc: 176177.43 -> 36.33km) DRIVING_TO_STATION station_20 REMAINING DISTANCE 2.22km
+
+car_47 ARRIVED station_20
+
+--------------------------------------------- INSTANT 9/48 ---------------------------------------------
+
+car_10 NEED CHARGING (soc:146.37km < 148.37km)
+
+-> REQUEST 450 | DURATION: 37 slots -> 3H 5min | RAY: 1.00km | PATIENCE: 85.00min
+
+-> MIN_DIST = 0.60km, station 20
+
+-> 6 ELIGIBLE STATION
+
+----- CHOOSEN OFFER:
+station_id = 20
+charger_id = 2
+t_arr = 9
+t_dep = 46
+d_prop = 37
+distance = 0.60km
+
+--------------------------------------------- INSTANT 10/48 ---------------------------------------------
+
+car_10 (soc: 146368.61 -> 33.65km) DRIVING_TO_STATION station_20 REMAINING DISTANCE 2.74km
+
+--------------------------------------------- INSTANT 11/48 ---------------------------------------------
+
+car_10 (soc: 145804.94 -> 33.52km) DRIVING_TO_STATION station_20 REMAINING DISTANCE 2.74km
+
+car_10 ARRIVED station_20
+
+car_22 NEED CHARGING (soc:136.06km < 136.81km)
+
+-> REQUEST 550 | DURATION: 70 slots -> 5H 50min | RAY: 1.00km | PATIENCE: 100.00min
+
+-> MIN_DIST = 0.57km, station 20
+
+-> 6 ELIGIBLE STATION
+
+----- CHOOSEN OFFER:
+station_id = 20
+charger_id = 4
+t_arr = 11
+t_dep = 48
+d_prop = 37
+distance = 0.57km
+
+--------------------------------------------- INSTANT 12/48 ---------------------------------------------
+
+car_22 (soc: 136055.39 -> 29.26km) DRIVING_TO_STATION station_20 REMAINING DISTANCE 0.92km
+
+--------------------------------------------- INSTANT 13/48 ---------------------------------------------
+
+car_22 (soc: 135491.72 -> 29.14km) DRIVING_TO_STATION station_20 REMAINING DISTANCE 0.92km
+
+car_22 ARRIVED station_20
+
+car_15 NEED CHARGING (soc:173.75km < 174.01km)
+
+-> REQUEST 650 | DURATION: 53 slots -> 4H 25min | RAY: 1.00km | PATIENCE: 30.00min
+
+-> MIN_DIST = 0.37km, station 0
+
+-> 4 ELIGIBLE STATION
+
+----- CHOOSEN OFFER:
+station_id = 0
+charger_id = 0
+t_arr = 13
+t_dep = 48
+d_prop = 35
+distance = 0.37km
+
+--------------------------------------------- INSTANT 14/48 ---------------------------------------------
+
+car_15 (soc: 173747.36 -> 37.77km) DRIVING_TO_STATION station_0 REMAINING DISTANCE 1.57km
+
+car_32 NEED CHARGING (soc:139.17km < 139.69km)
+
+-> REQUEST 700 | DURATION: 20 slots -> 1H 40min | RAY: 1.00km | PATIENCE: 95.00min
+
+-> MIN_DIST = 0.42km, station 16
+
+-> 9 ELIGIBLE STATION
+
+----- CHOOSEN OFFER:
+station_id = 16
+charger_id = 0
+t_arr = 14
+t_dep = 34
+d_prop = 20
+distance = 0.42km
+
+--------------------------------------------- INSTANT 15/48 ---------------------------------------------
+
+car_15 (soc: 173417.84 -> 37.70km) DRIVING_TO_STATION station_0 REMAINING DISTANCE 1.57km
+
+car_15 ARRIVED station_0
+
+car_32 (soc: 139169.41 -> 37.11km) DRIVING_TO_STATION station_16 REMAINING DISTANCE 1.49km
+
+car_43 NEED CHARGING (soc:128.53km < 129.24km)
+
+-> REQUEST 750 | DURATION: 57 slots -> 4H 45min | RAY: 1.00km | PATIENCE: 95.00min
+
+-> MIN_DIST = 0.13km, station 16
+
+-> 7 ELIGIBLE STATION
+
+----- CHOOSEN OFFER:
+station_id = 16
+charger_id = 1
+t_arr = 15
+t_dep = 48
+d_prop = 33
+distance = 0.13km
+
+--------------------------------------------- INSTANT 16/48 ---------------------------------------------
+
+car_32 (soc: 138760.25 -> 37.00km) DRIVING_TO_STATION station_16 REMAINING DISTANCE 1.49km
+
+car_32 ARRIVED station_16
+
+car_43 (soc: 128531.60 -> 28.25km) DRIVING_TO_STATION station_16 REMAINING DISTANCE 2.94km
+
+--------------------------------------------- INSTANT 17/48 ---------------------------------------------
+
+car_43 (soc: 128423.41 -> 28.22km) DRIVING_TO_STATION station_16 REMAINING DISTANCE 2.94km
+
+car_43 ARRIVED station_16
+
+--------------------------------------------- INSTANT 18/48 ---------------------------------------------
+
+--------------------------------------------- INSTANT 19/48 ---------------------------------------------
+
+--------------------------------------------- INSTANT 20/48 ---------------------------------------------
+
+--------------------------------------------- INSTANT 21/48 ---------------------------------------------
+
+--------------------------------------------- INSTANT 22/48 ---------------------------------------------
+
+--------------------------------------------- INSTANT 23/48 ---------------------------------------------
+
+--------------------------------------------- INSTANT 24/48 ---------------------------------------------
+
+--------------------------------------------- INSTANT 25/48 ---------------------------------------------
+
+--------------------------------------------- INSTANT 26/48 ---------------------------------------------
+
+--------------------------------------------- INSTANT 27/48 ---------------------------------------------
+
+car_8 NEED CHARGING (soc:160.99km < 161.06km)
+
+-> REQUEST 1350 | DURATION: 57 slots -> 4H 45min | RAY: 1.00km | PATIENCE: 50.00min
+
+-> MIN_DIST = 0.60km, station 20
+
+-> 6 ELIGIBLE STATION
+
+car_49 NEED CHARGING (soc:150.48km < 150.59km)
+
+-> REQUEST 1350 | DURATION: 41 slots -> 3H 25min | RAY: 1.00km | PATIENCE: 105.00min
+
+-> MIN_DIST = 0.16km, station 24
+
+-> 4 ELIGIBLE STATION
+
+----- CHOOSEN OFFER:
+station_id = 20
+charger_id = 3
+t_arr = 27
+t_dep = 48
+d_prop = 21
+distance = 0.60km
+
+----- CHOOSEN OFFER:
+station_id = 24
+charger_id = 4
+t_arr = 27
+t_dep = 48
+d_prop = 21
+distance = 0.16km
+
+--------------------------------------------- INSTANT 28/48 ---------------------------------------------
+
+car_8 (soc: 160994.26 -> 32.52km) DRIVING_TO_STATION station_20 REMAINING DISTANCE 2.14km
+
+car_49 (soc: 150483.28 -> 35.83km) DRIVING_TO_STATION station_24 REMAINING DISTANCE 0.65km
+
+--------------------------------------------- INSTANT 29/48 ---------------------------------------------
+
+car_8 (soc: 160430.59 -> 32.41km) DRIVING_TO_STATION station_20 REMAINING DISTANCE 2.14km
+
+car_8 ARRIVED station_20
+
+car_49 (soc: 150366.99 -> 35.80km) DRIVING_TO_STATION station_24 REMAINING DISTANCE 0.65km
+
+car_49 ARRIVED station_24
+
+--------------------------------------------- INSTANT 30/48 ---------------------------------------------
+
+car_14 NEED CHARGING (soc:147.12km < 148.43km)
+
+-> REQUEST 1500 | DURATION: 42 slots -> 3H 30min | RAY: 1.00km | PATIENCE: 60.00min
+
+-> MIN_DIST = 0.22km, station 3
+
+-> 4 ELIGIBLE STATION
+
+car_24 NEED CHARGING (soc:166.19km < 168.30km)
+
+-> REQUEST 1500 | DURATION: 13 slots -> 1H 5min | RAY: 1.00km | PATIENCE: 75.00min
+
+-> MIN_DIST = 0.66km, station 16
+
+-> 4 ELIGIBLE STATION
+
+----- CHOOSEN OFFER:
+station_id = 3
+charger_id = 0
+t_arr = 30
+t_dep = 48
+d_prop = 18
+distance = 0.22km
+
+----- CHOOSEN OFFER:
+station_id = 16
+charger_id = 2
+t_arr = 30
+t_dep = 43
+d_prop = 13
+distance = 0.66km
+
+--------------------------------------------- INSTANT 31/48 ---------------------------------------------
+
+car_14 (soc: 147119.90 -> 40.87km) DRIVING_TO_STATION station_3 REMAINING DISTANCE 0.56km
+
+car_24 (soc: 166186.92 -> 42.61km) DRIVING_TO_STATION station_16 REMAINING DISTANCE 2.91km
+
+--------------------------------------------- INSTANT 32/48 ---------------------------------------------
+
+car_14 (soc: 146907.99 -> 40.81km) DRIVING_TO_STATION station_3 REMAINING DISTANCE 0.56km
+
+car_14 ARRIVED station_3
+
+car_24 (soc: 165529.51 -> 42.44km) DRIVING_TO_STATION station_16 REMAINING DISTANCE 2.91km
+
+car_24 ARRIVED station_16
+
+car_34 NEED CHARGING (soc:152.29km < 153.17km)
+
+-> REQUEST 1600 | DURATION: 27 slots -> 2H 15min | RAY: 1.00km | PATIENCE: 95.00min
+
+-> MIN_DIST = 0.66km, station 24
+
+-> 3 ELIGIBLE STATION
+
+----- CHOOSEN OFFER:
+station_id = 24
+charger_id = 1
+t_arr = 32
+t_dep = 48
+d_prop = 16
+distance = 0.66km
+
+--------------------------------------------- INSTANT 33/48 ---------------------------------------------
+
+car_34 NEED CHARGING (soc:151.67km < 153.17km)
+
+-> REQUEST 1650 | DURATION: 28 slots -> 2H 20min | RAY: 1.00km | PATIENCE: 55.00min
+
+-> MIN_DIST = 0.11km, station 24
+
+-> 4 ELIGIBLE STATION
+
+----- CHOOSEN OFFER:
+station_id = 0
+charger_id = 1
+t_arr = 33
+t_dep = 48
+d_prop = 15
+distance = 0.55km
+
+--------------------------------------------- INSTANT 34/48 ---------------------------------------------
+
+car_34 NEED CHARGING (soc:149.29km < 153.17km)
+
+-> REQUEST 1700 | DURATION: 38 slots -> 3H 10min | RAY: 1.00km | PATIENCE: 100.00min
+
+-> MIN_DIST = 0.22km, station 3
+
+-> 4 ELIGIBLE STATION
+
+----- CHOOSEN OFFER:
+station_id = 3
+charger_id = 1
+t_arr = 34
+t_dep = 48
+d_prop = 14
+distance = 0.22km
+
+--------------------------------------------- INSTANT 35/48 ---------------------------------------------
+
+car_34 (soc: 149288.15 -> 39.81km) DRIVING_TO_STATION station_3 REMAINING DISTANCE 2.35km
+
+--------------------------------------------- INSTANT 36/48 ---------------------------------------------
+
+car_34 (soc: 149076.24 -> 39.75km) DRIVING_TO_STATION station_3 REMAINING DISTANCE 2.35km
+
+car_34 ARRIVED station_3
+
+--------------------------------------------- INSTANT 37/48 ---------------------------------------------
+
+car_4 NEED CHARGING (soc:129.43km < 130.43km)
+
+-> REQUEST 1850 | DURATION: 36 slots -> 3H 0min | RAY: 1.00km | PATIENCE: 115.00min
+
+-> MIN_DIST = 0.45km, station 16
+
+-> 9 ELIGIBLE STATION
+
+car_18 NEED CHARGING (soc:132.45km < 133.66km)
+
+-> REQUEST 1850 | DURATION: 60 slots -> 5H 0min | RAY: 1.00km | PATIENCE: 60.00min
+
+-> MIN_DIST = 0.17km, station 8
+
+-> 10 ELIGIBLE STATION
+
+----- CHOOSEN OFFER:
+station_id = 16
+charger_id = 0
+t_arr = 37
+t_dep = 48
+d_prop = 11
+distance = 0.45km
+
+----- CHOOSEN OFFER:
+station_id = 8
+charger_id = 0
+t_arr = 37
+t_dep = 48
+d_prop = 11
+distance = 0.17km
+
+--------------------------------------------- INSTANT 38/48 ---------------------------------------------
+
+car_4 (soc: 129427.76 -> 32.77km) DRIVING_TO_STATION station_16 REMAINING DISTANCE 2.70km
+
+car_18 (soc: 132447.63 -> 35.32km) DRIVING_TO_STATION station_8 REMAINING DISTANCE 1.83km
+
+--------------------------------------------- INSTANT 39/48 ---------------------------------------------
+
+car_4 (soc: 128980.73 -> 32.65km) DRIVING_TO_STATION station_16 REMAINING DISTANCE 2.70km
+
+car_4 ARRIVED station_16
+
+car_18 (soc: 132327.49 -> 35.29km) DRIVING_TO_STATION station_8 REMAINING DISTANCE 1.83km
+
+car_18 ARRIVED station_8
+
+--------------------------------------------- INSTANT 40/48 ---------------------------------------------
+
+--------------------------------------------- INSTANT 41/48 ---------------------------------------------
+
+car_3 NEED CHARGING (soc:137.56km < 139.53km)
+
+-> REQUEST 2050 | DURATION: 30 slots -> 2H 30min | RAY: 1.00km | PATIENCE: 115.00min
+
+-> MIN_DIST = 0.28km, station 2
+
+-> 5 ELIGIBLE STATION
+
+----- CHOOSEN OFFER:
+station_id = 2
+charger_id = 0
+t_arr = 41
+t_dep = 48
+d_prop = 7
+distance = 0.28km
+
+--------------------------------------------- INSTANT 42/48 ---------------------------------------------
+
+car_3 (soc: 137558.49 -> 32.37km) DRIVING_TO_STATION station_2 REMAINING DISTANCE 1.59km
+
+car_11 NEED CHARGING (soc:141.46km < 142.88km)
+
+-> REQUEST 2100 | DURATION: 40 slots -> 3H 20min | RAY: 1.00km | PATIENCE: 90.00min
+
+-> MIN_DIST = 0.41km, station 20
+
+-> 6 ELIGIBLE STATION
+
+----- CHOOSEN OFFER:
+station_id = 20
+charger_id = 0
+t_arr = 43
+t_dep = 48
+d_prop = 5
+distance = 0.41km
+
+--------------------------------------------- INSTANT 43/48 ---------------------------------------------
+
+car_3 (soc: 137281.56 -> 32.30km) DRIVING_TO_STATION station_2 REMAINING DISTANCE 1.59km
+
+car_3 ARRIVED station_2
+
+car_11 (soc: 141463.07 -> 35.37km) DRIVING_TO_STATION station_20 REMAINING DISTANCE 2.05km
+
+--------------------------------------------- INSTANT 44/48 ---------------------------------------------
+
+car_11 (soc: 141057.43 -> 35.26km) DRIVING_TO_STATION station_20 REMAINING DISTANCE 2.05km
+
+car_11 ARRIVED station_20
+
+--------------------------------------------- INSTANT 45/48 ---------------------------------------------
+
+--------------------------------------------- INSTANT 46/48 ---------------------------------------------
+
+--------------------------------------------- INSTANT 47/48 ---------------------------------------------
+
+
+=== Simulation terminée (48 slots) ===

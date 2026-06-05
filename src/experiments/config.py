@@ -15,7 +15,7 @@ class SimulationConfig:
     NB_SLOTS_IN_ONE_HOUR = 12       # 60 / SLOT_DURATION
 
     # ------------------------------------------------------------------ VISUALIZATION
-    VIS_DELAY = 0.4
+    VIS_DELAY = 1
 
     # ------------------------------------------------------------------ APPRENTISSAGE
     GAMMA = 0.1
