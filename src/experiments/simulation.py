@@ -79,7 +79,13 @@ class Simulation:
         id_demand = t_c * len(self.cars)
 
         for car in self.cars:
+
+            # Véhicule déjà lié à une réservation
+            if car.reservation is not None:
+                continue
+
             if car.needs_charging():
+
                 print(f'\ncar_{car.idx} NEED CHARGING (soc:{car.soc_m * 1e-3:.2f}km < {car.soc_threshold_m * 1e-3:.2f}km)', file=file)
                 req = car.emit_request(t_c, (car.x, car.y), id_demand)
                 print(f'\n-> REQUEST {req['n']}'
@@ -149,6 +155,7 @@ class Simulation:
 
             target_station = self._get_station(best_offer.station_id)
             target_station.confirm_reservation(car.idx, best_offer)
+            target_station.nb_reservations += 1
 
             behavior = np.random.choice(
                 list(car.theta.keys()), p=list(car.theta.values())
@@ -156,8 +163,9 @@ class Simulation:
             car.set_behavior(behavior)
 
             if behavior == 'abs':
-                target_station.release_reservation(car.idx, best_offer)
-                target_station.update_car_score(car, 'abs', car.request['d_n'])
+                # La réservation reste active dans le planning.
+                # Le véhicule ne se présentera jamais.
+                car.set_reservation(best_offer)
                 car.set_state('DRIVING')
                 continue
 
@@ -174,16 +182,21 @@ class Simulation:
 
         # 5. Recharge active
         for car in self.cars:
+
             if car.state not in ('AT_STATION', 'CHARGING', 'WAITING') or car.reservation is None:
                 continue
             target_station = self._get_station(car.reservation.station_id)
             _, charging_now = target_station.get_current_charger_and_slot(car.idx, t_c)
+
             if charging_now:
                 car.set_state('CHARGING')
                 car.charge_one_slot()
+
             elif car.state == 'AT_STATION':
                 car.set_state('WAITING')
+
             if target_station.is_session_finished(car.idx, t_c + 1) or car.soc_m >= 0.99 * car.autonomy:
+                target_station.nb_pres += 1
                 target_station.update_car_score(car, 'pres', car.reservation.d_prop)
                 car.set_state('DRIVING')
                 car.reservation = None
@@ -205,6 +218,36 @@ class Simulation:
 
     # ------------------------------------------------------------------
     def _process_cancellations(self, t_c):
+
+        # --------------------------------------------------
+        # No-show (absence)
+        # --------------------------------------------------
+
+        for car in self.cars:
+
+            if car.behavior != 'abs' or car.reservation is None:
+                continue
+
+            # La réservation est totalement terminée
+            if t_c == car.reservation.t_dep:
+
+                s = self._get_station(car.reservation.station_id)
+
+                s.release_reservation(
+                    car.idx,
+                    car.reservation
+                )
+
+                s.nb_no_show += 1
+                s.update_car_score(car, 'abs', car.reservation.d_prop)
+
+                car.reservation = None
+                car.request = None
+
+        # --------------------------------------------------
+        # Early/Late cancelation
+        # --------------------------------------------------
+
         for car in self.cars:
             if car.state != 'DRIVING_TO_STATION' or car.reservation is None:
                 continue
@@ -220,7 +263,11 @@ class Simulation:
                 continue
             s = self._get_station(car.reservation.station_id)
             s.release_reservation(car.idx, car.reservation)
-            s.update_car_score(car, status, car.request['d_n'])
+            if status == 'early':
+                s.nb_early_canc += 1
+            else:
+                s.nb_late_canc += 1
+            s.update_car_score(car, status, car.reservation.d_prop)
             self._driving_to_station.pop(car.idx, None)
             car.set_state('DRIVING')
             car.reservation = None
@@ -283,3 +330,4 @@ class Simulation:
                 car.set_state('DRIVING')
                 self._broken_cars.discard(car.idx)
                 print(f"\n  [REPRISE] car_{car.idx} redémarre (soc={car.soc_m:.3f})", file=file)
+

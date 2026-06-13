@@ -29,6 +29,13 @@ class Station:
         self.T = config.TOTAL_TIME
         self.schedule = np.full((self.nb_charg_spot, self.T), -1, dtype=int)
 
+        # --- count metrics
+        self.nb_pres = 0
+        self.nb_no_show = 0
+        self.nb_early_canc = 0
+        self.nb_late_canc = 0
+        self.nb_reservations = 0
+
     # ------------------------------------------------------------------
     # Score
     # ------------------------------------------------------------------
