@@ -175,7 +175,7 @@ def plot_stations_2d(
             [0],
             marker='o',
             color='w',
-            label=f"Society {sid}",
+            label=f"Company {sid}",
             markerfacecolor=society_colors[sid],
             markeredgecolor='black',
             markersize=10
@@ -290,7 +290,7 @@ def plot_station_demand(metrics, societies, scenario_name, \
     legend_elements = [
         Patch(
             facecolor=society_colors[sid],
-            label=f"Society {sid}"
+            label=f"Company {sid}"
         )
         for sid in unique_societies
     ]
@@ -557,12 +557,13 @@ def plot_station_strategies(societies, sim_config, scenario_name, approach_name,
             )
 
         ax.set_title(
-            f"Society {society.f_id}",
+            f"Company {society.f_id}",
             fontweight="bold"
         )
 
         ax.set_xlabel("Time (h)")
         ax.set_ylabel(r"$\alpha_m$")
+        ax.set_ylim(0., 1.)
 
         ax.legend()
 
@@ -764,11 +765,6 @@ def plot_society_station_occupancy(societies, scenario_name,
     plt.close()
 
 
-import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.lines import Line2D
-
-
 def plot_station_no_show(
     societies,
     scenario_name,
@@ -907,6 +903,312 @@ def plot_station_no_show(
     ax.legend(
         handles=legend_elements,
         title="Companies"
+    )
+
+    plt.tight_layout()
+    plt.show()
+    plt.close()
+
+
+def plot_society_station_occupancy(societies, scenario_name,
+                 approach_name, nb_car):
+    """
+    Affiche, pour chaque société, le taux moyen d'occupation
+    de chacune de ses stations.
+
+    - 4 subplots (2x2)
+    - une barre = une station
+    - ligne rouge = moyenne des stations de la société
+    - même largeur visuelle des barres sur tous les subplots
+    - axe y entre 0 et 1.1
+    """
+
+    # Nombre maximal de stations parmi les sociétés
+    max_nb_stations = max(
+        len(society.stations)
+        for society in societies
+    )
+
+    fig, axs = plt.subplots(
+        2,
+        2,
+        figsize=(12, 10)
+    )
+
+    axs = axs.flatten()
+
+    for idx, society in enumerate(societies):
+
+        ax = axs[idx]
+
+        station_ids = []
+        station_occ = []
+
+        # --------------------------------------------
+        # Taux moyen d'occupation par station
+        # --------------------------------------------
+
+        for station in society.stations:
+
+            occ_rate = np.mean(
+                station.schedule != -1
+            )
+
+            station_ids.append(station.m)
+            station_occ.append(occ_rate)
+
+        if len(station_occ) == 0:
+            continue
+
+        mean_society_occ = np.mean(station_occ)
+
+        # --------------------------------------------
+        # Barres
+        # --------------------------------------------
+
+        x_pos = np.arange(len(station_ids))
+
+        bars = ax.bar(
+            x_pos,
+            station_occ,
+            width=0.6,
+            alpha=0.8
+        )
+
+        # Même échelle horizontale pour tous
+        ax.set_xlim(
+            -0.5,
+            max_nb_stations - 0.5
+        )
+
+        # IDs des stations comme étiquettes
+        ax.set_xticks(x_pos)
+
+        ax.set_xticklabels(
+            [f"S{sid}" for sid in station_ids],
+            rotation=45
+        )
+
+        # --------------------------------------------
+        # Ligne moyenne
+        # --------------------------------------------
+
+        ax.axhline(
+            mean_society_occ,
+            color="red",
+            linestyle="--",
+            linewidth=2,
+            label=f"Mean = {mean_society_occ:.2f}"
+        )
+
+        # --------------------------------------------
+        # Valeurs sur les barres
+        # --------------------------------------------
+
+        for bar in bars:
+
+            height = bar.get_height()
+
+            if height > 0:
+
+                ax.text(
+                    bar.get_x() + bar.get_width() / 2,
+                    height + 0.02,
+                    f"{height:.2f}",
+                    ha="center",
+                    va="bottom",
+                    fontsize=9,
+                    fontweight="bold"
+                )
+
+        # --------------------------------------------
+        # Mise en forme
+        # --------------------------------------------
+
+        society_id = getattr(
+            society,
+            "society_id",
+            getattr(society, "f_id", idx)
+        )
+
+        ax.set_title(
+            f"Company {society_id}",
+            fontweight="bold"
+        )
+
+        ax.set_xlabel("Station")
+        ax.set_ylabel("Mean Occupancy Rate")
+
+        ax.set_ylim(0, 1.1)
+
+        ax.grid(
+            axis="y",
+            linestyle="--",
+            alpha=0.3
+        )
+
+        ax.legend()
+
+    # Masquer les subplots inutilisés
+    for idx in range(len(societies), len(axs)):
+        axs[idx].set_visible(False)
+
+    scenario_tag = f"[{scenario_name[:3].upper()}-{approach_name.upper()}@{nb_car}]"
+    fig.suptitle(
+        f"{scenario_tag} Average Charger Occupancy Rate per Station",
+        fontsize=14,
+        fontweight="bold"
+    )
+
+    plt.tight_layout()
+    plt.show()
+    plt.close()
+
+
+def plot_society_station_rejected_request(societies, scenario_name,
+                 approach_name, nb_car):
+    """
+    Affiche, pour chaque société, le taux moyen d'occupation
+    de chacune de ses stations.
+
+    - 4 subplots (2x2)
+    - une barre = une station
+    - ligne rouge = moyenne des stations de la société
+    - même largeur visuelle des barres sur tous les subplots
+    - axe y entre 0 et 1.1
+    """
+
+    # Nombre maximal de stations parmi les sociétés
+    max_nb_stations = max(
+        len(society.stations)
+        for society in societies
+    )
+
+    fig, axs = plt.subplots(
+        2,
+        2,
+        figsize=(12, 10)
+    )
+
+    axs = axs.flatten()
+
+    for idx, society in enumerate(societies):
+
+        ax = axs[idx]
+
+        station_ids = []
+        station_nb_rej_req = []
+
+        # --------------------------------------------
+        # Taux moyen d'occupation par station
+        # --------------------------------------------
+
+        for station in society.stations:
+
+            station_ids.append(station.m)
+            station_nb_rej_req.append(station.nb_rejected_request)
+
+        if len(station_nb_rej_req) == 0:
+            continue
+
+        mean_society_occ = np.mean(station_nb_rej_req)
+
+        # --------------------------------------------
+        # Barres
+        # --------------------------------------------
+
+        x_pos = np.arange(len(station_ids))
+
+        bars = ax.bar(
+            x_pos,
+            station_nb_rej_req,
+            width=0.6,
+            alpha=0.8
+        )
+
+        # Même échelle horizontale pour tous
+        ax.set_xlim(
+            -0.5,
+            max_nb_stations - 0.5
+        )
+
+        # IDs des stations comme étiquettes
+        ax.set_xticks(x_pos)
+
+        ax.set_xticklabels(
+            [f"S{sid}" for sid in station_ids],
+            rotation=45
+        )
+
+        # --------------------------------------------
+        # Ligne moyenne
+        # --------------------------------------------
+
+        ax.axhline(
+            mean_society_occ,
+            color="red",
+            linestyle="--",
+            linewidth=2,
+            label=f"Mean = {mean_society_occ:.2f}"
+        )
+
+        # --------------------------------------------
+        # Valeurs sur les barres
+        # --------------------------------------------
+
+        for bar in bars:
+
+            height = bar.get_height()
+
+            if height > 0:
+
+                ax.text(
+                    bar.get_x() + bar.get_width() / 2,
+                    height + 0.02,
+                    f"{height:.2f}",
+                    ha="center",
+                    va="bottom",
+                    fontsize=9,
+                    fontweight="bold"
+                )
+
+        # --------------------------------------------
+        # Mise en forme
+        # --------------------------------------------
+
+        society_id = getattr(
+            society,
+            "society_id",
+            getattr(society, "f_id", idx)
+        )
+
+        ax.set_title(
+            f"Company {society_id}",
+            fontweight="bold"
+        )
+
+        ax.set_xlabel("Station")
+        ax.set_ylabel("#Rejected Requests")
+
+        ax.set_ylim(0, 40)
+
+        ax.grid(
+            axis="y",
+            linestyle="--",
+            alpha=0.3
+        )
+
+        ax.legend()
+
+    # Masquer les subplots inutilisés
+    for idx in range(len(societies), len(axs)):
+        axs[idx].set_visible(False)
+
+    scenario_tag = f"[{scenario_name[:3].upper()}-{approach_name.upper()}@{nb_car}]"
+    fig.suptitle(
+        f"{scenario_tag} Number of rejected requests per Station",
+        fontsize=14,
+        fontweight="bold"
     )
 
     plt.tight_layout()

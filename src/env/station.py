@@ -36,6 +36,8 @@ class Station:
         self.nb_late_canc = 0
         self.nb_reservations = 0
 
+        self.nb_rejected_request = 0
+
     # ------------------------------------------------------------------
     # Score
     # ------------------------------------------------------------------
@@ -168,6 +170,8 @@ class Station:
             times = [t for (nn, j, t), var in a.items()
                      if nn == n and j == j_selected and var.solution_value() > 0.5]
             if not times:
+                # demande qui n'a pas pu être satisfaite
+                self.nb_rejected_request += 1
                 continue
 
             offer = off.Offer(
