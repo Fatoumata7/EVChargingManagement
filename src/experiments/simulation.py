@@ -75,6 +75,7 @@ class Simulation:
 
         # 2. Émission des requêtes
         demands   = {s.m: [] for s in self.stations}
+        eligibles = {c.idx: None for c in self.cars}
         min_dists = {}
         id_demand = t_c * len(self.cars)
 
@@ -101,6 +102,7 @@ class Simulation:
                 eligible, min_d, min_s = self._get_eligible_stations(
                     req['loc'][0], req['loc'][1], req['r_n']
                 )
+                eligibles[car.idx] = eligible
                 print(f'\n-> MIN_DIST = {min_d*1e-3:.2f}km, station {min_s}', file=file)
                 print(f'\n-> {len(eligible)} ELIGIBLE STATION', file=file)
                 # --- fix: si rayon de recherche trop petit et pas d'eligible station, le véhicule continue de rouler
@@ -136,6 +138,7 @@ class Simulation:
                 continue
 
             offers = car_offers[car.idx]
+            car.nb_rejected += len(eligibles[car.idx]) - len(offers)
             min_d  = min_dists.get(car.idx, 0.)
 
             if not offers:

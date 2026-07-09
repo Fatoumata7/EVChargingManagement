@@ -34,6 +34,8 @@ class Car:
         self.score = np.zeros(nb_society)
         self.u_total = 0.0
         self.nb_sessions = 0
+        self.nb_rejected = 0
+        self.nb_request = 0
 
         self.soc_threshold_m = utils.get_truncated_normal(
             mean=self.config.CAR_SOC_THRESHOLD_PARAMS['mean'],

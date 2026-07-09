@@ -37,6 +37,7 @@ class Station:
         self.nb_reservations = 0
 
         self.nb_rejected_request = 0
+        self.nb_request = 0
 
     # ------------------------------------------------------------------
     # Score
@@ -73,6 +74,7 @@ class Station:
         n_list, cars = [], []
         t_hat_arr, t_hat_dep = {}, {}
         scores, distance, d_n, g_n = {}, {}, {}, {}
+        self.nb_request += len(station_demands)
 
         for car, req in station_demands:
             n = req['n']

@@ -1214,3 +1214,310 @@ def plot_society_station_rejected_request(societies, scenario_name,
     plt.tight_layout()
     plt.show()
     plt.close()
+
+
+
+def plot_car_rejected(
+    cars,
+    scenario_name,
+    approach_name,
+    nb_car
+):
+    """
+    Diagramme en barres du nombre de demandes rejetées par véhicule.
+
+    - Affiche une barre par véhicule (car.nb_rejected).
+    - Affiche une ligne horizontale représentant la moyenne globale.
+    """
+    if not cars:
+        print("La liste des véhicules est vide.")
+        return
+
+    fig, ax = plt.subplots(figsize=(14, 6))
+
+    # --------------------------------------------------
+    # Construction des données
+    # --------------------------------------------------
+    x_pos = []
+    labels = []
+    rejected_values = []
+
+    for idx, car in enumerate(cars):
+        x_pos.append(idx)
+        # On suppose que l'objet car possède un identifiant, sinon on utilise l'index idx
+        car_id = getattr(car, 'id', idx)
+        labels.append(f"Car {car_id}")
+        rejected_values.append(getattr(car, 'nb_rejected', 0))
+
+    # Calcul de la moyenne globale
+    mean_rejected = np.mean(rejected_values) if rejected_values else 0
+
+    # --------------------------------------------------
+    # Diagramme en barres
+    # --------------------------------------------------
+    bars = ax.bar(
+        x_pos,
+        rejected_values,
+        color="skyblue",
+        alpha=0.8,
+        width=0.8,
+        edgecolor="black",
+        linewidth=0.5
+    )
+
+    # Affichage des valeurs exactes au-dessus des barres
+    for bar in bars:
+        height = bar.get_height()
+        if height > 0:
+            ax.text(
+                bar.get_x() + bar.get_width() / 2,
+                height + 0.05,
+                f"{int(height)}",
+                ha="center",
+                va="bottom",
+                fontsize=9,
+                fontweight="bold"
+            )
+
+    # --------------------------------------------------
+    # Ligne de moyenne globale
+    # --------------------------------------------------
+    ax.axhline(
+        mean_rejected, 
+        color="red", 
+        linestyle="--", 
+        linewidth=1.5, 
+        label=f"Global Mean ({mean_rejected:.2f})"
+    )
+
+    # --------------------------------------------------
+    # Mise en forme
+    # --------------------------------------------------
+    ax.set_xticks(x_pos)
+    ax.set_xticklabels(
+        labels,
+        rotation=45,
+        ha="right"
+    )
+
+    ax.set_xlabel("Vehicle ID")
+    ax.set_ylabel("Number of Rejected Requests")
+
+    scenario_tag = (
+        f"[{scenario_name[:3].upper()}-"
+        f"{approach_name.upper()}@{nb_car}]"
+    )
+
+    ax.set_title(
+        f"{scenario_tag} Number of Rejected Requests per Vehicle",
+        fontweight="bold"
+    )
+
+    ax.grid(
+        axis="y",
+        linestyle="--",
+        alpha=0.3
+    )
+
+    # Affichage de la légende pour la ligne de moyenne
+    ax.legend(loc="upper right")
+
+    plt.tight_layout()
+    plt.show()
+    plt.close()
+
+
+
+def plot_station_requests(
+    stations,
+    scenario_name,
+    approach_name,
+    nb_car
+):
+    """
+    Diagramme en barres du nombre de requêtes par station.
+
+    - Affiche une barre par station (station.nb_request).
+    - Affiche une ligne horizontale représentant la moyenne globale des requêtes.
+    """
+    if not stations:
+        print("La liste des stations est vide.")
+        return
+
+    fig, ax = plt.subplots(figsize=(14, 6))
+
+    # --------------------------------------------------
+    # Construction des données
+    # --------------------------------------------------
+    x_pos = []
+    labels = []
+    request_values = []
+
+    for idx, station in enumerate(stations):
+        x_pos.append(idx)
+        # Utilise l'attribut m de la station (comme dans ton code initial), sinon son id ou l'index
+        station_id = getattr(station, 'm', getattr(station, 'id', idx))
+        labels.append(f"Station {station_id}")
+        request_values.append(getattr(station, 'nb_request', 0))
+
+    # Calcul de la moyenne globale
+    mean_requests = np.mean(request_values) if request_values else 0
+
+    # --------------------------------------------------
+    # Diagramme en barres
+    # --------------------------------------------------
+    bars = ax.bar(
+        x_pos,
+        request_values,
+        color="lightgreen",
+        alpha=0.8,
+        width=0.8,
+        edgecolor="black",
+        linewidth=0.5
+    )
+
+    # Affichage des valeurs exactes au-dessus des barres
+    for bar in bars:
+        height = bar.get_height()
+        if height > 0:
+            ax.text(
+                bar.get_x() + bar.get_width() / 2,
+                height + 0.05,
+                f"{int(height)}",
+                ha="center",
+                va="bottom",
+                fontsize=9,
+                fontweight="bold"
+            )
+
+    # --------------------------------------------------
+    # Ligne de moyenne globale
+    # --------------------------------------------------
+    ax.axhline(
+        mean_requests, 
+        color="red", 
+        linestyle="--", 
+        linewidth=1.5, 
+        label=f"Global Mean ({mean_requests:.2f})"
+    )
+
+    # --------------------------------------------------
+    # Mise en forme
+    # --------------------------------------------------
+    ax.set_xticks(x_pos)
+    ax.set_xticklabels(
+        labels,
+        rotation=45,
+        ha="right"
+    )
+
+    ax.set_xlabel("Station ID")
+    ax.set_ylabel("Number of Requests")
+
+    scenario_tag = (
+        f"[{scenario_name[:3].upper()}-"
+        f"{approach_name.upper()}@{nb_car}]"
+    )
+
+    ax.set_title(
+        f"{scenario_tag} Number of Requests per Station",
+        fontweight="bold"
+    )
+
+    ax.grid(
+        axis="y",
+        linestyle="--",
+        alpha=0.3
+    )
+
+    # Affichage de la légende pour la ligne de moyenne
+    ax.legend(loc="upper right")
+
+    plt.tight_layout()
+    plt.show()
+    plt.close()
+
+
+
+def plot_car_rejected_hist(
+    cars,
+    scenario_name,
+    approach_name,
+    nb_car
+):
+    """
+    Histogramme du nombre de demandes rejetées par véhicule.
+    Adapté pour un grand nombre de véhicules (ex: 250).
+    """
+    if not cars:
+        print("La liste des véhicules est vide.")
+        return
+
+    fig, ax = plt.subplots(figsize=(12, 6))
+
+    # --------------------------------------------------
+    # Extraction des données
+    # --------------------------------------------------
+    rejected_values = [getattr(car, 'nb_rejected', 0) for car in cars]
+    
+    # Calcul des statistiques
+    mean_rejected = np.mean(rejected_values) if rejected_values else 0
+    max_rejected = max(rejected_values) if rejected_values else 0
+
+    # --------------------------------------------------
+    # Construction de l'histogramme
+    # --------------------------------------------------
+    # Définition dynamique des bins (barres de l'histogramme)
+    # Si les valeurs sont des entiers, on crée des bins par pas de 1 ou 2 pour éviter les trous
+    bins_edges = np.arange(0, max_rejected + 2, max(1, max_rejected // 15))
+
+    counts, bins, patches = ax.hist(
+        rejected_values,
+        bins=bins_edges,
+        color="skyblue",
+        alpha=0.8,
+        edgecolor="black",
+        linewidth=0.8,
+        label="Vehicles distribution"
+    )
+
+    # --------------------------------------------------
+    # Ligne de moyenne globale
+    # --------------------------------------------------
+    ax.axvline(
+        mean_rejected, 
+        color="red", 
+        linestyle="--", 
+        linewidth=2, 
+        label=f"Global Mean ({mean_rejected:.2f})"
+    )
+
+    # --------------------------------------------------
+    # Mise en forme
+    # --------------------------------------------------
+    ax.set_xlabel("Number of Rejected Requests", fontsize=11)
+    ax.set_ylabel("Number of Vehicles (Frequency)", fontsize=11)
+
+    scenario_tag = (
+        f"[{scenario_name[:3].upper()}-"
+        f"{approach_name.upper()}@{nb_car}]"
+    )
+
+    ax.set_title(
+        f"{scenario_tag} Distribution of Rejected Requests per Vehicle (N={len(cars)})",
+        fontweight="bold",
+        fontsize=13
+    )
+
+    ax.grid(
+        axis="y",
+        linestyle="--",
+        alpha=0.3
+    )
+
+    # Placement de la légende
+    ax.legend(loc="upper right")
+
+    plt.tight_layout()
+    plt.show()
+    plt.close()
