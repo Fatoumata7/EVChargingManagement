@@ -1,0 +1,316 @@
+{
+  "run": "20260823T180259Z_seed42_full-grid",
+  "started_utc": "20260823T180259Z",
+  "finished_utc": "20260824T010709Z",
+  "seed": 42,
+  "nb_cases_planned": 30,
+  "nb_cases_done": 30,
+  "params_source": "experiments/full_grid.yaml",
+  "git_commit": "68b16adcd760fe506374d09c57a8c60bfe263e27",
+  "git_dirty": true,
+  "python": "3.12.0",
+  "platform": "macOS-26.5.2-arm64-arm-64bit",
+  "cases": [
+    {
+      "tag": "optimistic_50cars_greedy",
+      "scenario": "optimistic",
+      "nb_cars": 50,
+      "method": "greedy",
+      "world_seed": 42,
+      "wall_time_s": 18.277,
+      "invariant_ok": true,
+      "nb_diagnostics": 2
+    },
+    {
+      "tag": "optimistic_50cars_bramev",
+      "scenario": "optimistic",
+      "nb_cars": 50,
+      "method": "bramev",
+      "world_seed": 42,
+      "wall_time_s": 141.01,
+      "invariant_ok": true,
+      "nb_diagnostics": 2
+    },
+    {
+      "tag": "optimistic_100cars_greedy",
+      "scenario": "optimistic",
+      "nb_cars": 100,
+      "method": "greedy",
+      "world_seed": 42,
+      "wall_time_s": 37.23,
+      "invariant_ok": true,
+      "nb_diagnostics": 1
+    },
+    {
+      "tag": "optimistic_100cars_bramev",
+      "scenario": "optimistic",
+      "nb_cars": 100,
+      "method": "bramev",
+      "world_seed": 42,
+      "wall_time_s": 318.328,
+      "invariant_ok": true,
+      "nb_diagnostics": 2
+    },
+    {
+      "tag": "optimistic_150cars_greedy",
+      "scenario": "optimistic",
+      "nb_cars": 150,
+      "method": "greedy",
+      "world_seed": 42,
+      "wall_time_s": 51.973,
+      "invariant_ok": true,
+      "nb_diagnostics": 0
+    },
+    {
+      "tag": "optimistic_150cars_bramev",
+      "scenario": "optimistic",
+      "nb_cars": 150,
+      "method": "bramev",
+      "world_seed": 42,
+      "wall_time_s": 625.699,
+      "invariant_ok": true,
+      "nb_diagnostics": 1
+    },
+    {
+      "tag": "optimistic_200cars_greedy",
+      "scenario": "optimistic",
+      "nb_cars": 200,
+      "method": "greedy",
+      "world_seed": 42,
+      "wall_time_s": 78.443,
+      "invariant_ok": true,
+      "nb_diagnostics": 0
+    },
+    {
+      "tag": "optimistic_200cars_bramev",
+      "scenario": "optimistic",
+      "nb_cars": 200,
+      "method": "bramev",
+      "world_seed": 42,
+      "wall_time_s": 2031.67,
+      "invariant_ok": true,
+      "nb_diagnostics": 1
+    },
+    {
+      "tag": "optimistic_250cars_greedy",
+      "scenario": "optimistic",
+      "nb_cars": 250,
+      "method": "greedy",
+      "world_seed": 42,
+      "wall_time_s": 88.255,
+      "invariant_ok": true,
+      "nb_diagnostics": 0
+    },
+    {
+      "tag": "optimistic_250cars_bramev",
+      "scenario": "optimistic",
+      "nb_cars": 250,
+      "method": "bramev",
+      "world_seed": 42,
+      "wall_time_s": 4857.995,
+      "invariant_ok": true,
+      "nb_diagnostics": 1
+    },
+    {
+      "tag": "balance_50cars_greedy",
+      "scenario": "balance",
+      "nb_cars": 50,
+      "method": "greedy",
+      "world_seed": 42,
+      "wall_time_s": 20.481,
+      "invariant_ok": true,
+      "nb_diagnostics": 2
+    },
+    {
+      "tag": "balance_50cars_bramev",
+      "scenario": "balance",
+      "nb_cars": 50,
+      "method": "bramev",
+      "world_seed": 42,
+      "wall_time_s": 133.149,
+      "invariant_ok": true,
+      "nb_diagnostics": 2
+    },
+    {
+      "tag": "balance_100cars_greedy",
+      "scenario": "balance",
+      "nb_cars": 100,
+      "method": "greedy",
+      "world_seed": 42,
+      "wall_time_s": 43.273,
+      "invariant_ok": true,
+      "nb_diagnostics": 1
+    },
+    {
+      "tag": "balance_100cars_bramev",
+      "scenario": "balance",
+      "nb_cars": 100,
+      "method": "bramev",
+      "world_seed": 42,
+      "wall_time_s": 334.244,
+      "invariant_ok": true,
+      "nb_diagnostics": 2
+    },
+    {
+      "tag": "balance_150cars_greedy",
+      "scenario": "balance",
+      "nb_cars": 150,
+      "method": "greedy",
+      "world_seed": 42,
+      "wall_time_s": 61.97,
+      "invariant_ok": true,
+      "nb_diagnostics": 0
+    },
+    {
+      "tag": "balance_150cars_bramev",
+      "scenario": "balance",
+      "nb_cars": 150,
+      "method": "bramev",
+      "world_seed": 42,
+      "wall_time_s": 644.662,
+      "invariant_ok": true,
+      "nb_diagnostics": 1
+    },
+    {
+      "tag": "balance_200cars_greedy",
+      "scenario": "balance",
+      "nb_cars": 200,
+      "method": "greedy",
+      "world_seed": 42,
+      "wall_time_s": 94.057,
+      "invariant_ok": true,
+      "nb_diagnostics": 0
+    },
+    {
+      "tag": "balance_200cars_bramev",
+      "scenario": "balance",
+      "nb_cars": 200,
+      "method": "bramev",
+      "world_seed": 42,
+      "wall_time_s": 1998.62,
+      "invariant_ok": true,
+      "nb_diagnostics": 1
+    },
+    {
+      "tag": "balance_250cars_greedy",
+      "scenario": "balance",
+      "nb_cars": 250,
+      "method": "greedy",
+      "world_seed": 42,
+      "wall_time_s": 104.855,
+      "invariant_ok": true,
+      "nb_diagnostics": 0
+    },
+    {
+      "tag": "balance_250cars_bramev",
+      "scenario": "balance",
+      "nb_cars": 250,
+      "method": "bramev",
+      "world_seed": 42,
+      "wall_time_s": 4877.229,
+      "invariant_ok": true,
+      "nb_diagnostics": 1
+    },
+    {
+      "tag": "pessimistic_50cars_greedy",
+      "scenario": "pessimistic",
+      "nb_cars": 50,
+      "method": "greedy",
+      "world_seed": 42,
+      "wall_time_s": 31.006,
+      "invariant_ok": true,
+      "nb_diagnostics": 1
+    },
+    {
+      "tag": "pessimistic_50cars_bramev",
+      "scenario": "pessimistic",
+      "nb_cars": 50,
+      "method": "bramev",
+      "world_seed": 42,
+      "wall_time_s": 196.671,
+      "invariant_ok": true,
+      "nb_diagnostics": 2
+    },
+    {
+      "tag": "pessimistic_100cars_greedy",
+      "scenario": "pessimistic",
+      "nb_cars": 100,
+      "method": "greedy",
+      "world_seed": 42,
+      "wall_time_s": 56.983,
+      "invariant_ok": true,
+      "nb_diagnostics": 0
+    },
+    {
+      "tag": "pessimistic_100cars_bramev",
+      "scenario": "pessimistic",
+      "nb_cars": 100,
+      "method": "bramev",
+      "world_seed": 42,
+      "wall_time_s": 399.255,
+      "invariant_ok": true,
+      "nb_diagnostics": 1
+    },
+    {
+      "tag": "pessimistic_150cars_greedy",
+      "scenario": "pessimistic",
+      "nb_cars": 150,
+      "method": "greedy",
+      "world_seed": 42,
+      "wall_time_s": 81.483,
+      "invariant_ok": true,
+      "nb_diagnostics": 0
+    },
+    {
+      "tag": "pessimistic_150cars_bramev",
+      "scenario": "pessimistic",
+      "nb_cars": 150,
+      "method": "bramev",
+      "world_seed": 42,
+      "wall_time_s": 731.97,
+      "invariant_ok": true,
+      "nb_diagnostics": 1
+    },
+    {
+      "tag": "pessimistic_200cars_greedy",
+      "scenario": "pessimistic",
+      "nb_cars": 200,
+      "method": "greedy",
+      "world_seed": 42,
+      "wall_time_s": 110.814,
+      "invariant_ok": true,
+      "nb_diagnostics": 0
+    },
+    {
+      "tag": "pessimistic_200cars_bramev",
+      "scenario": "pessimistic",
+      "nb_cars": 200,
+      "method": "bramev",
+      "world_seed": 42,
+      "wall_time_s": 2131.865,
+      "invariant_ok": true,
+      "nb_diagnostics": 1
+    },
+    {
+      "tag": "pessimistic_250cars_greedy",
+      "scenario": "pessimistic",
+      "nb_cars": 250,
+      "method": "greedy",
+      "world_seed": 42,
+      "wall_time_s": 130.937,
+      "invariant_ok": true,
+      "nb_diagnostics": 0
+    },
+    {
+      "tag": "pessimistic_250cars_bramev",
+      "scenario": "pessimistic",
+      "nb_cars": 250,
+      "method": "bramev",
+      "world_seed": 42,
+      "wall_time_s": 5016.593,
+      "invariant_ok": true,
+      "nb_diagnostics": 1
+    }
+  ],
+  "total_wall_time_s": 25449.9
+}
