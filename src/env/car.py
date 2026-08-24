@@ -12,14 +12,58 @@ import src.experiments.config as config
 
 class Car:
 
-    def __init__(self, idx: int, nb_society: int, config: config.SimulationConfig):
+    def __init__(self, idx: int, nb_society: int, config: config.SimulationConfig,
+                 spec: dict | None = None, rng_hub=None):
+        """
+        Parameters
+        ----------
+        spec : dict | None
+            Paramètres explicites issus d'un `WorldSpec` (position, SoC,
+            autonomie, seuil, theta, préférences, puissance). Si fourni, aucun
+            tirage n'a lieu ici : le véhicule est reconstructible à l'identique
+            pour chaque méthode comparée.
+        rng_hub : RngHub | None
+            Fabrique de flux aléatoires. Fournit trois flux indépendants pour ce
+            véhicule (déplacement / comportement / requête), ce qui permet de
+            comparer deux méthodes sur le *même* aléa : la divergence des
+            décisions ne décale pas les tirages des autres usages.
+        """
 
         self.config = config
         self.idx = idx
-        self.loc = utils.init_pos(config)
+
+        # ---- Flux aléatoires dédiés (reproductibilité + common random numbers)
+        if rng_hub is not None:
+            self.rng_move     = rng_hub.stream('car_move', idx)
+            self.rng_behavior = rng_hub.stream('car_behavior', idx)
+            self.rng_request  = rng_hub.stream('car_request', idx)
+        else:
+            self.rng_move     = np.random.default_rng()
+            self.rng_behavior = np.random.default_rng()
+            self.rng_request  = np.random.default_rng()
+
+        if spec is not None:
+            self.loc = np.asarray(spec['loc'], dtype=float)
+            self.soc_init        = float(spec['soc_init'])
+            self.autonomy        = float(spec['autonomy'])
+            self.theta           = dict(spec['theta'])
+            self.pref            = dict(spec['pref'])
+            self.charging_power  = int(spec['charging_power'])
+            self.soc_threshold_m = float(spec['soc_threshold_m'])
+        else:
+            self.loc = utils.init_pos(config)
+            self.soc_init        = self.init_soc()
+            self.autonomy        = self.define_autonomy()
+            self.theta           = self.generate_cancel_probabilities()
+            self.pref            = self.generate_preferences()
+            self.charging_power  = self.generate_charging_power()        # km/slot
+            self.soc_threshold_m = utils.get_truncated_normal(
+                mean=self.config.CAR_SOC_THRESHOLD_PARAMS['mean'],
+                sd=self.config.CAR_SOC_THRESHOLD_PARAMS['sd'],
+                low=self.config.CAR_SOC_THRESHOLD_PARAMS['low'],
+                high=self.config.CAR_SOC_THRESHOLD_PARAMS['high']) * self.autonomy
+
         self.x, self.y = float(self.loc[0]), float(self.loc[1])
-        self.soc_init = self.init_soc()
-        self.autonomy = self.define_autonomy()
         self.soc_m = self.autonomy * self.soc_init # distance restante à parcourir avec état actuel de la batterie
         self.state = 'DRIVING'   # 'DRIVING', 'REQUESTING', 'DRIVING_TO_STATION', 'AT_STATION', 'CHARGING', 'WAITING', 'BREAKDOWN'
         self.request = None
@@ -27,21 +71,18 @@ class Car:
         self.behavior = None
         self.speed_to_station = None
 
-        self.theta = self.generate_cancel_probabilities()
-        self.pref = self.generate_preferences()
-        self.charging_power = self.generate_charging_power()        # km/slot
+        # ---- Suivi de l'intention d'annulation (cf. Simulation._process_cancellations)
+        self.cancel_intent    = None   # comportement tiré à la réservation
+        self.reservation_slot = None   # slot d'émission de la requête réservée
+        self.reservation_lead = None   # nb de slots entre requête et arrivée prévue
 
         self.score = np.zeros(nb_society)
         self.u_total = 0.0
         self.nb_sessions = 0
         self.nb_rejected = 0
         self.nb_request = 0
-
-        self.soc_threshold_m = utils.get_truncated_normal(
-            mean=self.config.CAR_SOC_THRESHOLD_PARAMS['mean'],
-            sd=self.config.CAR_SOC_THRESHOLD_PARAMS['sd'],
-            low=self.config.CAR_SOC_THRESHOLD_PARAMS['low'],
-            high=self.config.CAR_SOC_THRESHOLD_PARAMS['high']) * self.autonomy # seuil soc_m pour déclencher l'émission d'une requête
+        self.nb_offers_received = 0
+        self.nb_confirm_failed = 0
 
         self.schedule_requested = np.zeros(config.TOTAL_TIME)
 
@@ -60,6 +101,15 @@ class Car:
 
     def set_behavior(self, behavior):
         self.behavior = behavior
+
+    def clear_reservation(self):
+        """Remet à zéro tout l'état lié à une réservation close."""
+        self.reservation = None
+        self.request = None
+        self.behavior = None
+        self.cancel_intent = None
+        self.reservation_slot = None
+        self.reservation_lead = None
 
     def define_autonomy(self):
         """
@@ -96,14 +146,27 @@ class Car:
     def generate_charging_power(self):
         return np.random.choice([i for i in range(4, 9)])  # km/slot
 
+    def draw_behavior(self):
+        """
+        Tire le comportement réalisé pour la réservation en cours.
+
+        Utilise le flux `car_behavior`, indépendant du déplacement : pour une
+        même graine, la k-ième réservation d'un véhicule donné tire le même
+        comportement quelle que soit la méthode d'allocation testée.
+        """
+        keys = list(self.theta.keys())
+        probs = np.asarray([self.theta[k] for k in keys], dtype=float)
+        probs = probs / probs.sum()
+        return str(self.rng_behavior.choice(keys, p=probs))
+
     def generate_charging_duration_request(self, strategies):
         if self.soc_m >= self.autonomy * 0.95 :
             return 0
         weights   = [s[0] for s in strategies]
         intervals = [s[1] for s in strategies]
-        idx_choice = np.random.choice(len(intervals), p=weights)
+        idx_choice = self.rng_request.choice(len(intervals), p=weights)
         low, high = intervals[idx_choice]
-        target_soc = np.random.uniform(low, high) * self.autonomy   # en mètres
+        target_soc = self.rng_request.uniform(low, high) * self.autonomy   # en mètres
         if self.soc_m > target_soc:
             target_soc = self.autonomy
         needed_km = (target_soc - self.soc_m) * 1e-3                # en kilomètres
@@ -113,7 +176,7 @@ class Car:
         if self.behavior == 'pres':
             reduce_factor = 1
         else:
-            reduce_factor = random.choice(self.config.REDUCE_SPEED_FACTORS)
+            reduce_factor = float(self.rng_behavior.choice(self.config.REDUCE_SPEED_FACTORS))
         self.speed_to_station = self.config.CAR_SPEED / reduce_factor
 
     def update_state(self, loc=None):
@@ -156,14 +219,12 @@ class Car:
         x_init, y_init = self.x, self.y
 
         if loc is None:
-            move_axis = np.random.choice(['x', 'y'])
-            #print(self.x, self.y)
-            step = np.random.uniform(-1, 1) * self.config.CAR_SPEED
+            move_axis = self.rng_move.choice(['x', 'y'])
+            step = self.rng_move.uniform(-1, 1) * self.config.CAR_SPEED
             if move_axis == 'x':
                 self.x = np.clip(self.x + step, 0, self.config.C_GRID)
             else:
                 self.y = np.clip(self.y + step, 0, self.config.C_GRID)
-            #print(self.x, self.y)
         else:
             x_m, y_m = loc
             dx, dy = x_m - self.x, y_m - self.y
@@ -171,7 +232,7 @@ class Car:
                 self.set_state('AT_STATION')
                 return True
             move_axis = 'x' if abs(dx) >= abs(dy) else 'y'
-            step_size = np.random.uniform(0, self.speed_to_station)
+            step_size = self.rng_move.uniform(0, self.speed_to_station)
             if move_axis == 'x':
                 step = np.sign(dx) * min(abs(dx), step_size)
                 self.x = np.clip(self.x + step, 0, self.config.C_GRID)
@@ -183,9 +244,6 @@ class Car:
                 return True
 
         dist = abs(self.x - x_init) + abs(self.y - y_init)
-        # energy_per_unit = (self.config.ENERGY_CONSUMPTION['quantity_kW'] /
-        #                 self.config.ENERGY_CONSUMPTION['distance_unit_m'])
-        # self.soc = max(0., self.soc - dist * energy_per_unit)
         self.soc_m = max(0., self.soc_m - dist)
 
         # Vérifie panne après déplacement
@@ -196,13 +254,9 @@ class Car:
 
     def charge_one_slot(self):
         """Recharge la batterie d'un slot (appelé depuis Simulation)."""
-        # km_per_slot = self.charging_power
-        # delta_soc = km_per_slot / self.autonomy
         delta_soc = self.charging_power * 1e3
-        #print(f'delta_soc = {delta_soc * 1e-3:.2f}km')
         self.soc_m = min(self.autonomy, self.soc_m + delta_soc)
-        #print(f'self.soc_m = {self.soc_m * 1e-3:.2f}km')
-    
+
     def needs_charging(self):
         # ne pas émettre de requête si déjà en panne
         return (self.soc_m <= self.soc_threshold_m
@@ -213,11 +267,11 @@ class Car:
         charging_duration = self.generate_charging_duration_request(
             self.config.CHARGING_DURATION_PARAMS)
         x_n, y_n = loc_n
-        max_waiting_time = np.random.randint(6, 24)
+        max_waiting_time = int(self.rng_request.integers(6, 24))
         max_dist = self.soc_m
         min_ray = min(self.config.MIN_RAY_SEARCH, self.config.COEFF_MAX_DIST * max_dist)
         max_ray = max(self.config.MIN_RAY_SEARCH, self.config.COEFF_MAX_DIST * max_dist)
-        r_n = min(np.random.uniform(min_ray, max_ray), self.config.MAX_RAY_SEARCH)
+        r_n = min(self.rng_request.uniform(min_ray, max_ray), self.config.MAX_RAY_SEARCH)
         request = {
             'n':       id_demand,
             'car_idx': self.idx,
@@ -228,6 +282,7 @@ class Car:
             'g_n':     max_waiting_time
         }
         self.request = request
+        self.nb_request += 1
         return request
 
     def update_schedule_requested(self, min_dist):
@@ -270,14 +325,24 @@ class Car:
              - self.pref['wait']   * (waitingTime / maxWaitingTime))
         return max(0., u)
 
+    def rank_offers(self, offers, request, min_dist):
+        """
+        Classe les offres par utilité décroissante.
+
+        Le véhicule tente de confirmer dans cet ordre : si la station refuse la
+        confirmation (offre périmée ou créneau plus libre), il se rabat sur
+        l'offre suivante au lieu de renoncer.
+        """
+        scored = [(offer, self.compute_utility(offer, request, min_dist))
+                  for offer in offers]
+        scored.sort(key=lambda pair: pair[1], reverse=True)
+        return scored
+
     def choose_offer(self, offers, request, min_dist):
-        best_offer, best_u = None, -np.inf
-        for offer in offers:
-            u = self.compute_utility(offer, request, min_dist)
-            if u > best_u:
-                best_u = u
-                best_offer = offer
-        return best_offer, best_u
+        ranked = self.rank_offers(offers, request, min_dist)
+        if not ranked:
+            return None, -np.inf
+        return ranked[0]
 
     def display_parameters(self, file):
         print('--- AGENT CAR', file=file)

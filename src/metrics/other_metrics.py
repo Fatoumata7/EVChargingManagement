@@ -1,11 +1,17 @@
 import numpy as np
 import pandas as pd
 
-import numpy as np
-import pandas as pd
-
 
 def check_station_metrics(station):
+    """
+    Vérifie que chaque réservation confirmée a reçu exactement une issue.
+
+    Deux issues s'ajoutent aux quatre issues comportementales : `breakdown`
+    (véhicule tombé en panne avant sa session, réservation libérée) et
+    `unresolved` (réservation encore ouverte à la fin de l'horizon). Sans elles
+    l'invariant était structurellement faux dès qu'une panne survenait ou qu'une
+    réservation dépassait la fin de la simulation.
+    """
 
     lhs = station.nb_reservations
 
@@ -14,11 +20,17 @@ def check_station_metrics(station):
         + station.nb_no_show
         + station.nb_early_canc
         + station.nb_late_canc
+        + station.nb_breakdown_canc
+        + station.nb_unresolved
     )
 
     assert lhs == rhs, (
         f"Station {station.m}: "
-        f"{lhs} reservations != {rhs} outcomes"
+        f"{lhs} reservations != {rhs} outcomes "
+        f"(pres={station.nb_pres}, abs={station.nb_no_show}, "
+        f"early={station.nb_early_canc}, late={station.nb_late_canc}, "
+        f"breakdown={station.nb_breakdown_canc}, "
+        f"unresolved={station.nb_unresolved})"
     )
 
 def create_station_occupancy_dataframe(societies):

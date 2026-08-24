@@ -1,0 +1,13 @@
+# Campagne courte de validation (~1 min) : à lancer avant la grille complète.
+#
+#   python -m src.pipeline.cli run --config experiments/smoke.yaml
+label: smoke
+seed: 42
+scenarios: [pessimistic]
+fleet_sizes: [20, 40]
+methods: [greedy, bramev]
+total_time: 144           # 12 heures
+nb_stations: 12
+nb_societies: 3
+save_latency: true
+figures: true

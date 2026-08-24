@@ -53,10 +53,47 @@ class SimulationConfig:
     # Seuil en dessous duquel la voiture est considérée en panne (soc ≈ 0)
     SOC_BREAKDOWN_THRESHOLD = 3 * 1e3   # 1% → ~3 km restants
 
+    # ------------------------------------------------------------------ SCÉNARIOS
+    # Source unique de vérité pour les probabilités de comportement.
+    # Les notebooks doivent appeler `set_scenario(nom)` au lieu de redéfinir
+    # BASE_CANCEL_PROB localement (c'est ce qui avait produit des jeux de
+    # paramètres divergents entre notebooks et rapport).
+    #
+    # Convention :
+    #   pres  : se présente et honore la réservation
+    #   abs   : no-show complet (créneau jamais libéré avant t_dep)
+    #   early : annulation anticipée  (> LATE_CANCEL_REF slots avant l'arrivée)
+    #   late  : annulation tardive    (<= LATE_CANCEL_REF slots avant l'arrivée)
+    #
+    # La sévérité croît de `optimistic` à `pessimistic` sur les deux dimensions
+    # coûteuses pour l'opérateur (`abs` et `late`), et `noise` est identique
+    # partout pour que les scénarios ne diffèrent que par les probabilités.
+    SCENARIOS = {
+        'optimistic':  {'pres': 75, 'abs': 10, 'early':  9, 'late':  6, 'noise': 0.15},
+        'balance':     {'pres': 60, 'abs': 20, 'early': 12, 'late':  8, 'noise': 0.15},
+        'pessimistic': {'pres': 40, 'abs': 25, 'early': 15, 'late': 20, 'noise': 0.15},
+    }
+
 
     def __init__(self):
 
         self.TOTAL_TIME = 12 * 4 # 12 * 24 * 5        # 12 slots de 5min dans une heure, 4 heures
+
+        # ------------------------------------------------------------------ REPRODUCTIBILITÉ
+        # Graine unique de l'expérience. Fixée via set_seed() ; enregistrée avec
+        # chaque résultat par le pipeline (src/pipeline).
+        self.SEED = None
+        self.SCENARIO_NAME = 'custom'      # renseigné par set_scenario()
+
+        # ------------------------------------------------------------------ PROTOCOLE D'OFFRE
+        # Durée de validité d'une offre, en slots. 1 = l'offre expire à la fin du
+        # slot d'émission (une offre non confirmée immédiatement est perdue).
+        self.OFFER_TTL_SLOTS = 1
+
+        # Part du délai requête → arrivée en dessous de laquelle une annulation
+        # est considérée tardive, quand ce délai est plus court que
+        # LATE_CANCEL_REF (cf. late_cancel_threshold).
+        self.LATE_CANCEL_FRACTION = 0.5
 
         self.VISUALIZE = True
 
@@ -360,6 +397,98 @@ class SimulationConfig:
     def set_log_iter(self, value):
 
         self.log_iter = value
+
+
+    def set_seed(self, value: int) -> None:
+        """
+        Fixe la graine de l'expérience.
+
+        Ne graine pas les générateurs : c'est `RngHub(seed)` (cf.
+        src/experiments/seeding.py) qui le fait, appelé par `define_agents`.
+        """
+        if not isinstance(value, int):
+            raise TypeError(
+                f"SEED doit être un entier, reçu : {type(value).__name__}"
+            )
+        if value < 0:
+            raise ValueError(f"SEED doit être >= 0, reçu : {value}")
+        self.SEED = value
+
+
+    def set_scenario(self, name: str) -> None:
+        """
+        Applique les probabilités de comportement d'un scénario nommé.
+
+        Parameters
+        ----------
+        name : {'optimistic', 'balance', 'pessimistic'}
+        """
+        if name not in self.SCENARIOS:
+            raise ValueError(
+                f"Scénario inconnu : {name!r}. "
+                f"Attendu parmi {sorted(self.SCENARIOS)}"
+            )
+        self.set_BASE_CANCEL_PROB(self.SCENARIOS[name])
+        self.SCENARIO_NAME = name
+
+
+    def set_OFFER_TTL_SLOTS(self, value: int) -> None:
+
+        if type(value) is not int:
+            raise TypeError(
+                f"OFFER_TTL_SLOTS doit être un int, reçu : {type(value).__name__}"
+            )
+        if value < 1:
+            raise ValueError(f"OFFER_TTL_SLOTS doit être >= 1, reçu : {value}")
+        self.OFFER_TTL_SLOTS = value
+
+
+    def late_cancel_threshold(self, lead: int) -> int:
+        """
+        Seuil (en slots avant l'arrivée prévue) séparant annulation anticipée et
+        annulation tardive, pour une réservation dont le délai requête → arrivée
+        vaut `lead`.
+
+        `LATE_CANCEL_REF` (2 h = 24 slots) suppose une réservation prise
+        longtemps à l'avance. Ici le délai est souvent de quelques slots
+        seulement (le trajet vers la station est court) : appliqué tel quel, le
+        seuil absolu classait *toute* annulation comme tardive et rendait la
+        branche « anticipée » inatteignable. Le seuil est donc borné par une
+        fraction du délai réel, ce qui garantit que les deux régimes existent.
+        """
+        lead = max(0, int(lead))
+        relative = int(lead * self.LATE_CANCEL_FRACTION)
+        return max(1, min(self.LATE_CANCEL_REF, relative))
+
+
+    def summary(self) -> dict:
+        """
+        Paramètres à enregistrer avec chaque résultat (traçabilité).
+        """
+        return {
+            'seed':                  self.SEED,
+            'scenario':              self.SCENARIO_NAME,
+            'total_time':            self.TOTAL_TIME,
+            'slot_duration_min':     self.SLOT_DURATION,
+            'nb_cars':               self.NB_CARS,
+            'nb_stations':           self.NB_STATIONS,
+            'nb_societies':          self.NB_SOCIETIES,
+            'nb_charg_spot':         dict(self.NB_CHARG_SPOT),
+            'grid_m':                self.C_GRID,
+            'car_speed_m_per_slot':  self.CAR_SPEED,
+            'base_cancel_prob':      dict(self.BASE_CANCEL_PROB),
+            'base_points_strategy':  dict(self.BASE_POINTS_STRATEGY),
+            'strategy_noise':        self.STRATEGY_NOISE,
+            'w1': self.w1, 'w2': self.w2, 'z': self.z,
+            'gamma':                 self.GAMMA,
+            'society_update_interval': self.SOCIETY_UPDATE_INTERVAL,
+            'min_ray_search':        self.MIN_RAY_SEARCH,
+            'max_ray_search':        self.MAX_RAY_SEARCH,
+            'coeff_max_dist':        self.COEFF_MAX_DIST,
+            'late_cancel_ref':       self.LATE_CANCEL_REF,
+            'late_cancel_fraction':  self.LATE_CANCEL_FRACTION,
+            'offer_ttl_slots':       self.OFFER_TTL_SLOTS,
+        }
 
     
 

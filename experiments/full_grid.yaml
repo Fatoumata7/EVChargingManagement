@@ -1,0 +1,20 @@
+# Grille complète du rapport : 3 scénarios x 5 flottes x 2 méthodes, 5 jours.
+#
+#   python -m src.pipeline.cli run --config experiments/full_grid.yaml
+#
+# Toute option de la CLI surcharge ce fichier :
+#   python -m src.pipeline.cli run --config experiments/full_grid.yaml --seed 7
+label: full-grid
+seed: 42
+scenarios: [optimistic, balance, pessimistic]
+fleet_sizes: [50, 100, 150, 200, 250]
+methods: [greedy, bramev]
+
+total_time: 1440          # 5 jours en slots de 5 min
+nb_stations: 40
+nb_societies: 4
+strategy_noise: 0.5
+
+save_latency: true
+save_tables: true
+figures: true

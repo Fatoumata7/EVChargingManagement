@@ -6,12 +6,14 @@ dist/
 wheels/
 *.egg-info
 
-# Virtual environments
-.venv
-.env
+# Local
+.*
+!.gitignore
+!.env.example
 
 # Other folders
 img
 outputs
+results_grid
 
 .DS_Store
