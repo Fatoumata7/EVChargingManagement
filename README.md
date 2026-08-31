@@ -49,10 +49,11 @@ The goal is to jointly optimize charging allocation, user satisfaction, and oper
 │   │
 │   ├── experiments                # Simulation & reproducibility
 │   │   ├── config.py              # Simulation parameters + scenario table
+│   │   ├── methods.py             # Method registry: the ablation plan
 │   │   ├── seeding.py             # Seed management, per-agent RNG streams
 │   │   ├── world.py               # Shared grid + fleets + per-scenario composition
-│   │   ├── simulation.py          # Shared simulation loop (BRAM-EV / Greedy)
-│   │   ├── simulation_greedy.py   # Greedy baseline (specialisation)
+│   │   ├── simulation.py          # Shared simulation loop (every method)
+│   │   ├── simulation_greedy.py   # Nearest baseline (convenience subclass)
 │   │   └── run.py                 # Single run with the visualizer
 │   │
 │   ├── metrics                    # Measurement
@@ -66,10 +67,14 @@ The goal is to jointly optimize charging allocation, user satisfaction, and oper
 │       ├── store.py               # Run layout and artifact persistence
 │       ├── runner.py              # Case and grid execution
 │       ├── tables.py              # Tidy tables extracted from a simulation
+│       ├── ablation.py            # Per-component decomposition of the gains
 │       ├── figures.py             # Figures built from tables, never from objects
-│       └── cli.py                 # run / report / show / runs / scenarios
+│       └── cli.py                 # run / report / show / runs / scenarios /
+│                                  #   methods / ablation
 │
 ├── experiments                    # Ready-made campaign configurations
+│   ├── ablation.yaml              # The four configurations, full grid
+│   ├── ablation_variants.yaml     # BRAM-EV with one mechanism replaced
 │   ├── full_grid.yaml
 │   └── smoke.yaml
 │
@@ -79,7 +84,8 @@ The goal is to jointly optimize charging allocation, user satisfaction, and oper
 ├── tests                          # uv run python -m tests
 │   ├── test_priority1.py          # Model fixes
 │   ├── test_shared_world.py       # One grid & one fleet across all scenarios
-│   └── test_pipeline.py           # Params, storage, runner, figures, CLI
+│   ├── test_pipeline.py           # Params, storage, runner, figures, CLI
+│   └── test_ablation.py           # Components, variants, decomposition
 │
 ├── results_grid/                  # Run outputs (gitignored)
 ├── outputs/                       # Visualizer logs (gitignored)
@@ -112,13 +118,19 @@ Everything runs through one entry point. `uv run main.py` and
 ### The campaigns
 
 ```bash
-# 1. Smoke campaign — run this first: 1 scenario x 2 fleets x 2 methods.
-#    Validates the whole chain in about a minute.
+# 1. Smoke campaign — run this first: 1 scenario x 2 fleets x all 8 methods.
+#    Validates the whole chain in about two minutes.
 uv run main.py run --config experiments/smoke.yaml
 
-# 2. Full grid of the report — 3 scenarios x 5 fleet sizes x 2 methods,
+# 2. Ablation ladder — 3 scenarios x 5 fleet sizes x the 4 configurations,
 #    5 simulated days. This is the long one: check the plan before launching.
-uv run main.py run --dry-run --config experiments/full_grid.yaml
+uv run main.py run --dry-run --config experiments/ablation.yaml
+uv run main.py run --config experiments/ablation.yaml
+
+# 3. BRAM-EV variants — one internal mechanism replaced at a time.
+uv run main.py run --config experiments/ablation_variants.yaml
+
+# 4. Historical two-method grid (Nearest vs BRAM-EV Full only).
 uv run main.py run --config experiments/full_grid.yaml
 ```
 
@@ -131,7 +143,7 @@ uv run main.py run --config experiments/full_grid.yaml --seed 7 --label seed-7
 
 # a custom campaign, without a configuration file
 uv run main.py run --seed 42 --scenarios pessimistic --cars 50 100 150 \
-    --methods greedy bramev --total-time 1440
+    --methods ablation --total-time 1440
 
 # one scenario, one fleet, one method — the quickest way to test a change
 uv run main.py run --scenarios balance --cars 50 --methods bramev --total-time 288
@@ -172,6 +184,122 @@ Several modules carry an executable self-check under `if __name__ == "__main__"`
 which asserts the invariant that module is responsible for.
 
 
+# Ablation study
+
+Comparing Nearest against BRAM-EV Full tells you *that* there is a gap. It does
+not tell you where the gap comes from — and the most likely explanation is also
+the least interesting one: simply asking several stations instead of one.
+The ablation answers that question by construction.
+
+## The four configurations
+
+Each rung adds **exactly one component** to the previous one:
+
+| Configuration | Method name | Multi-station search | Reputation | Cross-station adaptation |
+| --- | --- | :---: | :---: | :---: |
+| Nearest | `greedy` (alias `nearest`) | no | no | no |
+| Multi-Station Only | `multistation` | yes | no | no |
+| Multi-Station + Reputation | `multistation_rep` | yes | yes | no |
+| BRAM-EV Full | `bramev` | yes | yes | yes |
+
+```bash
+uv run main.py methods                    # the full plan, with the notes
+uv run main.py run --methods ablation     # the four configurations
+```
+
+`greedy` and `bramev` keep their historical names, so earlier runs, tables and
+figures stay readable; the ladder simply inserts the two missing rungs between
+them.
+
+## BRAM-EV variants
+
+Each variant replaces **one internal mechanism** of the full method and is
+compared against `bramev`. Where the ladder asks "what does adding this
+component buy?", the variants ask "does this mechanism have to work the way it
+does?".
+
+| Variant | Mechanism neutralised | Replaced by |
+| --- | --- | --- |
+| `bramev_nearest_offer` | multi-criteria utility | the vehicle takes the nearest offer |
+| `bramev_fixed_alpha` | heterogeneous alpha | one `--alpha-fixed` value for every station |
+| `bramev_global_rep` | per-company reputation | a single score shared by all companies |
+| `bramev_event_score` | duration-weighted score | a flat penalty per event |
+
+```bash
+uv run main.py run --methods bramev variants
+uv run main.py run --methods all          # ladder + variants, 8 methods
+```
+
+`bramev_fixed_alpha` keeps collective learning switched on, but it becomes
+inert: with every alpha equal, the best station has nothing to propagate. The
+variant therefore isolates the contribution of alpha *heterogeneity* itself.
+
+## Why the numbers are attributable
+
+A measured gap is only attributable to a component if nothing else moved. Three
+properties, all enforced by tests (`tests/test_ablation.py`), make that true:
+
+* **One switch per rung.** Methods are declarative flag sets in
+  `src/experiments/methods.py`; a single `Simulation` class reads them. Two
+  neighbouring rungs run strictly the same code, on the same world, with one
+  boolean flipped.
+* **One world per comparison.** The grid, the fleet and the behaviour draws are
+  sampled once per campaign and reused for every method (see *One world, all
+  scenarios and all methods* below). The per-vehicle RNG streams are
+  independent, so a decision that diverges under one method does not shift the
+  draws of another.
+* **A stated direction per metric.** Fewer no-shows is a gain; less
+  satisfaction is not. Each metric declares its direction, and the reported
+  `improvement` is a judgement, not a sign.
+
+## Reading the decomposition
+
+```bash
+uv run main.py ablation --latest
+uv run main.py ablation --latest --metrics exact_satisfaction rate_abs nb_reservations
+```
+
+```text
+Composant                       Satisfaction exacte   Taux de no-show   Taux de service
+------------------------------  -------------------  ----------------  ----------------
+
+Échelle d'ablation (contribution du composant ajouté)
+Recherche multi-stations                 +4.1% (92%)      -2.7% (83%)        +6.0% (92%)
+Réputation                               +0.6% (58%)     -11.4% (100%)       +2.2% (75%)
+Adaptation entre stations                +0.2% (50%)      -0.4% (58%)        +0.3% (50%)
+```
+
+Each cell carries the mean relative gap **and, in parentheses, the share of
+worlds where the component actually improves that metric**. The parenthesis is
+the part that matters: a component that helps in half the worlds
+(`share_improved ≈ 50%`) has no robust contribution, however good its average
+looks. `ablation.csv` keeps every world separately, so the dispersion behind an
+average stays auditable.
+
+Two tables are written at the root of every run, and rebuilt by the `ablation`
+sub-command without simulating:
+
+| File | Content |
+| --- | --- |
+| `ablation.csv` | one line per (world, component, metric): both values, delta, relative delta, improvement |
+| `ablation_mean.csv` | one line per (component, metric): mean delta, `nb_improved`, `share_improved` |
+
+Figures `ablation_components.png`, `ablation_variants.png` and
+`ablation_ladder_<scenario>.png` are produced with the rest.
+
+## Caveats when reading a short run
+
+Two components need a long enough horizon to express themselves at all:
+
+* **Cross-station adaptation** only fires every `SOCIETY_UPDATE_INTERVAL` slots
+  (144 by default, 12 h). A campaign shorter than that measures a contribution
+  of exactly zero — because the mechanism never ran, not because it is useless.
+* **The multi-criteria utility** only matters when a demand receives several
+  offers. On a small grid most demands receive zero or one, and
+  `bramev_nearest_offer` is then indistinguishable from `bramev`.
+  `mean_offers_per_demand` in `summary.csv` says whether the comparison had any
+  substance.
+
 # Reproducibility and Fair Comparison
 
 ## The pipeline
@@ -190,6 +318,8 @@ orchestration, persistence and figures each live in their own module under
 | `show` | Prints the summary table and the diagnostics of a run |
 | `runs` | Lists available runs |
 | `scenarios` | Prints the behaviour-probability table |
+| `methods` | Prints the ablation plan: which components each method enables |
+| `ablation` | Decomposes the gains per component, without simulating |
 
 The sub-commands deliberately separate computing (`run`) from reporting
 (`report`, `show`): figures are regenerated from the persisted tables, without
@@ -216,7 +346,7 @@ uv run main.py run --config experiments/full_grid.yaml --seed 7 --label seed-7
 | --- | --- |
 | Experiment plan | `--seed`, `--scenarios`, `--cars`, `--methods` |
 | Simulated world | `--total-time`, `--nb-stations`, `--nb-societies`, `--charg-spot-low/high`, `--strategy-noise` |
-| Protocol | `--offer-ttl-slots`, `--late-cancel-fraction`, `--society-update-interval` |
+| Protocol | `--offer-ttl-slots`, `--late-cancel-fraction`, `--society-update-interval`, `--alpha-fixed` |
 | Outputs | `--output-root`, `--label`, `--keep-logs`, `--save-latency`, `--save-tables`, `--figures`, `--log-every` |
 
 Parameters are validated up front, as a whole: an unknown scenario, a duplicated
@@ -230,6 +360,8 @@ results_grid/<timestamp>_seed<seed>[_<label>]/
     params.json                       campaign parameters (replayable as is)
     manifest.json                     seed, git commit, platform, progress, timings
     summary.csv                       one line per case, ready for plotting
+    ablation.csv                      one line per (world, component, metric)
+    ablation_mean.csv                 contribution of each component, averaged
     grid.json                         THE grid: societies, stations, alpha, strategies
     fleets/fleet_<n>cars.json         one fleet per size, shared by every scenario
     worlds/<scenario>_<n>cars.json    composed world (grid + fleet + scenario)
@@ -457,9 +589,10 @@ uv run python -m tests                     # all suites
 uv run python -m tests.test_priority1      # model fixes
 uv run python -m tests.test_shared_world   # shared grid and fleets
 uv run python -m tests.test_pipeline       # pipeline
+uv run python -m tests.test_ablation       # ablation study
 ```
 
-64 tests, no external test dependency.
+82 tests, no external test dependency.
 
 `test_priority1.py` (26) covers the model fixes: reproducibility, shared
 environment, unique demand identifiers, latency decomposition, slot contiguity,
@@ -470,11 +603,20 @@ for the whole campaign, fleets independent of the scenario and nested across
 sizes, `theta` as a pure function of the fixed noise and the scenario's base
 probabilities, and the same properties verified end-to-end on a real campaign.
 
-`test_pipeline.py` (21) covers the orchestration: parameter validation, YAML/JSON
+`test_pipeline.py` (22) covers the orchestration: parameter validation, YAML/JSON
 round-trip, CLI precedence over configuration files, run layout and artifact
 round-trip, incremental writing, same-world comparison, reproducibility of a
 whole campaign, figures rebuilt from the persisted tables alone, and CLI exit
 codes.
+
+`test_ablation.py` (17) covers the attributability of the results: each rung of
+the ladder flips exactly one flag and leaves the internal mechanisms untouched,
+each variant differs from `bramev` by exactly one mechanism, those flags
+actually reach the agents (score index, score weighting, alpha, offer ranking),
+the decomposition matches `summary.csv` with the right direction per metric, a
+duplicated method in `summary.csv` is refused rather than silently overwritten,
+and — end to end — broadcasting really does produce more offers per demand,
+which is what makes a measured contribution interpretable.
 
 
 # Running a Simulation
