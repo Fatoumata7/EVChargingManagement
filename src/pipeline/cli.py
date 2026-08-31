@@ -2,10 +2,14 @@
 cli.py — Interface en ligne de commande du pipeline BRAM-EV.
 
     python -m src.pipeline.cli run --scenarios pessimistic --cars 50 100 --seed 42
+    python -m src.pipeline.cli run --methods ablation      # les 4 configurations
+    python -m src.pipeline.cli run --methods all           # + variantes de BRAM-EV
+    python -m src.pipeline.cli ablation --latest
     python -m src.pipeline.cli report --run-dir results_grid/<run>
     python -m src.pipeline.cli show --latest
     python -m src.pipeline.cli runs
     python -m src.pipeline.cli scenarios
+    python -m src.pipeline.cli methods
 
 Les sous-commandes séparent volontairement le calcul (`run`) de la restitution
 (`report`, `show`) : les figures se régénèrent à partir des tables persistées,
@@ -28,8 +32,9 @@ from typing import Sequence
 from loguru import logger
 
 import src.experiments.config as cfg_module
+import src.experiments.methods as methods_module
 from src.experiments.seeding import DEFAULT_SEED
-from src.pipeline import figures
+from src.pipeline import ablation, figures
 from src.pipeline.params import (METHODS, SCENARIOS, ExperimentParams,
                                  ParamsError)
 from src.pipeline.runner import run_grid
@@ -75,6 +80,8 @@ def build_parser() -> argparse.ArgumentParser:
     _add_show(subparsers)
     _add_runs(subparsers)
     _add_scenarios(subparsers)
+    _add_methods(subparsers)
+    _add_ablation(subparsers)
     return parser
 
 
@@ -97,8 +104,13 @@ def _add_run(subparsers) -> None:
                       metavar='NOM', help=f'Scénarios à exécuter {list(SCENARIOS)}.')
     plan.add_argument('--cars', dest='fleet_sizes', nargs='+', type=int, default=None,
                       metavar='N', help='Tailles de flotte à tester.')
-    plan.add_argument('--methods', nargs='+', choices=METHODS, default=None,
-                      metavar='NOM', help=f'Méthodes à comparer {list(METHODS)}.')
+    # Pas de `choices` ici : la valeur peut être un nom, un alias (`nearest`) ou
+    # un groupe (`ablation`, `variants`, `all`). La validation — et son message
+    # d'erreur — appartient à `ExperimentParams`, seule à connaître le registre.
+    plan.add_argument('--methods', nargs='+', default=None, metavar='NOM',
+                      help="Méthodes à comparer : noms, alias, ou groupes "
+                           "(ablation, variants, baseline, all). "
+                           "`cli.py methods` affiche la table complète.")
 
     env = p.add_argument_group('environnement simulé')
     env.add_argument('--total-time', type=int, default=None,
@@ -119,6 +131,9 @@ def _add_run(subparsers) -> None:
                             'annulation anticipée et tardive.')
     proto.add_argument('--society-update-interval', type=int, default=None,
                        help="Période d'apprentissage collectif, en slots.")
+    proto.add_argument('--alpha-fixed', type=float, default=None,
+                       help="Alpha commun imposé aux méthodes à alpha fixe "
+                            "(bramev_fixed_alpha). Sans effet sur les autres.")
 
     out = p.add_argument_group('sorties')
     out.add_argument('--output-root', default=None,
@@ -172,6 +187,31 @@ def _add_scenarios(subparsers) -> None:
     p.set_defaults(func=cmd_scenarios)
 
 
+def _add_methods(subparsers) -> None:
+    p = subparsers.add_parser(
+        'methods', help="Affiche le plan d'ablation (méthodes disponibles).",
+        description="Composants activés par chaque méthode. Source unique de "
+                    "vérité : src/experiments/methods.py.")
+    p.set_defaults(func=cmd_methods)
+    p.add_argument('--detail', action='store_true',
+                   help='Ajoute la note explicative de chaque méthode.')
+
+
+def _add_ablation(subparsers) -> None:
+    p = subparsers.add_parser(
+        'ablation', help="Décompose les gains par composant.",
+        description="Recalcule ablation.csv / ablation_mean.csv depuis "
+                    "summary.csv et affiche la contribution de chaque "
+                    "composant. Ne relance aucune simulation.")
+    p.set_defaults(func=cmd_ablation)
+    _add_run_selector(p)
+    p.add_argument('--metrics', nargs='+', default=None, metavar='COL',
+                   help='Métriques affichées (défaut : sélection lisible). '
+                        'Toutes restent écrites dans ablation.csv.')
+    p.add_argument('--no-write', action='store_true',
+                   help="Affiche sans réécrire les tables du run.")
+
+
 def _add_run_selector(p: argparse.ArgumentParser) -> None:
     group = p.add_mutually_exclusive_group(required=True)
     group.add_argument('--run-dir', type=Path, help='Dossier du run.')
@@ -188,9 +228,9 @@ def _add_run_selector(p: argparse.ArgumentParser) -> None:
 PARAM_OPTIONS = ('seed', 'scenarios', 'fleet_sizes', 'methods',
                  'total_time', 'nb_stations', 'nb_societies', 'nb_charg_spot_low',
                  'nb_charg_spot_high', 'strategy_noise', 'offer_ttl_slots',
-                 'late_cancel_fraction', 'society_update_interval', 'output_root',
-                 'label', 'keep_logs', 'save_latency', 'save_tables', 'figures',
-                 'log_every')
+                 'late_cancel_fraction', 'society_update_interval', 'alpha_fixed',
+                 'output_root', 'label', 'keep_logs', 'save_latency',
+                 'save_tables', 'figures', 'log_every')
 
 
 def params_from_args(args: argparse.Namespace) -> ExperimentParams:
@@ -226,6 +266,12 @@ def cmd_run(args: argparse.Namespace) -> int:
         written = figures.render_all(store.read_summary(), store.figures_dir,
                                      **_shared_tables(store))
         logger.info(f'{len(written)} figures écrites dans {store.figures_dir}')
+
+    means = ablation.mean_rows(ablation.detail_rows(store.read_summary()))
+    if means:
+        print()
+        print(ablation.render_mean_table(means))
+        print()
 
     manifest = store.read_manifest()
     failed = [c['tag'] for c in manifest['cases'] if not c['invariant_ok']]
@@ -319,6 +365,64 @@ def cmd_runs(args: argparse.Namespace) -> int:
             print(f"{path}  seed={manifest['seed']}  cas={done}  {state}")
         except (OSError, KeyError, ValueError):
             print(f'{path}  (manifeste illisible)')
+    return EXIT_OK
+
+
+def cmd_methods(args: argparse.Namespace) -> int:
+    print(methods_module.describe_table())
+    if getattr(args, 'detail', False):
+        print()
+        for name in methods_module.METHOD_NAMES:
+            spec = methods_module.resolve(name)
+            print(f"  {name} — {spec.label}")
+            print(f"      {spec.note}")
+    print(f"\nGroupes : {', '.join(sorted(methods_module.METHOD_GROUPS))}")
+    print(f"Alias   : {', '.join(sorted(methods_module.ALIASES))}")
+    print("\nUtiliser avec : --methods ablation | --methods all | --methods "
+          "greedy bramev")
+    return EXIT_OK
+
+
+def cmd_ablation(args: argparse.Namespace) -> int:
+    store = _resolve_store(args)
+    rows = store.read_summary()
+    if not rows:
+        logger.error(f'{store.summary_path} est vide ou absent')
+        return EXIT_ERROR
+
+    try:
+        detail = ablation.detail_rows(rows)
+    except ValueError as exc:          # doublons dans summary.csv
+        logger.error(str(exc))
+        return EXIT_ERROR
+
+    if not detail:
+        present = sorted({r['method'] for r in rows})
+        logger.error(
+            "Aucun couple comparable dans ce run : méthodes présentes "
+            f"{present}. Relancer avec --methods ablation pour obtenir "
+            "les quatre configurations."
+        )
+        return EXIT_ERROR
+
+    if not args.no_write:
+        for path in ablation.write_tables(store, rows):
+            logger.info(f'écrit : {path}')
+
+    metrics = args.metrics or ablation.DEFAULT_REPORT_METRICS
+    unknown = [m for m in metrics if m not in ablation.METRICS_BY_COLUMN]
+    if unknown:
+        logger.error(f'Métriques inconnues : {unknown} '
+                     f'(attendu {list(ablation.METRICS_BY_COLUMN)})')
+        return EXIT_ERROR
+
+    means = ablation.mean_rows(detail)
+    nb_worlds = len({(r['scenario'], r['nb_cars']) for r in rows})
+    print(f'Run    : {store.root}')
+    print(f'Mondes : {nb_worlds}   méthodes : '
+          f'{", ".join(sorted({r["method"] for r in rows}))}')
+    print()
+    print(ablation.render_mean_table(means, metrics))
     return EXIT_OK
 
 

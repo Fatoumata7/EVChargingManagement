@@ -1,15 +1,18 @@
 """
-simulation_greedy.py — Baseline gloutonne.
+simulation_greedy.py — Baseline « Nearest » (recherche mono-station).
 
-Version GREEDY :
+Version NEAREST (nom historique : `greedy`) :
 - le véhicule contacte UNIQUEMENT la station la plus proche
 - il accepte l'offre reçue (une seule offre, donc aucune comparaison utile)
 - pas de score de réputation, pas d'apprentissage collectif entre stations
 
-Implémentée comme une spécialisation de `Simulation` : le protocole (émission,
-PLI, confirmation sécurisée, annulations, métriques) est strictement le même que
-pour BRAM-EV, seules les trois différences de méthode sont activées. C'est ce
-qui garantit qu'un correctif ne s'applique pas à une seule des deux branches.
+C'est le premier barreau de l'échelle d'ablation
+(`src/experiments/methods.py`) : chaque barreau suivant lui ajoute exactement
+un composant.
+
+Cette classe n'est plus qu'un raccourci de confort : le pipeline instancie
+directement `Simulation(mode=...)` pour toutes les méthodes, y compris
+celle-ci. La conserver garde le code d'appel historique valide.
 """
 
 import src.experiments.config as cfg

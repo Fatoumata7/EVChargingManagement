@@ -1,0 +1,22 @@
+# Variantes de BRAM-EV : un mécanisme interne remplacé, le reste inchangé.
+#
+#   python -m src.pipeline.cli run --config experiments/ablation_variants.yaml
+#   python -m src.pipeline.cli ablation --latest
+#
+# `bramev` est inclus : c'est la référence à laquelle chaque variante se compare.
+#   bramev_nearest_offer  offre la plus proche au lieu de l'utilité multicritère
+#   bramev_fixed_alpha    même alpha pour toutes les stations (alpha_fixed)
+#   bramev_global_rep     réputation globale au lieu d'une réputation par société
+#   bramev_event_score    pénalité forfaitaire au lieu d'une pénalité par durée
+label: ablation-variants
+seed: 42
+scenarios: [optimistic, balance, pessimistic]
+fleet_sizes: [50, 100, 150, 200, 250]
+total_time: 1440
+nb_stations: 40
+nb_societies: 4
+strategy_noise: 0.5
+
+save_latency: true
+save_tables: true
+figures: true

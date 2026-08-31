@@ -325,21 +325,44 @@ class Car:
              - self.pref['wait']   * (waitingTime / maxWaitingTime))
         return max(0., u)
 
-    def rank_offers(self, offers, request, min_dist):
+    def rank_offers(self, offers, request, min_dist, criterion='utility'):
         """
-        Classe les offres par utilité décroissante.
+        Classe les offres, la meilleure en tête.
 
         Le véhicule tente de confirmer dans cet ordre : si la station refuse la
         confirmation (offre périmée ou créneau plus libre), il se rabat sur
         l'offre suivante au lieu de renoncer.
+
+        Parameters
+        ----------
+        criterion : {'utility', 'nearest'}
+            `'utility'` — utilité multicritère décroissante (défaut, BRAM-EV).
+            `'nearest'` — distance croissante : la variante
+            `bramev_nearest_offer` de l'étude d'ablation, qui mesure ce que
+            l'arbitrage énergie/distance/attente apporte réellement.
+
+        L'utilité est calculée dans les deux cas : elle reste la mesure de
+        satisfaction reportée (`car.u_total`), même quand elle ne pilote pas
+        le choix.
         """
+        if criterion not in ('utility', 'nearest'):
+            raise ValueError(
+                f"Critère de sélection inconnu : {criterion!r}. "
+                "Attendu 'utility' ou 'nearest'."
+            )
         scored = [(offer, self.compute_utility(offer, request, min_dist))
                   for offer in offers]
-        scored.sort(key=lambda pair: pair[1], reverse=True)
+        if criterion == 'nearest':
+            # Départage stable : distance, puis utilité, puis identifiant de
+            # station — deux exécutions du même monde classent à l'identique.
+            scored.sort(key=lambda pair: (pair[0].distance, -pair[1],
+                                          pair[0].station_id))
+        else:
+            scored.sort(key=lambda pair: pair[1], reverse=True)
         return scored
 
-    def choose_offer(self, offers, request, min_dist):
-        ranked = self.rank_offers(offers, request, min_dist)
+    def choose_offer(self, offers, request, min_dist, criterion='utility'):
+        ranked = self.rank_offers(offers, request, min_dist, criterion)
         if not ranked:
             return None, -np.inf
         return ranked[0]

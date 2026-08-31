@@ -1,17 +1,24 @@
 """
 simulation.py — Boucle principale avec collecte des métriques
 
-Une seule classe couvre les deux méthodes comparées ; elles ne diffèrent que par
-trois interrupteurs (cf. `Simulation.MODES`) :
+Une seule classe couvre **toutes** les méthodes comparées ; elles ne diffèrent
+que par des interrupteurs déclarés dans `src/experiments/methods.py` :
 
     broadcast            la requête part vers toutes les stations éligibles
-                         (BRAM-EV) ou vers la plus proche seulement (Greedy)
+                         ou vers la plus proche seulement (Nearest)
     use_reputation       les stations mettent à jour le score comportemental
     collective_learning  les sociétés propagent l'alpha de leur meilleure station
+    offer_choice         le véhicule classe les offres par utilité multicritère
+                         ou par distance
+    alpha_mode           alpha tiré par station, ou identique partout
+    reputation_scope     score par société, ou score global partagé
+    score_weighting      pénalité proportionnelle à la durée, ou forfaitaire
 
 Le reste du protocole (émission, PLI, confirmation, annulations, métriques) est
-partagé : un correctif profite ainsi aux deux méthodes, et la comparaison ne
-peut plus diverger par recopie de code.
+partagé : un correctif profite ainsi à toutes les méthodes, et la comparaison ne
+peut pas diverger par recopie de code. C'est cette propriété qui rend l'étude
+d'ablation interprétable — entre deux barreaux de l'échelle, *un seul*
+interrupteur change.
 
 Ordre d'un slot
 ---------------
@@ -31,27 +38,44 @@ import numpy as np
 from loguru import logger
 
 import src.experiments.config as cfg
+import src.experiments.methods as methods
 from src.metrics.metrics import MetricsCollector, BreakdownTracker, BehaviorTracker
 
 
 class Simulation:
 
+    #: Drapeaux des composants, par méthode. Vue dérivée du registre, conservée
+    #: pour le code (et les tests) qui interrogeaient `Simulation.MODES`.
     MODES = {
-        'bramev': {'broadcast': True,  'use_reputation': True,  'collective_learning': True},
-        'greedy': {'broadcast': False, 'use_reputation': False, 'collective_learning': False},
+        name: {'broadcast': spec.broadcast,
+               'use_reputation': spec.use_reputation,
+               'collective_learning': spec.collective_learning}
+        for name, spec in methods.METHODS.items()
     }
 
     def __init__(self, cars, stations, societies, t_max, config: cfg.SimulationConfig,
                  mode: str = 'bramev'):
-        if mode not in self.MODES:
-            raise ValueError(
-                f"Mode inconnu : {mode!r}. Attendu parmi {sorted(self.MODES)}"
-            )
-        self.mode      = mode
-        flags          = self.MODES[mode]
-        self.broadcast           = flags['broadcast']
-        self.use_reputation      = flags['use_reputation']
-        self.collective_learning = flags['collective_learning']
+        """
+        Parameters
+        ----------
+        mode : str
+            Nom d'une méthode du registre `src/experiments/methods.py` (alias
+            acceptés). Le monde reçu est *identique* quelle que soit la
+            méthode : les drapeaux ne changent que la façon dont il est
+            exploité, ce qui est la condition pour attribuer un écart mesuré à
+            un composant plutôt qu'à un tirage.
+        """
+        try:
+            spec = methods.resolve(mode)
+        except KeyError as exc:
+            raise ValueError(str(exc)) from exc
+
+        self.method    = spec
+        self.mode      = spec.name
+        self.broadcast           = spec.broadcast
+        self.use_reputation      = spec.use_reputation
+        self.collective_learning = spec.collective_learning
+        self.offer_choice        = spec.offer_choice
 
         self.t_max     = t_max
         self.current_t = 0
@@ -60,6 +84,12 @@ class Simulation:
         self.societies = societies
         self.config    = config
         self.nb_demands = 0
+
+        # Les mécanismes internes portés par les stations (portée du score,
+        # pondération du score, alpha fixe) sont appliqués ici, après le tirage
+        # du monde : `WorldSpec` reste la source de vérité de l'environnement.
+        for station in stations:
+            station.apply_method(spec, config)
 
         # Index O(1) : `next(...)` sur toute la liste à chaque accès était le
         # point chaud de la boucle pour 250 véhicules × 40 stations.
@@ -222,6 +252,7 @@ class Simulation:
             if charging_now:
                 car.set_state('CHARGING')
                 car.charge_one_slot()
+                target_station.record_served_slot()
 
             elif car.state == 'AT_STATION':
                 car.set_state('WAITING')
@@ -253,7 +284,8 @@ class Simulation:
 
     def _select_and_confirm(self, car, offers, eligible, min_d, t_c, file):
         """
-        Le véhicule classe les offres reçues et n'en confirme **qu'une**.
+        Le véhicule classe les offres reçues (utilité multicritère, ou distance
+        si `offer_choice == 'nearest'`) et n'en confirme **qu'une**.
 
         Garanties :
           * une seule offre confirmée par demande ;
@@ -273,7 +305,7 @@ class Simulation:
             car.set_state('DRIVING')
             return
 
-        ranked = car.rank_offers(offers, car.request, min_d)
+        ranked = car.rank_offers(offers, car.request, min_d, self.offer_choice)
         self.metrics.record_demand_selection(demand_id)
 
         chosen, chosen_u, attempts = None, None, 0
@@ -483,6 +515,8 @@ class Simulation:
         ok, errors = self.check_reservation_invariant()
         return {
             'mode':             self.mode,
+            'method':           self.mode,
+            'method_flags':     self.method.to_dict(),
             'seed':             self.config.SEED,
             'scenario':         self.config.SCENARIO_NAME,
             'config':           self.config.summary(),

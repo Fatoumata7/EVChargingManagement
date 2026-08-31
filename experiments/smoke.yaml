@@ -1,11 +1,14 @@
-# Campagne courte de validation (~1 min) : à lancer avant la grille complète.
+# Campagne courte de validation (~2 min) : à lancer avant la grille complète.
 #
 #   python -m src.pipeline.cli run --config experiments/smoke.yaml
+#
+# Couvre les 8 méthodes : l'échelle d'ablation et les variantes de BRAM-EV
+# passent ainsi toutes par le chemin d'exécution avant une campagne longue.
 label: smoke
 seed: 42
 scenarios: [pessimistic]
 fleet_sizes: [20, 40]
-methods: [greedy, bramev]
+methods: [all]
 total_time: 144           # 12 heures
 nb_stations: 12
 nb_societies: 3

@@ -16,10 +16,18 @@ from pathlib import Path
 from typing import Any, Iterator, Mapping, Sequence
 
 import src.experiments.config as cfg_module
+import src.experiments.methods as methods_module
 from src.experiments.seeding import DEFAULT_SEED
 
 SCENARIOS = tuple(cfg_module.SimulationConfig.SCENARIOS)
-METHODS = ('greedy', 'bramev')
+
+#: Méthodes disponibles, dans l'ordre du registre (échelle d'ablation puis
+#: variantes de BRAM-EV) — cf. `src/experiments/methods.py`.
+METHODS = methods_module.METHOD_NAMES
+
+#: Ce qu'un fichier YAML ou la CLI peut écrire dans `methods` : un nom, un alias
+#: (`nearest`), ou un groupe (`ablation`, `variants`, `baseline`, `all`).
+METHOD_TOKENS = methods_module.METHOD_TOKENS
 
 SLOTS_PER_HOUR = cfg_module.SimulationConfig.NB_SLOTS_IN_ONE_HOUR
 SLOTS_PER_DAY = 24 * SLOTS_PER_HOUR
@@ -56,14 +64,17 @@ class ExperimentParams:
     Paramètres d'une campagne d'expériences.
 
     Les valeurs par défaut reproduisent la grille du rapport :
-    3 scénarios x 5 tailles de flotte x 2 méthodes sur 5 jours simulés.
+    3 scénarios x 5 tailles de flotte x les 4 barreaux de l'échelle d'ablation,
+    sur 5 jours simulés. Cette échelle contient les deux méthodes historiques
+    (`greedy` et `bramev`) : la comparaison d'origine reste lisible, et les deux
+    barreaux intermédiaires disent d'où vient l'écart.
     """
 
     # ---- plan d'expérience
     seed: int = DEFAULT_SEED
     scenarios: tuple[str, ...] = SCENARIOS
     fleet_sizes: tuple[int, ...] = (50, 100, 150, 200, 250)
-    methods: tuple[str, ...] = METHODS
+    methods: tuple[str, ...] = methods_module.LADDER
 
     # ---- environnement simulé
     total_time: int = 5 * SLOTS_PER_DAY
@@ -77,6 +88,9 @@ class ExperimentParams:
     offer_ttl_slots: int = 1
     late_cancel_fraction: float = 0.5
     society_update_interval: int | None = None
+    #: Alpha commun imposé aux méthodes à alpha fixe (`bramev_fixed_alpha`).
+    #: Sans effet sur les autres : leur alpha vient du monde partagé.
+    alpha_fixed: float = 0.5
 
     # ---- sorties
     output_root: str = 'results_grid'
@@ -99,7 +113,12 @@ class ExperimentParams:
         # ne doit pas exposer de conteneur mutable partagé.
         object.__setattr__(self, 'scenarios', tuple(self.scenarios))
         object.__setattr__(self, 'fleet_sizes', tuple(int(n) for n in self.fleet_sizes))
-        object.__setattr__(self, 'methods', tuple(self.methods))
+        # Groupes (`ablation`, `variants`, `all`) et alias (`nearest`) sont
+        # développés en noms canoniques ici : le reste du pipeline — tags de
+        # cas, noms de fichiers, colonne `method` de summary.csv — ne voit
+        # jamais qu'un nom canonique. Un jeton inconnu est conservé tel quel
+        # pour que `validate()` le signale avec un message situé.
+        object.__setattr__(self, 'methods', methods_module.expand(self.methods))
         self.validate()
 
     @classmethod
@@ -177,8 +196,12 @@ class ExperimentParams:
         if not self.methods:
             errors.append("methods ne peut pas être vide")
         for name in self.methods:
-            if name not in METHODS:
-                errors.append(f"méthode inconnue : {name!r} (attendu {list(METHODS)})")
+            if not methods_module.is_known(name):
+                errors.append(
+                    f"méthode inconnue : {name!r} (attendu {list(METHODS)}, "
+                    f"alias {sorted(methods_module.ALIASES)}, "
+                    f"groupes {sorted(methods_module.METHOD_GROUPS)})"
+                )
 
         if not self.fleet_sizes:
             errors.append("fleet_sizes ne peut pas être vide")
@@ -215,6 +238,10 @@ class ExperimentParams:
 
         if self.society_update_interval is not None and self.society_update_interval <= 0:
             errors.append("society_update_interval doit être > 0 ou nul (défaut)")
+
+        if not 0. <= float(self.alpha_fixed) <= 1.:
+            errors.append(
+                f"alpha_fixed doit être dans [0, 1], reçu {self.alpha_fixed!r}")
 
         if errors:
             raise ParamsError("Paramètres invalides :\n  - " + "\n  - ".join(errors))
@@ -285,6 +312,7 @@ class ExperimentParams:
         config.set_STRATEGY_NOISE(self.strategy_noise)
         config.set_OFFER_TTL_SLOTS(self.offer_ttl_slots)
         config.LATE_CANCEL_FRACTION = self.late_cancel_fraction
+        config.set_ALPHA_FIXED(self.alpha_fixed)
         if self.society_update_interval is not None:
             config.SOCIETY_UPDATE_INTERVAL = self.society_update_interval
         config.set_log_iter(self.log_every)

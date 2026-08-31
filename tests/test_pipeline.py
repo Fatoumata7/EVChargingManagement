@@ -19,6 +19,7 @@ from pathlib import Path
 
 import numpy as np
 
+import src.experiments.methods as methods
 from src.pipeline import figures, tables
 from src.pipeline.cli import EXIT_ERROR, EXIT_OK, main as cli_main
 from src.pipeline.params import CaseParams, ExperimentParams, ParamsError
@@ -49,10 +50,23 @@ def tiny_params(**overrides) -> ExperimentParams:
 
 def test_params_defaults_match_report_grid():
     params = ExperimentParams()
-    assert params.nb_cases == 3 * 5 * 2
+    # La grille par défaut est l'échelle d'ablation : 4 barreaux, dont les deux
+    # méthodes historiques (`greedy` et `bramev`).
+    assert params.methods == methods.LADDER
+    assert params.nb_cases == 3 * 5 * 4
     assert params.total_time == 1440
     assert len(list(params.cases())) == params.nb_cases
     assert len(list(params.worlds())) == 3 * 5
+
+
+def test_params_expand_method_groups_and_aliases():
+    assert ExperimentParams(methods=('ablation',)).methods == methods.LADDER
+    assert ExperimentParams(methods=('nearest',)).methods == ('greedy',)
+    assert ExperimentParams(methods=('all',)).methods == methods.METHOD_NAMES
+    # Un groupe et un nom déjà couvert par ce groupe ne produisent pas de doublon.
+    assert ExperimentParams(methods=('ablation', 'greedy')).methods == methods.LADDER
+    assert ExperimentParams(methods=('bramev', 'variants')).methods == \
+        ('bramev',) + methods.VARIANTS
 
 
 def test_params_reject_invalid_values():

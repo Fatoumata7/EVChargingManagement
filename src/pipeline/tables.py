@@ -15,6 +15,7 @@ from __future__ import annotations
 
 from typing import Any, Mapping, Sequence
 
+import src.experiments.methods as methods
 from src.pipeline.params import CaseParams
 
 # Colonnes de summary.csv, dans l'ordre d'affichage.
@@ -22,6 +23,9 @@ SUMMARY_FIELDS: tuple[str, ...] = (
     # identité
     'scenario', 'nb_cars', 'method', 'seed', 'world_seed', 'grid_seed',
     'nb_stations', 'nb_societies', 'total_time', 'wall_time_s',
+    # plan d'ablation : les drapeaux actifs, pour que summary.csv se lise seul
+    'method_label', 'method_family', 'broadcast', 'reputation', 'adaptation',
+    'offer_choice', 'alpha_mode', 'reputation_scope', 'score_weighting',
     # satisfaction
     'exact_satisfaction', 'needs_satisfaction', 'nb_cars_evaluated',
     'mean_travel_distance_km', 'mean_waiting_time_min',
@@ -40,10 +44,20 @@ SUMMARY_FIELDS: tuple[str, ...] = (
     # protocole d'offre & stations
     'nb_offer_issued', 'nb_offer_expired', 'nb_confirm_refused',
     'nb_stale_confirm', 'nb_rejected_request', 'nb_station_requests',
-    'mean_occupancy_rate', 'total_station_demand_kwh',
+    'mean_occupancy_rate', 'mean_service_rate', 'nb_slots_reserved',
+    'nb_slots_served', 'slot_waste_rate', 'total_station_demand_kwh',
     # santé du run
     'nb_breakdowns', 'nb_diagnostics', 'invariant_ok',
 )
+
+
+def _waste_rate(stations: Sequence[Mapping[str, Any]]) -> float | None:
+    """Part des slots-bornes réservés qui n'ont jamais servi. `None` si aucun."""
+    reserved = sum(s.get('nb_slots_reserved', 0) for s in stations)
+    served = sum(s.get('nb_slots_served', 0) for s in stations)
+    if reserved <= 0:
+        return None
+    return round(1. - served / reserved, 4)
 
 
 def _identity(result: Mapping[str, Any]) -> dict:
@@ -58,6 +72,23 @@ def _identity(result: Mapping[str, Any]) -> dict:
     }
 
 
+def method_flags(result: Mapping[str, Any]) -> dict:
+    """
+    Drapeaux de la méthode d'un cas, prêts à rejoindre `summary.csv`.
+
+    Les résultats portent `method_flags` depuis l'introduction de l'étude
+    d'ablation ; pour un run antérieur, les drapeaux sont retrouvés depuis le
+    registre à partir du seul nom de méthode. Une campagne ancienne reste donc
+    analysable avec les outils actuels.
+    """
+    stored = result.get('method_flags')
+    if stored:
+        spec = methods.MethodSpec(**stored)
+    else:
+        spec = methods.resolve(result['mode'])
+    return spec.flags()
+
+
 def summary_row(result: Mapping[str, Any]) -> dict:
     """Agrège un résultat de cas en une ligne de `summary.csv`."""
     cfg = result['config']
@@ -68,12 +99,13 @@ def summary_row(result: Mapping[str, Any]) -> dict:
     stations = result['stations']
 
     def total(key: str) -> int:
-        return sum(s[key] for s in stations)
+        return sum(s.get(key, 0) for s in stations)
 
     nb_stations = max(1, len(stations))
     proc = met.get('mean_processing_time_ms') or {}
 
     row = _identity(result)
+    row.update(method_flags(result))
     row.update({
         'nb_stations':  cfg['nb_stations'],
         'nb_societies': cfg['nb_societies'],
@@ -103,6 +135,13 @@ def summary_row(result: Mapping[str, Any]) -> dict:
         'nb_station_requests': total('nb_request'),
         'mean_occupancy_rate': round(
             sum(s['occupancy_rate'] for s in stations) / nb_stations, 4),
+        'mean_service_rate': round(
+            sum(s.get('service_rate', 0.) for s in stations) / nb_stations, 4),
+        'nb_slots_reserved': total('nb_slots_reserved'),
+        'nb_slots_served':   total('nb_slots_served'),
+        # Part des slots réservés puis jamais utilisés : le coût direct des
+        # no-shows et des annulations tardives pour l'opérateur.
+        'slot_waste_rate':   _waste_rate(stations),
         'total_station_demand_kwh': round(
             sum(met['station_demand_kWh'].values()), 3),
 

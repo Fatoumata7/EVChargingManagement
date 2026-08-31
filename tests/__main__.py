@@ -9,12 +9,14 @@ modules exposant `main() -> int`.
 
 import sys
 
-from tests import test_pipeline, test_priority1, test_shared_world
+from tests import (test_ablation, test_pipeline, test_priority1,
+                   test_shared_world)
 
 SUITES = (
     ('modèle (corrections priorité 1)', test_priority1),
     ('monde partagé (grille, flottes, scénarios)', test_shared_world),
     ('pipeline (paramètres, stockage, CLI)', test_pipeline),
+    ("ablation (composants, variantes, décomposition)", test_ablation),
 )
 
 

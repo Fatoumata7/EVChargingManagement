@@ -29,12 +29,26 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.ticker import MaxNLocator
 
+import src.experiments.methods as methods
+from src.pipeline import ablation
+
 Row = Mapping[str, Any]
 Rows = Sequence[Row]
 
-# Couleurs par méthode, stables d'une figure à l'autre.
-METHOD_COLORS = {'greedy': '#d9822b', 'bramev': '#3b7dd8'}
-METHOD_LABELS = {'greedy': 'Greedy', 'bramev': 'BRAM-EV'}
+# Couleurs par méthode, stables d'une figure à l'autre. Les quatre barreaux de
+# l'échelle d'ablation vont du chaud (Nearest) au froid (BRAM-EV complet) ; les
+# variantes reprennent des teintes distinctes pour ne pas se confondre avec eux.
+METHOD_COLORS = {
+    'greedy':               '#d9822b',
+    'multistation':         '#c9a227',
+    'multistation_rep':     '#6a9a3a',
+    'bramev':               '#3b7dd8',
+    'bramev_nearest_offer': '#8e5bd0',
+    'bramev_fixed_alpha':   '#12a5a5',
+    'bramev_global_rep':    '#d1467f',
+    'bramev_event_score':   '#7a6a5c',
+}
+METHOD_LABELS = {name: spec.label for name, spec in methods.METHODS.items()}
 OUTCOME_COLORS = {
     'pres':  '#4c9a2a',
     'abs':   '#c0392b',
@@ -56,7 +70,8 @@ def _scenarios(rows: Rows) -> list[str]:
 
 
 def _methods(rows: Rows) -> list[str]:
-    order = ['greedy', 'bramev']
+    """Méthodes présentes, dans l'ordre du registre (échelle puis variantes)."""
+    order = list(methods.METHOD_NAMES)
     present = {r['method'] for r in rows}
     return [m for m in order if m in present] + sorted(present - set(order))
 
@@ -470,11 +485,137 @@ def _mean_of(rows: Rows, column: str) -> float:
 
 
 # ----------------------------------------------------------------------
+# Étude d'ablation
+# ----------------------------------------------------------------------
+
+#: Métriques tracées par les figures d'ablation, dans l'ordre des panneaux.
+ABLATION_METRICS: tuple[str, ...] = (
+    'exact_satisfaction', 'rate_abs', 'mean_service_rate', 'slot_waste_rate',
+)
+
+
+def _ablation_bars(means: Rows, kind: str, title: str):
+    """
+    Un panneau par métrique, une barre par composant.
+
+    La barre porte l'écart relatif moyen ; sa couleur dit si le composant
+    améliore ou dégrade la métrique (la direction dépend de la métrique : un
+    taux de no-show qui baisse est un gain). L'étiquette au-dessus donne la
+    part des mondes où le composant améliore effectivement la métrique — un
+    gain moyen porté par un seul monde se repère ainsi immédiatement.
+    """
+    selected = [c for c in ABLATION_METRICS
+                if any(r['metric'] == c and r['kind'] == kind for r in means)]
+    if not selected:
+        return None
+
+    components: list[str] = []
+    for row in means:
+        if row['kind'] == kind and row['component'] not in components:
+            components.append(row['component'])
+    if not components:
+        return None
+
+    fig, axes = plt.subplots(1, len(selected),
+                             figsize=(3.4 * len(selected) + 1.5, 4.4),
+                             squeeze=False)
+    x = np.arange(len(components))
+
+    for ax, column in zip(axes[0], selected):
+        by_component = {r['component']: r for r in means
+                        if r['kind'] == kind and r['metric'] == column}
+        values, colors, shares = [], [], []
+        for component in components:
+            row = by_component.get(component)
+            value = None if row is None else row['mean_delta_pct']
+            values.append(0. if value is None else value)
+            improves = bool(row and row['mean_delta'] and
+                            ablation.METRICS_BY_COLUMN[column].improves(row['mean_delta']))
+            colors.append('#3b7dd8' if improves else '#c0392b')
+            shares.append(None if row is None else row['share_improved'])
+
+        ax.bar(x, values, color=colors, width=0.6)
+        ax.axhline(0, color='#333', linewidth=0.8)
+        span = max(abs(v) for v in values) or 1.
+        for xi, value, share in zip(x, values, shares):
+            if share is None:
+                continue
+            offset = 0.06 * span * (1 if value >= 0 else -1)
+            ax.text(xi, value + offset, f'{share:.0%}', ha='center',
+                    va='bottom' if value >= 0 else 'top', fontsize=8,
+                    color='#444')
+        ax.set_xticks(x)
+        ax.set_xticklabels([_wrap(c) for c in components], fontsize=8)
+        ax.set_ylabel('écart relatif moyen (%)')
+        ax.set_title(ablation.METRICS_BY_COLUMN[column].label,
+                     fontweight='bold', fontsize=10)
+        ax.grid(alpha=0.3, linestyle=':', axis='y')
+        ax.margins(y=0.25)
+
+    fig.suptitle(title, fontweight='bold', fontsize=11)
+    fig.tight_layout(rect=(0, 0, 1, 0.94))
+    return fig
+
+
+def _wrap(text: str, width: int = 14) -> str:
+    """Coupe une étiquette d'axe sur deux lignes plutôt que de la tronquer."""
+    words, lines, current = text.split(), [], ''
+    for word in words:
+        candidate = f'{current} {word}'.strip()
+        if len(candidate) > width and current:
+            lines.append(current)
+            current = word
+        else:
+            current = candidate
+    if current:
+        lines.append(current)
+    return '\n'.join(lines)
+
+
+def fig_ablation_components(rows: Rows):
+    """Contribution de chaque composant ajouté le long de l'échelle d'ablation."""
+    means = ablation.mean_rows(ablation.ladder_rows(rows))
+    if not means:
+        return None
+    return _ablation_bars(
+        means, 'ladder',
+        "Contribution de chaque composant (écart au barreau précédent)")
+
+
+def fig_ablation_variants(rows: Rows):
+    """Effet du remplacement d'un mécanisme interne de BRAM-EV."""
+    means = ablation.mean_rows(ablation.variant_rows(rows))
+    if not means:
+        return None
+    return _ablation_bars(
+        means, 'variant',
+        "Variantes de BRAM-EV (écart à la méthode complète)")
+
+
+def fig_ablation_ladder(rows: Rows, scenario: str):
+    """Satisfaction et no-shows barreau par barreau, en fonction de la flotte."""
+    ladder = [r for r in rows if r['method'] in methods.LADDER
+              and r['scenario'] == scenario]
+    if not ladder:
+        return None
+    fig, axes = plt.subplots(1, 2, figsize=FIGSIZE)
+    ok = _plot_lines(axes[0], ladder, scenario, 'exact_satisfaction',
+                     'Satisfaction (%)',
+                     f'[{_tag(scenario)}] Satisfaction — échelle d\'ablation',
+                     percent=True)
+    ok |= _plot_lines(axes[1], ladder, scenario, 'rate_abs', 'No-show (%)',
+                      f'[{_tag(scenario)}] Taux de no-show — échelle d\'ablation',
+                      percent=True)
+    return _finish(fig) if ok else None
+
+
+# ----------------------------------------------------------------------
 # Rendu complet
 # ----------------------------------------------------------------------
 
 PER_SCENARIO: tuple[tuple[str, Callable], ...] = (
     ('satisfaction',   fig_satisfaction),
+    ('ablation_ladder', fig_ablation_ladder),
     ('travel_waiting', fig_travel_waiting),
     ('latency',        fig_latency),
     ('demand_funnel',  fig_demand_funnel),
@@ -487,6 +628,8 @@ GLOBAL: tuple[tuple[str, Callable], ...] = (
     ('overview_satisfaction', fig_scenarios_overview),
     ('scalability',           fig_scalability),
     ('intent_vs_observed',    fig_intent_vs_observed),
+    ('ablation_components',   fig_ablation_components),
+    ('ablation_variants',     fig_ablation_variants),
 )
 
 

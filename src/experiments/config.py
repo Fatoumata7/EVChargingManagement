@@ -105,6 +105,11 @@ class SimulationConfig:
         self.w2 = 1.0    # poids pénalité éloignement temporel
         self.z  = 2.0    # constante de priorité profit (z > 1)
 
+        # Valeur commune de alpha pour les méthodes dont `alpha_mode == 'fixed'`
+        # (variante `bramev_fixed_alpha`, cf. src/experiments/methods.py).
+        # Sans effet sur les autres méthodes, où alpha est tiré par station.
+        self.ALPHA_FIXED = 0.5
+
         self.NB_CHARG_SPOT = {'low': 4, 'high': 6}      # nombre de bornes par station
         self.SOCIETY_UPDATE_INTERVAL = 12 * 12          # mise à jour stratégie toutes <nb_slot>, 2 heures
 
@@ -432,6 +437,25 @@ class SimulationConfig:
         self.SCENARIO_NAME = name
 
 
+    def set_ALPHA_FIXED(self, value: float) -> None:
+        """
+        Valeur commune de alpha imposée aux variantes à alpha fixe.
+
+        Parameters
+        ----------
+        value : float
+            Arbitrage profit/risque dans [0, 1]. Les alpha tirés par station le
+            sont dans [0.1, 0.9] : rester dans cet intervalle garde la variante
+            comparable au reste de la grille.
+        """
+        if not isinstance(value, (int, float)) or isinstance(value, bool):
+            raise TypeError(
+                f"ALPHA_FIXED doit être un nombre, reçu : {type(value).__name__}"
+            )
+        if not 0. <= float(value) <= 1.:
+            raise ValueError(f"ALPHA_FIXED doit être dans [0, 1], reçu : {value}")
+        self.ALPHA_FIXED = float(value)
+
     def set_OFFER_TTL_SLOTS(self, value: int) -> None:
 
         if type(value) is not int:
@@ -488,6 +512,7 @@ class SimulationConfig:
             'late_cancel_ref':       self.LATE_CANCEL_REF,
             'late_cancel_fraction':  self.LATE_CANCEL_FRACTION,
             'offer_ttl_slots':       self.OFFER_TTL_SLOTS,
+            'alpha_fixed':           self.ALPHA_FIXED,
         }
 
     

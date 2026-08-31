@@ -309,6 +309,28 @@ class RunStore:
             return [{k: _coerce(v) for k, v in row.items()}
                     for row in csv.DictReader(fh)]
 
+    def root_table_path(self, name: str) -> Path:
+        """Table de campagne écrite à la racine du run (ex. `ablation.csv`)."""
+        return self.root / f'{name}.csv'
+
+    def write_root_table(self, name: str, rows: Sequence[Mapping[str, Any]],
+                         fieldnames: Sequence[str] | None = None) -> Path | None:
+        """Écrit une table de campagne à la racine. `None` si elle est vide."""
+        if not rows:
+            return None
+        path = self.root_table_path(name)
+        _write_csv(path, rows, fieldnames=fieldnames)
+        return path
+
+    def read_root_table(self, name: str) -> list[dict]:
+        """Relit une table de racine ; liste vide si elle n'existe pas."""
+        path = self.root_table_path(name)
+        if not path.is_file():
+            return []
+        with path.open(encoding='utf-8', newline='') as fh:
+            return [{k: _coerce(v) for k, v in row.items()}
+                    for row in csv.DictReader(fh)]
+
     def write_summary(self, rows: Sequence[Mapping[str, Any]],
                       fieldnames: Sequence[str]) -> Path:
         _write_csv(self.summary_path, rows, fieldnames=fieldnames)

@@ -42,6 +42,13 @@ class Station:
         self.strategy = None   # injecté par Society.add_station()
         self.alpha_save = [self.alpha]
 
+        # --- drapeaux de méthode (cf. src/experiments/methods.py)
+        # Valeurs par défaut = BRAM-EV. `Simulation` les surcharge à
+        # l'initialisation, une fois la méthode connue : le monde tiré reste
+        # identique d'une méthode à l'autre, seule sa lecture change.
+        self.score_index = society_id    # indice lu dans `car.score`
+        self.score_weighting = 'duration'  # 'duration' | 'event'
+
         self.T = config.TOTAL_TIME
         self.schedule = np.full((self.nb_charg_spot, self.T), -1, dtype=int)
 
@@ -61,6 +68,14 @@ class Station:
         self.nb_rejected_request = 0
         self.nb_request = 0
 
+        # --- occupation cumulée
+        # `schedule` est un état *courant* : chaque fin de session ou annulation
+        # y remet les slots à -1. Le lire en fin de run donnait donc un taux
+        # d'occupation nul pour toutes les méthodes. Ces deux compteurs sont
+        # cumulatifs et survivent aux libérations.
+        self.nb_slots_reserved = 0   # slots-bornes écrits au calendrier
+        self.nb_slots_served = 0     # slots-bornes réellement utilisés en charge
+
         # --- réservations closes par un événement exogène
         self.nb_breakdown_canc = 0   # véhicule tombé en panne avant la session
         self.nb_unresolved = 0       # réservation encore ouverte à la fin de l'horizon
@@ -72,21 +87,61 @@ class Station:
         self.nb_stale_confirm = 0    # confirmations acceptées malgré une version périmée
 
     # ------------------------------------------------------------------
+    # Méthode
+    # ------------------------------------------------------------------
+
+    def apply_method(self, spec, config=None):
+        """
+        Applique les drapeaux d'une `MethodSpec` à cette station.
+
+        Trois mécanismes internes sont concernés :
+
+        * `reputation_scope` — `'society'` : chaque société tient son propre
+          score (le score est un actif local à un opérateur) ; `'global'` :
+          toutes les stations lisent et écrivent la case 0, la réputation
+          devient un bien public partagé.
+        * `score_weighting` — `'duration'` : la pénalité est proportionnelle à
+          la durée réservée ; `'event'` : pénalité forfaitaire par événement.
+        * `alpha_mode` — `'fixed'` : l'arbitrage profit/risque est le même pour
+          toutes les stations (`config.ALPHA_FIXED`), ce qui neutralise
+          l'hétérogénéité initiale des alpha.
+
+        Appelée par `Simulation.__init__` : le `WorldSpec` reste la source de
+        vérité du monde, la méthode n'en change que la lecture.
+        """
+        self.score_index = 0 if spec.reputation_scope == 'global' else self.society_id
+        self.score_weighting = spec.score_weighting
+
+        if spec.alpha_mode == 'fixed':
+            alpha = float(getattr(config or self.config, 'ALPHA_FIXED', 0.5))
+            self.alpha = alpha
+            # `alpha_save[0]` documente l'alpha effectivement utilisé : la table
+            # alpha resterait sinon celle du monde, pas celle de la méthode.
+            self.alpha_save = [alpha]
+
+    # ------------------------------------------------------------------
     # Score
     # ------------------------------------------------------------------
 
     def update_car_score(self, car_agent, status, d_n):
-        """Met à jour la composante f du score du véhicule."""
+        """
+        Met à jour la composante f du score du véhicule.
+
+        Le poids de l'événement est la durée réservée (`score_weighting =
+        'duration'`, défaut : un no-show de 2 h coûte plus qu'un no-show de
+        20 min) ou 1 (`'event'` : pénalité forfaitaire).
+        """
         mu = self.strategy
+        weight = float(d_n) if self.score_weighting == 'duration' else 1.0
         if status == 'pres':
-            delta = +mu['pres'] * d_n
+            delta = +mu['pres'] * weight
         elif status == 'early':
-            delta = -mu['early'] * d_n
+            delta = -mu['early'] * weight
         elif status == 'late':
-            delta = -mu['late'] * d_n
+            delta = -mu['late'] * weight
         else:  # 'abs'
-            delta = -mu['abs'] * d_n
-        car_agent.score[self.society_id] += delta
+            delta = -mu['abs'] * weight
+        car_agent.score[self.score_index] += delta
 
     # ------------------------------------------------------------------
     # Optimisation ILP
@@ -138,7 +193,7 @@ class Station:
             t_hat_dep[n] = int(dep)
             d_n[n] = req['d_n']
             g_n[n] = req['g_n']
-            scores[n] = float(car.score[self.society_id])
+            scores[n] = float(car.score[self.score_index])
 
         # Variables de décision : a[n,j,t] = 1 si n occupe la borne j au slot t
         a = {}
@@ -343,7 +398,18 @@ class Station:
 
         offer.confirm()
         self.nb_reservations += 1
+        self.nb_slots_reserved += int(t_end - t_start)
         return True
+
+    def record_served_slot(self) -> None:
+        """Comptabilise un slot-borne effectivement passé en charge.
+
+        Appelé par la boucle de simulation à chaque slot de recharge active.
+        L'écart avec `nb_slots_reserved` est exactement ce que les no-shows et
+        les annulations tardives coûtent à la station : des slots bloqués puis
+        jamais utilisés.
+        """
+        self.nb_slots_served += 1
 
     def expire_offer(self, offer):
         """Fait expirer une offre non retenue (elle ne sera jamais confirmable)."""
@@ -376,13 +442,20 @@ class Station:
     def total_nb_allocated_slot(self):
         return int(np.sum(self.schedule != -1))
 
+    def slot_capacity(self) -> int:
+        """Nombre total de slots-bornes offerts sur l'horizon."""
+        return int(self.nb_charg_spot * self.T)
+
     def outcomes_report(self) -> dict:
         """Issues des réservations confirmées + santé du protocole d'offre."""
+        capacity = max(1, self.slot_capacity())
         return {
             'station_id':          self.m,
             'society_id':          self.society_id,
             'nb_charg_spot':       self.nb_charg_spot,
             'alpha':               round(float(self.alpha), 4),
+            'score_index':         self.score_index,
+            'score_weighting':     self.score_weighting,
             'nb_request':          self.nb_request,
             'nb_rejected_request': self.nb_rejected_request,
             'nb_offer_issued':     self.nb_offer_issued,
@@ -396,7 +469,12 @@ class Station:
             'nb_late_canc':        self.nb_late_canc,
             'nb_breakdown_canc':   self.nb_breakdown_canc,
             'nb_unresolved':       self.nb_unresolved,
-            'occupancy_rate':      round(float(np.mean(self.schedule != -1)), 4),
+            'nb_slots_reserved':   self.nb_slots_reserved,
+            'nb_slots_served':     self.nb_slots_served,
+            # Part de la capacité de l'horizon réservée / réellement utilisée.
+            # Leur écart chiffre les slots bloqués puis perdus.
+            'occupancy_rate':      round(self.nb_slots_reserved / capacity, 4),
+            'service_rate':        round(self.nb_slots_served / capacity, 4),
         }
 
     def display_parameters(self, file):

@@ -32,17 +32,11 @@ from typing import Callable, Iterable
 from loguru import logger
 
 from src.experiments.simulation import Simulation
-from src.experiments.simulation_greedy import SimulationGreedy
 from src.experiments.world import (build_world, compose_world_spec,
                                    generate_fleet_spec, generate_grid_spec)
-from src.pipeline import tables
+from src.pipeline import ablation, tables
 from src.pipeline.params import CaseParams, ExperimentParams
 from src.pipeline.store import RunStore
-
-SIMULATIONS: dict[str, type[Simulation]] = {
-    'greedy': SimulationGreedy,
-    'bramev': Simulation,
-}
 
 
 @dataclass
@@ -74,9 +68,13 @@ def run_case(case: CaseParams, params: ExperimentParams, spec,
     config = params.build_config(case.scenario, case.nb_cars)
     cars, stations, societies = build_world(spec, config)
 
-    simulation = SIMULATIONS[case.method](
+    # Une seule classe pour toutes les méthodes : `mode` sélectionne le jeu de
+    # drapeaux (cf. src/experiments/methods.py). Deux méthodes exécutent donc
+    # strictement le même code sur le même monde, aux drapeaux près — condition
+    # nécessaire pour attribuer un écart mesuré à un composant.
+    simulation = Simulation(
         cars=cars, stations=stations, societies=societies,
-        t_max=config.TOTAL_TIME, config=config,
+        t_max=config.TOTAL_TIME, config=config, mode=case.method,
     )
 
     started = time.perf_counter()
@@ -204,6 +202,12 @@ def run_grid(params: ExperimentParams, store: RunStore | None = None,
 
             # Libère explicitement le monde de ce cas avant le suivant.
             del simulation
+
+    # Décomposition des contributions : écrite dès que la campagne contient au
+    # moins deux méthodes comparables sur un même monde.
+    written = ablation.write_tables(store, summary_rows)
+    for path in written:
+        logger.info(f'Ablation → {path}')
 
     store.close_manifest(time.perf_counter() - started)
     logger.info(f'{len(summary_rows)} cas terminés → {store.root}')
