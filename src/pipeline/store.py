@@ -122,6 +122,46 @@ class RunStore:
             raise FileNotFoundError(f"Aucun run trouvé dans {output_root}")
         return cls.open(runs[-1])
 
+    @classmethod
+    def latest_with_methods(cls, methods: Sequence[str],
+                            output_root: str | Path = 'results_grid') -> "RunStore":
+        """
+        Run le plus récent dont le `summary.csv` contient toutes ces méthodes.
+
+        Une campagne ne porte pas forcément toutes les méthodes du registre :
+        `latest()` peut donc désigner un run où la comparaison demandée est
+        impossible. Ce sélecteur évite d'analyser un run muet sur la question
+        posée — et, en cas d'échec, dit quelles méthodes chaque run contient
+        plutôt que de laisser un tableau vide s'expliquer tout seul.
+
+        Parameters
+        ----------
+        methods : Sequence[str]
+            Noms canoniques exigés (cf. `src/experiments/methods.py`).
+
+        Raises
+        ------
+        FileNotFoundError
+            Aucun run ne les contient toutes.
+        """
+        required = set(methods)
+        inventory: list[tuple[Path, set[str]]] = []
+        for path in reversed(cls.list_runs(output_root)):
+            store = cls(path)
+            present = {row['method'] for row in store.read_summary()
+                       if row.get('method')}
+            if required <= present:
+                return cls.open(path)
+            inventory.append((path, present))
+
+        detail = '\n'.join(
+            f"  {path.name} : {', '.join(sorted(present)) or 'aucun cas'}"
+            for path, present in inventory) or '  (aucun run)'
+        raise FileNotFoundError(
+            f"Aucun run de {output_root} ne contient toutes les méthodes "
+            f"{sorted(required)}.\nRuns disponibles :\n{detail}"
+        )
+
     @staticmethod
     def list_runs(output_root: str | Path = 'results_grid') -> list[Path]:
         root = Path(output_root)

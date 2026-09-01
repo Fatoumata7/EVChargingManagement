@@ -1,0 +1,12 @@
+scenario,nb_cars,method,seed,world_seed,grid_seed,kind,label,count,rate
+balance,150,greedy,42,42,42,observed,abs,291,0.1931
+balance,150,greedy,42,42,42,observed,breakdown,15,0.01
+balance,150,greedy,42,42,42,observed,early,27,0.0179
+balance,150,greedy,42,42,42,observed,late,268,0.1778
+balance,150,greedy,42,42,42,observed,pres,905,0.6005
+balance,150,greedy,42,42,42,observed,unresolved,1,0.0007
+balance,150,greedy,42,42,42,intent,abs,306,0.2031
+balance,150,greedy,42,42,42,intent,early,183,0.1214
+balance,150,greedy,42,42,42,intent,late,112,0.0743
+balance,150,greedy,42,42,42,intent,pres,906,0.6012
+balance,150,greedy,42,42,42,reclassified,early->late,156,

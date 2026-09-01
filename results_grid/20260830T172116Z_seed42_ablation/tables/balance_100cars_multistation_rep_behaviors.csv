@@ -1,0 +1,10 @@
+scenario,nb_cars,method,seed,world_seed,grid_seed,kind,label,count,rate
+balance,100,multistation_rep,42,42,42,observed,abs,180,0.185
+balance,100,multistation_rep,42,42,42,observed,breakdown,7,0.0072
+balance,100,multistation_rep,42,42,42,observed,late,196,0.2014
+balance,100,multistation_rep,42,42,42,observed,pres,590,0.6064
+balance,100,multistation_rep,42,42,42,intent,abs,187,0.1922
+balance,100,multistation_rep,42,42,42,intent,early,119,0.1223
+balance,100,multistation_rep,42,42,42,intent,late,77,0.0791
+balance,100,multistation_rep,42,42,42,intent,pres,590,0.6064
+balance,100,multistation_rep,42,42,42,reclassified,early->late,119,

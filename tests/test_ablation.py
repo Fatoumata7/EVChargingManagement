@@ -304,6 +304,50 @@ def test_incomparable_run_produces_no_table():
 
 
 # ----------------------------------------------------------------------
+# Configurations livrées
+# ----------------------------------------------------------------------
+
+def test_shipped_configs_declare_their_methods():
+    """
+    Chaque preset de `experiments/` doit déclarer `methods` explicitement.
+
+    `ExperimentParams.methods` a une valeur par défaut — l'échelle d'ablation.
+    Un fichier qui omet la clé ne lève donc aucune erreur : il exécute
+    silencieusement une *autre* campagne que celle que ses commentaires
+    décrivent. C'est arrivé : `ablation_variants.yaml` privé de sa ligne
+    `methods` a refait l'échelle pendant 21 h sous le label des variantes.
+    """
+    import yaml
+
+    configs = sorted(Path('experiments').glob('*.yaml'))
+    assert configs, 'aucune configuration livrée trouvée'
+
+    for path in configs:
+        data = yaml.safe_load(path.read_text(encoding='utf-8')) or {}
+        assert 'methods' in data, (
+            f"{path} ne déclare pas `methods` : la campagne retomberait sur "
+            f"le défaut {list(methods.LADDER)} sans rien signaler")
+        params = ExperimentParams.from_file(path)
+        assert params.methods, f'{path} : liste de méthodes vide'
+
+
+def test_variants_config_actually_runs_the_variants():
+    """
+    Le preset des variantes doit contenir la référence *et* les quatre
+    variantes : sans `bramev`, aucun écart n'est calculable ; sans les
+    variantes, il n'y a rien à comparer.
+    """
+    params = ExperimentParams.from_file('experiments/ablation_variants.yaml')
+    assert set(params.methods) == {'bramev'} | set(methods.VARIANTS), (
+        f'methods={list(params.methods)}')
+
+
+def test_ablation_config_runs_the_four_configurations():
+    params = ExperimentParams.from_file('experiments/ablation.yaml')
+    assert params.methods == methods.LADDER, f'methods={list(params.methods)}'
+
+
+# ----------------------------------------------------------------------
 # Bout en bout
 # ----------------------------------------------------------------------
 
@@ -329,6 +373,29 @@ def test_run_grid_writes_the_ablation_tables():
         assert by_method['multistation_rep']['reputation'] is True
         assert by_method['multistation_rep']['adaptation'] is False
         assert by_method['bramev']['adaptation'] is True
+
+
+def test_ablation_tables_are_written_incrementally():
+    """
+    Une campagne complète met des heures. Les tables de décomposition doivent
+    donc exister *pendant* la campagne, comme `summary.csv` : autrement un run
+    encore en cours — ou interrompu — n'a rien à analyser, alors que tous les
+    cas nécessaires sont déjà calculés.
+    """
+    with tempfile.TemporaryDirectory() as tmp:
+        params = tiny_params(output_root=tmp)
+        store = RunStore.create(params)
+        vus = []
+
+        def apres_chaque_cas(outcome):
+            vus.append(outcome.case.method)
+            # Dès que deux barreaux consécutifs sont faits, la table existe.
+            if len(vus) >= 2:
+                assert store.read_root_table('ablation'), (
+                    f'ablation.csv absent après {len(vus)} cas ({vus})')
+
+        run_grid(params, store=store, on_case=apres_chaque_cas)
+        assert len(vus) == params.nb_cases
 
 
 def test_broadcast_actually_contacts_more_stations():

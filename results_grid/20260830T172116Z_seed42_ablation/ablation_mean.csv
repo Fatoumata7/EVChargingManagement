@@ -1,0 +1,46 @@
+kind,metric,metric_label,goal,unit,step,component,from_method,to_method,nb_worlds,mean_value_from,mean_value_to,mean_delta,mean_delta_pct,nb_improved,share_improved
+ladder,exact_satisfaction,Satisfaction exacte,up,%,1,Recherche multi-stations,greedy,multistation,15,0.75302,0.80834,0.05532,8.0431,15,1.0
+ladder,needs_satisfaction,Besoins satisfaits,up,%,1,Recherche multi-stations,greedy,multistation,15,0.770267,0.824687,0.05442,7.7283,13,0.8667
+ladder,confirm_rate,Taux de confirmation,up,%,1,Recherche multi-stations,greedy,multistation,15,0.967333,0.996027,0.028693,3.0841,10,0.6667
+ladder,mean_waiting_time_min,Attente moyenne,down,min,1,Recherche multi-stations,greedy,multistation,15,14.506,0.8912,-13.6148,-80.8434,13,0.8667
+ladder,mean_travel_distance_km,Distance moyenne,down,km,1,Recherche multi-stations,greedy,multistation,15,0.2856,0.30964,0.02404,8.4958,1,0.0667
+ladder,rate_pres,Taux de présentation,up,%,1,Recherche multi-stations,greedy,multistation,15,0.58918,0.589567,0.000387,0.0975,6,0.4
+ladder,rate_abs,Taux de no-show,down,%,1,Recherche multi-stations,greedy,multistation,15,0.167567,0.16646,-0.001107,-0.314,7,0.4667
+ladder,nb_no_show,No-shows,down,,1,Recherche multi-stations,greedy,multistation,15,298.866667,273.333333,-25.533333,-5.192,11,0.7333
+ladder,nb_reservations,Réservations confirmées,up,,1,Recherche multi-stations,greedy,multistation,15,1681.2,1557.8,-123.4,-4.9086,1,0.0667
+ladder,mean_occupancy_rate,Taux d'occupation,up,%,1,Recherche multi-stations,greedy,multistation,15,0.200767,0.205667,0.0049,1.5208,9,0.6
+ladder,mean_service_rate,Taux de service,up,%,1,Recherche multi-stations,greedy,multistation,15,0.108673,0.11018,0.001507,0.7849,8,0.5333
+ladder,slot_waste_rate,Slots réservés perdus,down,%,1,Recherche multi-stations,greedy,multistation,15,0.435347,0.438287,0.00294,0.8138,2,0.1333
+ladder,nb_rejected_request,Demandes rejetées,down,,1,Recherche multi-stations,greedy,multistation,15,81.6,12.4,-69.2,-78.8737,11,0.7333
+ladder,total_ms_mean,Latence bout-en-bout,down,ms,1,Recherche multi-stations,greedy,multistation,15,145.887733,15456.099,15310.211267,6849.824,0,0.0
+ladder,wall_time_s,Temps de calcul,down,s,1,Recherche multi-stations,greedy,multistation,15,69.1972,1678.6414,1609.4442,1757.2119,0,0.0
+ladder,exact_satisfaction,Satisfaction exacte,up,%,2,Réputation,multistation,multistation_rep,15,0.80834,0.780987,-0.027353,-3.5679,2,0.1333
+ladder,needs_satisfaction,Besoins satisfaits,up,%,2,Réputation,multistation,multistation_rep,15,0.824687,0.798333,-0.026353,-3.3878,5,0.3333
+ladder,confirm_rate,Taux de confirmation,up,%,2,Réputation,multistation,multistation_rep,15,0.996027,0.737847,-0.25818,-25.9324,0,0.0
+ladder,mean_waiting_time_min,Attente moyenne,down,min,2,Réputation,multistation,multistation_rep,15,0.8912,0.8112,-0.08,-12.8673,8,0.5333
+ladder,mean_travel_distance_km,Distance moyenne,down,km,2,Réputation,multistation,multistation_rep,15,0.30964,0.385853,0.076213,24.7245,0,0.0
+ladder,rate_pres,Taux de présentation,up,%,2,Réputation,multistation,multistation_rep,15,0.589567,0.59006,0.000493,0.0229,8,0.5333
+ladder,rate_abs,Taux de no-show,down,%,2,Réputation,multistation,multistation_rep,15,0.16646,0.168953,0.002493,1.0079,6,0.4
+ladder,nb_no_show,No-shows,down,,2,Réputation,multistation,multistation_rep,15,273.333333,256.266667,-17.066667,-4.4628,10,0.6667
+ladder,nb_reservations,Réservations confirmées,up,,2,Réputation,multistation,multistation_rep,15,1557.8,1456.0,-101.8,-5.2877,4,0.2667
+ladder,mean_occupancy_rate,Taux d'occupation,up,%,2,Réputation,multistation,multistation_rep,15,0.205667,0.19286,-0.012807,-5.2466,3,0.2
+ladder,mean_service_rate,Taux de service,up,%,2,Réputation,multistation,multistation_rep,15,0.11018,0.104773,-0.005407,-5.3989,3,0.2
+ladder,slot_waste_rate,Slots réservés perdus,down,%,2,Réputation,multistation,multistation_rep,15,0.438287,0.4401,0.001813,0.2327,5,0.3333
+ladder,nb_rejected_request,Demandes rejetées,down,,2,Réputation,multistation,multistation_rep,15,12.4,7469.066667,7456.666667,85987.0351,0,0.0
+ladder,total_ms_mean,Latence bout-en-bout,down,ms,2,Réputation,multistation,multistation_rep,15,15456.099,16238.769867,782.670867,2.3676,7,0.4667
+ladder,wall_time_s,Temps de calcul,down,s,2,Réputation,multistation,multistation_rep,15,1678.6414,1646.452533,-32.188867,-0.2739,11,0.7333
+ladder,exact_satisfaction,Satisfaction exacte,up,%,3,Adaptation entre stations,multistation_rep,bramev,15,0.780987,0.780587,-0.0004,-0.0536,7,0.4667
+ladder,needs_satisfaction,Besoins satisfaits,up,%,3,Adaptation entre stations,multistation_rep,bramev,15,0.798333,0.798047,-0.000287,-0.0386,5,0.3333
+ladder,confirm_rate,Taux de confirmation,up,%,3,Adaptation entre stations,multistation_rep,bramev,15,0.737847,0.734473,-0.003373,-0.7293,2,0.1333
+ladder,mean_waiting_time_min,Attente moyenne,down,min,3,Adaptation entre stations,multistation_rep,bramev,15,0.8112,0.8292,0.018,-10.2132,7,0.4667
+ladder,mean_travel_distance_km,Distance moyenne,down,km,3,Adaptation entre stations,multistation_rep,bramev,15,0.385853,0.388653,0.0028,0.6999,3,0.2
+ladder,rate_pres,Taux de présentation,up,%,3,Adaptation entre stations,multistation_rep,bramev,15,0.59006,0.589767,-0.000293,-0.0262,4,0.2667
+ladder,rate_abs,Taux de no-show,down,%,3,Adaptation entre stations,multistation_rep,bramev,15,0.168953,0.168647,-0.000307,-0.1678,8,0.5333
+ladder,nb_no_show,No-shows,down,,3,Adaptation entre stations,multistation_rep,bramev,15,256.266667,255.333333,-0.933333,-0.289,7,0.4667
+ladder,nb_reservations,Réservations confirmées,up,,3,Adaptation entre stations,multistation_rep,bramev,15,1456.0,1454.466667,-1.533333,-0.1277,5,0.3333
+ladder,mean_occupancy_rate,Taux d'occupation,up,%,3,Adaptation entre stations,multistation_rep,bramev,15,0.19286,0.192767,-9.3e-05,-0.0542,8,0.5333
+ladder,mean_service_rate,Taux de service,up,%,3,Adaptation entre stations,multistation_rep,bramev,15,0.104773,0.10474,-3.3e-05,-0.0483,6,0.4
+ladder,slot_waste_rate,Slots réservés perdus,down,%,3,Adaptation entre stations,multistation_rep,bramev,15,0.4401,0.439793,-0.000307,-0.0309,7,0.4667
+ladder,nb_rejected_request,Demandes rejetées,down,,3,Adaptation entre stations,multistation_rep,bramev,15,7469.066667,7629.266667,160.2,2.0735,2,0.1333
+ladder,total_ms_mean,Latence bout-en-bout,down,ms,3,Adaptation entre stations,multistation_rep,bramev,15,16238.769867,16218.714933,-20.054933,0.2645,6,0.4
+ladder,wall_time_s,Temps de calcul,down,s,3,Adaptation entre stations,multistation_rep,bramev,15,1646.452533,1652.497267,6.044733,0.1219,6,0.4

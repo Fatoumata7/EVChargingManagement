@@ -79,7 +79,9 @@ The goal is to jointly optimize charging allocation, user satisfaction, and oper
 │   └── smoke.yaml
 │
 ├── notebooks
-│   └── explore_run.ipynb          # Interactive exploration of a finished run
+│   ├── explore_run.ipynb          # Interactive exploration of a finished run
+│   ├── ablation.ipynb             # The four configurations, component by component
+│   └── ablation_variants.ipynb    # BRAM-EV with one mechanism replaced
 │
 ├── tests                          # uv run python -m tests
 │   ├── test_priority1.py          # Model fixes
@@ -284,8 +286,38 @@ sub-command without simulating:
 | `ablation.csv` | one line per (world, component, metric): both values, delta, relative delta, improvement |
 | `ablation_mean.csv` | one line per (component, metric): mean delta, `nb_improved`, `share_improved` |
 
+Both are rewritten after **every case**, like `summary.csv`: a full grid takes
+hours, so the decomposition has to be readable while the campaign is still
+running, and an interrupted campaign has to stay analysable.
+
 Figures `ablation_components.png`, `ablation_variants.png` and
 `ablation_ladder_<scenario>.png` are produced with the rest.
+
+## Notebooks
+
+Two notebooks read those artifacts and run no simulation of their own:
+
+| Notebook | Reads | Answers |
+| --- | --- | --- |
+| `notebooks/ablation.ipynb` | a run holding the four rungs | where the Nearest → BRAM-EV gap comes from |
+| `notebooks/ablation_variants.ipynb` | a run holding `bramev` and its variants | whether each internal mechanism earns its place |
+
+Both pick their run with `RunStore.latest_with_methods(...)`: the most recent
+campaign that actually contains the methods being compared, rather than the
+most recent one full stop — and, failing that, a message listing what each run
+does contain.
+
+Both open with the same check: **which flags were actually applied**, read from
+`summary.csv` rather than from the registry. A rung that flips more than one
+component, or a variant that neutralises more than one mechanism, is reported
+before any result is read — because from that point on no number is
+attributable.
+
+They also close on the two readings that a bare average would hide: the
+dispersion across worlds, and whether the mechanism was solicited at all
+(collective learning needs an horizon longer than `SOCIETY_UPDATE_INTERVAL`;
+multi-criteria selection needs demands that receive more than one offer). A
+`+0.0%` under those conditions means *never exercised*, not *useless*.
 
 ## Caveats when reading a short run
 
@@ -592,7 +624,7 @@ uv run python -m tests.test_pipeline       # pipeline
 uv run python -m tests.test_ablation       # ablation study
 ```
 
-82 tests, no external test dependency.
+86 tests, no external test dependency.
 
 `test_priority1.py` (26) covers the model fixes: reproducibility, shared
 environment, unique demand identifiers, latency decomposition, slot contiguity,
@@ -609,14 +641,17 @@ round-trip, incremental writing, same-world comparison, reproducibility of a
 whole campaign, figures rebuilt from the persisted tables alone, and CLI exit
 codes.
 
-`test_ablation.py` (17) covers the attributability of the results: each rung of
+`test_ablation.py` (21) covers the attributability of the results: each rung of
 the ladder flips exactly one flag and leaves the internal mechanisms untouched,
 each variant differs from `bramev` by exactly one mechanism, those flags
 actually reach the agents (score index, score weighting, alpha, offer ranking),
 the decomposition matches `summary.csv` with the right direction per metric, a
 duplicated method in `summary.csv` is refused rather than silently overwritten,
-and — end to end — broadcasting really does produce more offers per demand,
-which is what makes a measured contribution interpretable.
+the tables are rewritten after every case so a running campaign is already
+analysable, every shipped config declares its `methods` explicitly (omitting the
+key silently falls back to the default ladder — that mistake once cost a 21-hour
+campaign), and — end to end — broadcasting really does produce more offers per
+demand, which is what makes a measured contribution interpretable.
 
 
 # Running a Simulation

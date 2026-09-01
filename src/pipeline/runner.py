@@ -185,6 +185,11 @@ def run_grid(params: ExperimentParams, store: RunStore | None = None,
 
             summary_rows.append(outcome.summary)
             store.write_summary(summary_rows, tables.SUMMARY_FIELDS)
+            # La décomposition est réécrite à chaque cas, comme summary.csv :
+            # une campagne longue s'analyse pendant qu'elle tourne, et une
+            # campagne interrompue reste exploitable. Le calcul est une simple
+            # relecture des lignes déjà en mémoire.
+            ablation.write_tables(store, summary_rows)
             store.record_case({
                 'tag': case.tag,
                 'scenario': scenario,
@@ -203,10 +208,7 @@ def run_grid(params: ExperimentParams, store: RunStore | None = None,
             # Libère explicitement le monde de ce cas avant le suivant.
             del simulation
 
-    # Décomposition des contributions : écrite dès que la campagne contient au
-    # moins deux méthodes comparables sur un même monde.
-    written = ablation.write_tables(store, summary_rows)
-    for path in written:
+    for path in ablation.write_tables(store, summary_rows):
         logger.info(f'Ablation → {path}')
 
     store.close_manifest(time.perf_counter() - started)
