@@ -1,0 +1,61 @@
+kind,metric,metric_label,goal,unit,step,component,from_method,to_method,nb_worlds,mean_value_from,mean_value_to,mean_delta,mean_delta_pct,nb_improved,share_improved
+variant,exact_satisfaction,Satisfaction exacte,up,%,0,Hétérogénéité des alpha,bramev,bramev_fixed_alpha,15,0.780587,0.779587,-0.001,-0.1442,5,0.3333
+variant,needs_satisfaction,Besoins satisfaits,up,%,0,Hétérogénéité des alpha,bramev,bramev_fixed_alpha,15,0.798047,0.7967,-0.001347,-0.1855,6,0.4
+variant,confirm_rate,Taux de confirmation,up,%,0,Hétérogénéité des alpha,bramev,bramev_fixed_alpha,15,0.734473,0.726553,-0.00792,-1.2544,5,0.3333
+variant,mean_waiting_time_min,Attente moyenne,down,min,0,Hétérogénéité des alpha,bramev,bramev_fixed_alpha,15,0.8292,0.7484,-0.0808,3.9384,8,0.5333
+variant,mean_travel_distance_km,Distance moyenne,down,km,0,Hétérogénéité des alpha,bramev,bramev_fixed_alpha,15,0.388653,0.387153,-0.0015,-0.3388,9,0.6
+variant,rate_pres,Taux de présentation,up,%,0,Hétérogénéité des alpha,bramev,bramev_fixed_alpha,15,0.589767,0.590167,0.0004,0.0707,7,0.4667
+variant,rate_abs,Taux de no-show,down,%,0,Hétérogénéité des alpha,bramev,bramev_fixed_alpha,15,0.168647,0.1689,0.000253,0.214,4,0.2667
+variant,nb_no_show,No-shows,down,,0,Hétérogénéité des alpha,bramev,bramev_fixed_alpha,15,255.333333,254.8,-0.533333,-0.1457,5,0.3333
+variant,nb_reservations,Réservations confirmées,up,,0,Hétérogénéité des alpha,bramev,bramev_fixed_alpha,15,1454.466667,1448.333333,-6.133333,-0.3635,3,0.2
+variant,mean_occupancy_rate,Taux d'occupation,up,%,0,Hétérogénéité des alpha,bramev,bramev_fixed_alpha,15,0.192767,0.19206,-0.000707,-0.3379,3,0.2
+variant,mean_service_rate,Taux de service,up,%,0,Hétérogénéité des alpha,bramev,bramev_fixed_alpha,15,0.10474,0.104413,-0.000327,-0.3422,4,0.2667
+variant,slot_waste_rate,Slots réservés perdus,down,%,0,Hétérogénéité des alpha,bramev,bramev_fixed_alpha,15,0.439793,0.439773,-2e-05,-0.0027,9,0.6
+variant,nb_rejected_request,Demandes rejetées,down,,0,Hétérogénéité des alpha,bramev,bramev_fixed_alpha,15,7629.266667,7883.333333,254.066667,3.0436,3,0.2
+variant,total_ms_mean,Latence bout-en-bout,down,ms,0,Hétérogénéité des alpha,bramev,bramev_fixed_alpha,15,15991.480933,16063.7632,72.282267,0.3555,5,0.3333
+variant,wall_time_s,Temps de calcul,down,s,0,Hétérogénéité des alpha,bramev,bramev_fixed_alpha,15,1624.6114,1628.886667,4.275267,0.4521,3,0.2
+variant,exact_satisfaction,Satisfaction exacte,up,%,0,Réputation par société,bramev,bramev_global_rep,15,0.780587,0.515347,-0.26524,-35.0853,0,0.0
+variant,needs_satisfaction,Besoins satisfaits,up,%,0,Réputation par société,bramev,bramev_global_rep,15,0.798047,0.52802,-0.270027,-34.9686,0,0.0
+variant,confirm_rate,Taux de confirmation,up,%,0,Réputation par société,bramev,bramev_global_rep,15,0.734473,0.106753,-0.62772,-85.6377,0,0.0
+variant,mean_waiting_time_min,Attente moyenne,down,min,0,Réputation par société,bramev,bramev_global_rep,15,0.8292,0.4196,-0.4096,-41.9339,12,0.8
+variant,mean_travel_distance_km,Distance moyenne,down,km,0,Réputation par société,bramev,bramev_global_rep,15,0.388653,0.298093,-0.09056,-22.5475,15,1.0
+variant,rate_pres,Taux de présentation,up,%,0,Réputation par société,bramev,bramev_global_rep,15,0.589767,0.593607,0.00384,0.931,9,0.6
+variant,rate_abs,Taux de no-show,down,%,0,Réputation par société,bramev,bramev_global_rep,15,0.168647,0.169993,0.001347,0.8764,7,0.4667
+variant,nb_no_show,No-shows,down,,0,Réputation par société,bramev,bramev_global_rep,15,255.333333,135.266667,-120.066667,-42.6985,15,1.0
+variant,nb_reservations,Réservations confirmées,up,,0,Réputation par société,bramev,bramev_global_rep,15,1454.466667,820.866667,-633.6,-43.3088,0,0.0
+variant,mean_occupancy_rate,Taux d'occupation,up,%,0,Réputation par société,bramev,bramev_global_rep,15,0.192767,0.10618,-0.086587,-44.3104,0,0.0
+variant,mean_service_rate,Taux de service,up,%,0,Réputation par société,bramev,bramev_global_rep,15,0.10474,0.06182,-0.04292,-43.4364,0,0.0
+variant,slot_waste_rate,Slots réservés perdus,down,%,0,Réputation par société,bramev,bramev_global_rep,15,0.439793,0.43228,-0.007513,-1.072,10,0.6667
+variant,nb_rejected_request,Demandes rejetées,down,,0,Réputation par société,bramev,bramev_global_rep,15,7629.266667,44598.8,36969.533333,906.7264,0,0.0
+variant,total_ms_mean,Latence bout-en-bout,down,ms,0,Réputation par société,bramev,bramev_global_rep,15,15991.480933,27956.832467,11965.351533,78.0447,0,0.0
+variant,wall_time_s,Temps de calcul,down,s,0,Réputation par société,bramev,bramev_global_rep,15,1624.6114,1865.8336,241.2222,38.7325,0,0.0
+variant,exact_satisfaction,Satisfaction exacte,up,%,0,Score proportionnel à la durée,bramev,bramev_event_score,15,0.780587,0.808653,0.028067,4.062,15,1.0
+variant,needs_satisfaction,Besoins satisfaits,up,%,0,Score proportionnel à la durée,bramev,bramev_event_score,15,0.798047,0.826987,0.02894,4.1075,15,1.0
+variant,confirm_rate,Taux de confirmation,up,%,0,Score proportionnel à la durée,bramev,bramev_event_score,15,0.734473,0.988087,0.253613,54.6463,15,1.0
+variant,mean_waiting_time_min,Attente moyenne,down,min,0,Score proportionnel à la durée,bramev,bramev_event_score,15,0.8292,0.9996,0.1704,73.1544,4,0.2667
+variant,mean_travel_distance_km,Distance moyenne,down,km,0,Score proportionnel à la durée,bramev,bramev_event_score,15,0.388653,0.347093,-0.04156,-10.3746,15,1.0
+variant,rate_pres,Taux de présentation,up,%,0,Score proportionnel à la durée,bramev,bramev_event_score,15,0.589767,0.589887,0.00012,-0.001,7,0.4667
+variant,rate_abs,Taux de no-show,down,%,0,Score proportionnel à la durée,bramev,bramev_event_score,15,0.168647,0.166227,-0.00242,-1.009,8,0.5333
+variant,nb_no_show,No-shows,down,,0,Score proportionnel à la durée,bramev,bramev_event_score,15,255.333333,273.4,18.066667,5.3402,1,0.0667
+variant,nb_reservations,Réservations confirmées,up,,0,Score proportionnel à la durée,bramev,bramev_event_score,15,1454.466667,1558.533333,104.066667,6.5374,11,0.7333
+variant,mean_occupancy_rate,Taux d'occupation,up,%,0,Score proportionnel à la durée,bramev,bramev_event_score,15,0.192767,0.206593,0.013827,6.455,11,0.7333
+variant,mean_service_rate,Taux de service,up,%,0,Score proportionnel à la durée,bramev,bramev_event_score,15,0.10474,0.110547,0.005807,6.5962,12,0.8
+variant,slot_waste_rate,Slots réservés perdus,down,%,0,Score proportionnel à la durée,bramev,bramev_event_score,15,0.439793,0.439273,-0.00052,-0.035,7,0.4667
+variant,nb_rejected_request,Demandes rejetées,down,,0,Score proportionnel à la durée,bramev,bramev_event_score,15,7629.266667,1489.8,-6139.466667,-72.9402,15,1.0
+variant,total_ms_mean,Latence bout-en-bout,down,ms,0,Score proportionnel à la durée,bramev,bramev_event_score,15,15991.480933,15310.314667,-681.166267,-2.3877,10,0.6667
+variant,wall_time_s,Temps de calcul,down,s,0,Score proportionnel à la durée,bramev,bramev_event_score,15,1624.6114,1641.108867,16.497467,0.2518,6,0.4
+variant,exact_satisfaction,Satisfaction exacte,up,%,0,Utilité multicritère,bramev,bramev_nearest_offer,15,0.780587,0.762507,-0.01808,-2.2312,0,0.0
+variant,needs_satisfaction,Besoins satisfaits,up,%,0,Utilité multicritère,bramev,bramev_nearest_offer,15,0.798047,0.7863,-0.011747,-1.4277,0,0.0
+variant,confirm_rate,Taux de confirmation,up,%,0,Utilité multicritère,bramev,bramev_nearest_offer,15,0.734473,0.734833,0.00036,0.5468,8,0.5333
+variant,mean_waiting_time_min,Attente moyenne,down,min,0,Utilité multicritère,bramev,bramev_nearest_offer,15,0.8292,5.1052,4.276,814.7265,0,0.0
+variant,mean_travel_distance_km,Distance moyenne,down,km,0,Utilité multicritère,bramev,bramev_nearest_offer,15,0.388653,0.380167,-0.008487,-2.2062,10,0.6667
+variant,rate_pres,Taux de présentation,up,%,0,Utilité multicritère,bramev,bramev_nearest_offer,15,0.589767,0.589293,-0.000473,-0.1061,5,0.3333
+variant,rate_abs,Taux de no-show,down,%,0,Utilité multicritère,bramev,bramev_nearest_offer,15,0.168647,0.16912,0.000473,0.3071,4,0.2667
+variant,nb_no_show,No-shows,down,,0,Utilité multicritère,bramev,bramev_nearest_offer,15,255.333333,258.4,3.066667,1.0064,2,0.1333
+variant,nb_reservations,Réservations confirmées,up,,0,Utilité multicritère,bramev,bramev_nearest_offer,15,1454.466667,1468.866667,14.4,0.7002,10,0.6667
+variant,mean_occupancy_rate,Taux d'occupation,up,%,0,Utilité multicritère,bramev,bramev_nearest_offer,15,0.192767,0.1918,-0.000967,-0.4054,4,0.2667
+variant,mean_service_rate,Taux de service,up,%,0,Utilité multicritère,bramev,bramev_nearest_offer,15,0.10474,0.10458,-0.00016,-0.1304,4,0.2667
+variant,slot_waste_rate,Slots réservés perdus,down,%,0,Utilité multicritère,bramev,bramev_nearest_offer,15,0.439793,0.438453,-0.00134,-0.3717,10,0.6667
+variant,nb_rejected_request,Demandes rejetées,down,,0,Utilité multicritère,bramev,bramev_nearest_offer,15,7629.266667,7600.733333,-28.533333,1.9048,7,0.4667
+variant,total_ms_mean,Latence bout-en-bout,down,ms,0,Utilité multicritère,bramev,bramev_nearest_offer,15,15991.480933,15728.607733,-262.8732,-0.7786,10,0.6667
+variant,wall_time_s,Temps de calcul,down,s,0,Utilité multicritère,bramev,bramev_nearest_offer,15,1624.6114,1624.608133,-0.003267,-0.2422,10,0.6667

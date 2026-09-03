@@ -1,0 +1,12 @@
+scenario,nb_cars,method,seed,world_seed,grid_seed,kind,label,count,rate
+pessimistic,100,bramev_nearest_offer,42,42,42,observed,abs,239,0.2191
+pessimistic,100,bramev_nearest_offer,42,42,42,observed,breakdown,12,0.011
+pessimistic,100,bramev_nearest_offer,42,42,42,observed,early,3,0.0027
+pessimistic,100,bramev_nearest_offer,42,42,42,observed,late,374,0.3428
+pessimistic,100,bramev_nearest_offer,42,42,42,observed,pres,462,0.4235
+pessimistic,100,bramev_nearest_offer,42,42,42,observed,unresolved,1,0.0009
+pessimistic,100,bramev_nearest_offer,42,42,42,intent,abs,251,0.2301
+pessimistic,100,bramev_nearest_offer,42,42,42,intent,early,159,0.1457
+pessimistic,100,bramev_nearest_offer,42,42,42,intent,late,218,0.1998
+pessimistic,100,bramev_nearest_offer,42,42,42,intent,pres,463,0.4244
+pessimistic,100,bramev_nearest_offer,42,42,42,reclassified,early->late,156,
