@@ -4,6 +4,7 @@ car.py — Agent véhicule électrique
 
 import numpy as np
 import random
+from collections import deque
 
 import src.env.utils as utils
 import src.experiments.config as config
@@ -81,7 +82,12 @@ class Car:
         self.reservation_slot = None   # slot d'émission de la requête réservée
         self.reservation_lead = None   # nb de slots entre requête et arrivée prévue
 
+        # ---- Réputation : score borné sur une fenêtre glissante
+        # `score[j]` est *dérivé* de `score_history[j]` — ne jamais l'écrire
+        # directement, passer par `record_score_event` (ou `reset_score`).
         self.score = np.zeros(nb_society)
+        self.score_history = [deque(maxlen=config.SCORE_MEMORY)
+                              for _ in range(nb_society)]
         self.u_total = 0.0
         self.nb_sessions = 0
         self.nb_rejected = 0
@@ -320,6 +326,82 @@ class Car:
         self.request = request
         self.nb_request += 1
         return request
+
+    # ------------------------------------------------------------------
+    # Réputation
+    # ------------------------------------------------------------------
+
+    def record_score_event(self, index: int, signed_stake: float,
+                           weight: float) -> float:
+        """
+        Enregistre l'issue d'une réservation et recalcule le score de réputation.
+
+        Parameters
+        ----------
+        index : int
+            Indice de lecture du score (société, ou 0 en portée globale).
+        signed_stake : float
+            Enjeu normalisé de l'issue, dans [-1, 1] : positif pour une
+            présence, négatif sinon, rapporté au plus gros enjeu du barème de
+            la société (cf. `Station.update_car_score`).
+        weight : float
+            Poids de l'événement — durée réservée (`score_weighting =
+            'duration'`) ou 1 (`'event'`).
+
+        Le score est la moyenne pondérée des enjeux de la fenêtre, **atténuée
+        par le taux de remplissage** de celle-ci :
+
+            score = (Σ enjeu_i · poids_i / Σ poids_i) · (n / SCORE_MEMORY)
+
+        La fenêtre compte toujours `SCORE_MEMORY` places ; les places non encore
+        occupées comptent pour « inconnu », c'est-à-dire 0. Le score reste donc
+        borné dans [-1, 1] — c'est une moyenne de valeurs de [-1, 1], réduite
+        d'un facteur <= 1.
+
+        Trois propriétés en découlent, toutes voulues :
+
+        * *Droit à l'oubli* — au-delà de `SCORE_MEMORY` réservations, les plus
+          anciennes sortent de la fenêtre.
+        * *Rédemption effective* — sans l'atténuation, une **seule** issue
+          négative suffisait à atteindre le plancher (moyenne d'un unique
+          événement). Le véhicule devenait inéligible partout, ne recevait donc
+          plus aucune réservation, et sa fenêtre ne pouvait plus tourner : le
+          droit à l'oubli était inopérant, mesuré à 0 rédemption sur 9 véhicules
+          sanctionnés. Il faut désormais une dégradation *soutenue* pour
+          approcher le plancher, et un véhicule mal noté continue d'être servi
+          par les stations les moins averses au risque — donc de pouvoir
+          remonter.
+        * *Fiabilité, pas ancienneté* — c'est un taux, pas un cumul. Un
+          véhicule qui a beaucoup roulé n'est plus mécaniquement mieux noté
+          qu'un véhicule fiable mais peu actif. Et un véhicule sans passé (score
+          0, « inconnu ») n'est plus confondu avec un véhicule au bilan
+          exactement équilibré.
+
+        Le poids n'agit plus que *relativement*, à l'intérieur de la fenêtre :
+        une réservation longue pèse plus qu'une courte dans la moyenne, mais une
+        fenêtre d'événements de même durée donne le même score quelle que soit
+        cette durée. C'est la contrepartie du bornage.
+        """
+        hist = self.score_history[index]
+        hist.append((float(signed_stake), max(0., float(weight))))
+
+        total_w = sum(w for _, w in hist)
+        if total_w > 0.:
+            mean = sum(stake * w for stake, w in hist) / total_w
+        else:
+            # Poids tous nuls : on retombe sur la moyenne simple plutôt que de
+            # perdre l'information.
+            mean = sum(stake for stake, _ in hist) / len(hist)
+
+        confidence = len(hist) / float(hist.maxlen)
+        self.score[index] = float(np.clip(mean * confidence, -1., 1.))
+        return self.score[index]
+
+    def reset_score(self):
+        """Remet à zéro score et historique (véhicule sans passé connu)."""
+        self.score[:] = 0.
+        for hist in self.score_history:
+            hist.clear()
 
     def widen_search(self) -> bool:
         """

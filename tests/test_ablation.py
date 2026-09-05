@@ -146,27 +146,46 @@ def test_flags_reach_stations():
 
 
 def test_score_weighting_changes_the_penalty():
+    """
+    Le score étant une moyenne bornée sur une fenêtre glissante, la durée agit
+    *relativement* : elle décide du poids de chaque issue dans la moyenne, pas
+    de l amplitude absolue du score.
+
+    On compare donc une fenêtre hétérogène — une présence courte suivie d un
+    no-show long. En pondération par la durée, le no-show domine ; en
+    pondération forfaitaire, les deux issues comptent pareil.
+    """
     params = tiny_params()
     (cars, stations, societies), config = build_agents(params)
     station = stations[0]
     car = cars[0]
 
-    Simulation(cars, stations, societies, config.TOTAL_TIME, config, mode='bramev')
-    car.score[:] = 0.
-    station.update_car_score(car, 'abs', 10)
-    proportional = float(car.score[station.score_index])
+    def window(mode):
+        Simulation(cars, stations, societies, config.TOTAL_TIME, config, mode=mode)
+        car.reset_score()
+        station.update_car_score(car, 'pres', 1)    # présence courte
+        station.update_car_score(car, 'abs', 20)    # no-show long
+        return float(car.score[station.score_index])
 
-    Simulation(cars, stations, societies, config.TOTAL_TIME, config,
-               mode='bramev_event_score')
-    car.score[:] = 0.
-    station.update_car_score(car, 'abs', 10)
-    per_event = float(car.score[station.score_index])
+    proportional = window('bramev')
+    per_event = window('bramev_event_score')
 
-    assert proportional < 0 and per_event < 0
-    assert abs(proportional) > abs(per_event), (
-        'la pénalité proportionnelle à la durée doit être plus lourde qu une '
-        'pénalité forfaitaire pour une réservation de 10 slots')
-    assert abs(proportional / per_event - 10.) < 1e-9
+    assert proportional < per_event, (
+        'pondérée par la durée, la fenêtre doit être dominée par le no-show '
+        f'long : {proportional} vs {per_event} (forfaitaire)'
+    )
+    assert -1. <= proportional <= 1. and -1. <= per_event <= 1.
+
+    # Sur une fenêtre homogène en durée, les deux pondérations coïncident :
+    # c est la contrepartie du bornage, et elle doit être explicite.
+    def homogeneous(mode):
+        Simulation(cars, stations, societies, config.TOTAL_TIME, config, mode=mode)
+        car.reset_score()
+        station.update_car_score(car, 'abs', 10)
+        station.update_car_score(car, 'abs', 10)
+        return float(car.score[station.score_index])
+
+    assert abs(homogeneous('bramev') - homogeneous('bramev_event_score')) < 1e-12
 
 
 def test_reputation_scope_separates_or_shares_the_score():
@@ -182,14 +201,14 @@ def test_reputation_scope_separates_or_shares_the_score():
     first, second = list(by_society.values())[:2]
 
     Simulation(cars, stations, societies, config.TOTAL_TIME, config, mode='bramev')
-    car.score[:] = 0.
+    car.reset_score()
     first.update_car_score(car, 'abs', 4)
     assert car.score[second.score_index] == 0., \
         'réputation par société : une société ne subit pas le score écrit par une autre'
 
     Simulation(cars, stations, societies, config.TOTAL_TIME, config,
                mode='bramev_global_rep')
-    car.score[:] = 0.
+    car.reset_score()
     first.update_car_score(car, 'abs', 4)
     assert car.score[second.score_index] < 0., \
         'réputation globale : le score écrit par une société est lu par les autres'

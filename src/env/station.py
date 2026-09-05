@@ -125,23 +125,32 @@ class Station:
 
     def update_car_score(self, car_agent, status, d_n):
         """
-        Met à jour la composante f du score du véhicule.
+        Enregistre l'issue d'une réservation dans la réputation du véhicule.
 
-        Le poids de l'événement est la durée réservée (`score_weighting =
-        'duration'`, défaut : un no-show de 2 h coûte plus qu'un no-show de
-        20 min) ou 1 (`'event'` : pénalité forfaitaire).
+        L'enjeu de l'issue est lu dans le barème de la société (`self.strategy`)
+        puis **normalisé par le plus gros enjeu de ce barème**, ce qui le ramène
+        dans [-1, 1] : positif pour une présence, négatif sinon. Le véhicule en
+        fait la moyenne pondérée sur ses `SCORE_MEMORY` dernières réservations
+        (cf. `Car.record_score_event`).
+
+        Normaliser par `max(mu)` plutôt que par une constante préserve l'ordre
+        et les rapports du barème — une société qui punit le no-show deux fois
+        plus qu'une annulation tardive continue de le faire — tout en rendant
+        les scores de deux sociétés comparables sur la même échelle.
+
+        Le poids de l'événement reste la durée réservée (`score_weighting =
+        'duration'`, défaut) ou 1 (`'event'` : pénalité forfaitaire) ; il
+        pondère la moyenne au lieu de multiplier un cumul non borné.
         """
         mu = self.strategy
+        normalizer = max(mu.values())
+        if normalizer <= 0:
+            return 0.
+
+        stake = mu[status] if status in mu else mu['abs']
+        signed = (+stake if status == 'pres' else -stake) / normalizer
         weight = float(d_n) if self.score_weighting == 'duration' else 1.0
-        if status == 'pres':
-            delta = +mu['pres'] * weight
-        elif status == 'early':
-            delta = -mu['early'] * weight
-        elif status == 'late':
-            delta = -mu['late'] * weight
-        else:  # 'abs'
-            delta = -mu['abs'] * weight
-        car_agent.score[self.score_index] += delta
+        return car_agent.record_score_event(self.score_index, signed, weight)
 
     # ------------------------------------------------------------------
     # Optimisation ILP

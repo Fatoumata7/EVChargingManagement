@@ -969,6 +969,182 @@ def test_9_search_gives_up_and_never_deadlocks():
 
 
 # ----------------------------------------------------------------------
+# 10. Réputation : score borné, fenêtre glissante, rédemption
+# ----------------------------------------------------------------------
+
+def _scoring_station(cfg):
+    spec = generate_world_spec(cfg, cfg.SEED)
+    cars, stations, _ = build_world(spec, cfg)
+    return cars[0], stations[0]
+
+
+def test_10_score_stays_bounded_whatever_the_history():
+    """
+    Le score doit rester dans [-1, 1] quelle que soit la suite d'issues — c'est
+    ce qui rend `alpha` signifiant. L'ancien cumul atteignait plusieurs
+    centaines face à un terme de profit de w1*z = 2.
+    """
+    cfg = small_config(seed=101)
+    car, station = _scoring_station(cfg)
+    rng = np.random.default_rng(0)
+    statuts = ('pres', 'abs', 'early', 'late')
+    for _ in range(300):
+        station.update_car_score(car, str(rng.choice(statuts)),
+                                 float(rng.integers(1, 40)))
+        assert -1. <= car.score[station.score_index] <= 1., car.score
+
+    # Fenêtre pleine d'une même issue : le score vaut exactement l'enjeu
+    # normalisé de cette issue. Le plancher effectif est donc
+    # -mu['abs'] / max(mu) — il n'atteint -1 que si le no-show est l'enjeu le
+    # plus lourd du barème. Cette asymétrie est celle de BASE_POINTS_STRATEGY
+    # (pres 4.0 contre abs 3.0, bruitée par société) : la normalisation la
+    # préserve délibérément au lieu d'étirer chaque côté jusqu'à +/-1.
+    mu = station.strategy
+    for statut in ('abs', 'late', 'early'):
+        car.reset_score()
+        for _ in range(cfg.SCORE_MEMORY):
+            station.update_car_score(car, statut, 40)
+        attendu = -mu[statut] / max(mu.values())
+        assert abs(car.score[station.score_index] - attendu) < 1e-12, (
+            f"{statut} : {car.score[station.score_index]} != {attendu}"
+        )
+        assert -1. <= attendu < 0.
+
+    car.reset_score()
+    for _ in range(cfg.SCORE_MEMORY):
+        station.update_car_score(car, 'pres', 40)
+    assert abs(car.score[station.score_index]
+               - mu['pres'] / max(mu.values())) < 1e-12
+
+    # L'ordre du barème est préservé par la normalisation — quel qu'il soit :
+    # STRATEGY_NOISE (±50 %) peut réordonner les enjeux d'une société à l'autre,
+    # le test se réfère donc au barème réellement tiré.
+    def plein(statut):
+        car.reset_score()
+        for _ in range(cfg.SCORE_MEMORY):
+            station.update_car_score(car, statut, 40)
+        return float(car.score[station.score_index])
+
+    negatifs = sorted(('abs', 'late', 'early'), key=lambda k: mu[k], reverse=True)
+    scores = [plein(k) for k in negatifs]
+    assert scores == sorted(scores), (
+        f"ordre du barème non préservé : {dict(zip(negatifs, scores))} "
+        f"pour mu={ {k: round(mu[k], 3) for k in negatifs} }"
+    )
+    assert all(v < 0 for v in scores)
+
+
+def test_10_window_forgets_beyond_score_memory():
+    """Au-delà de SCORE_MEMORY réservations, les plus anciennes ne comptent plus."""
+    cfg = small_config(seed=102)
+    cfg.set_SCORE_MEMORY(5)
+    car, station = _scoring_station(cfg)
+
+    for _ in range(5):
+        station.update_car_score(car, 'abs', 10)
+    creux = float(car.score[station.score_index])
+    assert creux < 0
+
+    for _ in range(5):                      # la fenêtre est intégralement remplacée
+        station.update_car_score(car, 'pres', 10)
+    apres = float(car.score[station.score_index])
+
+    assert len(car.score_history[station.score_index]) == 5, "fenêtre non bornée"
+    assert apres > 0, f"les anciennes issues pèsent encore : {apres}"
+    # Le score final ne doit dépendre que des 5 dernières.
+    temoin, station_t = _scoring_station(small_config(seed=102))
+    for _ in range(5):
+        station_t.update_car_score(temoin, 'pres', 10)
+    assert abs(apres - float(temoin.score[station_t.score_index])) < 1e-12
+
+
+def test_10_sparse_history_is_shrunk_toward_unknown():
+    """
+    Une issue isolée ne doit pas suffire à atteindre le plancher.
+
+    Sans cette atténuation, une seule issue négative donnait la moyenne d'un
+    unique événement — soit le plancher — le véhicule devenait inéligible
+    partout, ne recevait plus de réservation, et sa fenêtre ne pouvait plus
+    tourner : le droit à l'oubli était inopérant.
+    """
+    cfg = small_config(seed=103)
+    cfg.set_SCORE_MEMORY(5)
+    car, station = _scoring_station(cfg)
+
+    station.update_car_score(car, 'abs', 10)
+    un_seul = float(car.score[station.score_index])
+
+    car.reset_score()
+    for _ in range(5):
+        station.update_car_score(car, 'abs', 10)
+    cinq = float(car.score[station.score_index])
+
+    assert un_seul > cinq, (
+        f"une issue isolée ({un_seul}) doit peser moins que cinq ({cinq})"
+    )
+    assert abs(un_seul - cinq / 5.) < 1e-12, (
+        "l'atténuation doit être proportionnelle au remplissage de la fenêtre"
+    )
+    assert car.score_history[station.score_index].maxlen == 5
+
+
+def test_10_a_single_incident_never_excludes_everywhere():
+    """
+    Rédemption : après une issue négative isolée, il doit rester des stations
+    disposées à servir le véhicule — sinon il ne peut plus rien démontrer.
+
+    Une station exclut un véhicule quand le coefficient de l'objectif devient
+    négatif, soit `score < -2*alpha/(1-alpha)` (fenêtre nominale, D = 0).
+    """
+    cfg = small_config(seed=104)
+    car, station = _scoring_station(cfg)
+    station.update_car_score(car, 'abs', 40)     # pire issue, durée maximale
+    score = float(car.score[station.score_index])
+
+    exclus = [a for a in (0.1, 0.3, 0.5, 0.7, 0.9)
+              if score < -2. * a / (1. - a)]
+    assert not exclus, (
+        f"score {score:.3f} : exclu des stations d'alpha {exclus} après un seul "
+        "incident — aucune rédemption possible"
+    )
+
+
+def test_10_reputation_no_longer_collapses_service():
+    """
+    Bout en bout : activer la réputation ne doit plus effondrer le service.
+
+    Avec le score cumulé, la satisfaction chutait de 0.761 à 0.645 — non par
+    arbitrage, mais parce que 97 % des demandes vues par les stations avaient
+    un score sous le seuil d'exclusion et ne recevaient aucune offre.
+    """
+    def run(mode):
+        cfg = small_config(scenario='pessimistic', nb_car=40,
+                           total_time=12 * 20, seed=71)
+        spec = generate_world_spec(cfg, cfg.SEED)
+        cars, stations, societies = build_world(spec, cfg)
+        sim = Simulation(cars=cars, stations=stations, societies=societies,
+                         t_max=cfg.TOTAL_TIME, config=cfg, mode=mode)
+        sim.run(io.StringIO(), print_metrics=False)
+        return sim
+
+    sans = run('multistation')
+    avec = run('multistation_rep')
+
+    s_sans = sans.metrics.report()['user_request_satisfaction']['exact_satisfaction']
+    s_avec = avec.metrics.report()['user_request_satisfaction']['exact_satisfaction']
+    assert s_avec >= 0.95 * s_sans, (
+        f"la réputation effondre le service : {s_avec:.3f} vs {s_sans:.3f}"
+    )
+
+    # ... sans pour autant devenir inerte : le score doit encore varier.
+    scores = np.array([c.score for c in avec.cars])
+    assert scores.min() < -0.05 and scores.max() > 0.05, (
+        f"score inerte : min={scores.min()}, max={scores.max()}"
+    )
+    assert np.all(np.abs(scores) <= 1.)
+
+
+# ----------------------------------------------------------------------
 # Lanceur
 # ----------------------------------------------------------------------
 

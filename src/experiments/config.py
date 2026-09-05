@@ -192,6 +192,19 @@ class SimulationConfig:
         }
         self.STRATEGY_NOISE = 0.5
 
+        # ------------------------------------------------------------------ RÉPUTATION
+        # Nombre de réservations retenues dans le score d'un véhicule : au-delà,
+        # les plus anciennes sortent de la fenêtre (droit à l'oubli).
+        #
+        # Le score n'est plus une somme cumulée mais la moyenne pondérée des
+        # enjeux normalisés de cette fenêtre, donc borné dans [-1, 1]
+        # (cf. `Car.record_score_event`). C'est ce qui rend `alpha` à nouveau
+        # signifiant : l'ancienne somme atteignait ±380 face à un terme de
+        # profit de w1*z = 2, et l'arbitrage profit/risque était purement
+        # nominal — tout véhicule ayant connu un seul incident devenait
+        # définitivement inéligible.
+        self.SCORE_MEMORY = 5
+
         self.log_iter = 10
 
     def set_TOTAL_TIME(self, value: int) -> None:
@@ -577,6 +590,17 @@ class SimulationConfig:
         return float(self.C_GRID) * np.sqrt(2.)
 
 
+    def set_SCORE_MEMORY(self, value: int) -> None:
+        """Nombre de réservations retenues dans le score de réputation (>= 1)."""
+        if not isinstance(value, int) or isinstance(value, bool):
+            raise TypeError(
+                f"SCORE_MEMORY doit être un int, reçu : {type(value).__name__}"
+            )
+        if value < 1:
+            raise ValueError(f"SCORE_MEMORY doit être >= 1, reçu : {value}")
+        self.SCORE_MEMORY = int(value)
+
+
     def set_SEARCH_RADIUS_GROWTH(self, value: float) -> None:
         """Facteur d'élargissement du rayon à chaque relance (> 1)."""
         if not isinstance(value, (int, float)) or isinstance(value, bool):
@@ -646,6 +670,7 @@ class SimulationConfig:
             'car_speed_m_per_slot':  self.CAR_SPEED,
             'base_cancel_prob':      dict(self.BASE_CANCEL_PROB),
             'base_points_strategy':  dict(self.BASE_POINTS_STRATEGY),
+            'score_memory':          self.SCORE_MEMORY,
             'strategy_noise':        self.STRATEGY_NOISE,
             'w1': self.w1, 'w2': self.w2, 'z': self.z,
             'gamma':                 self.GAMMA,
