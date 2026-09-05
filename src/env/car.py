@@ -67,7 +67,10 @@ class Car:
 
         self.x, self.y = float(self.loc[0]), float(self.loc[1])
         self.soc_m = self.autonomy * self.soc_init # distance restante à parcourir avec état actuel de la batterie
-        self.state = 'DRIVING'   # 'DRIVING', 'REQUESTING', 'DRIVING_TO_STATION', 'AT_STATION', 'CHARGING', 'WAITING', 'BREAKDOWN'
+        # 'DRIVING', 'REQUESTING', 'DRIVING_TO_STATION', 'AT_STATION',
+        # 'CHARGING', 'WAITING', 'BREAKDOWN', 'PARKED_SEARCHING',
+        # 'PARKED_NO_SHOW' (cf. PARKED_STATES)
+        self.state = 'DRIVING'
         self.request = None
         self.reservation = None
         self.behavior = None
@@ -86,15 +89,22 @@ class Car:
         self.nb_offers_received = 0
         self.nb_confirm_failed = 0
 
+        # ---- Relance de recherche (cf. Simulation, état PARKED_SEARCHING)
+        self.search_retries = 0    # relances consommées pour la demande courante
+
         self.schedule_requested = np.zeros(config.TOTAL_TIME)
 
     def init_soc(self):
         return random.uniform(self.config.CAR_INIT_SOC['low'],
                               self.config.CAR_INIT_SOC['high'])
 
+    #: États où le véhicule est à l'arrêt : il ne se déplace pas, donc ne
+    #: consomme rien. Aucune phase de `Simulation.step` ne les déplace.
+    PARKED_STATES = frozenset({'PARKED_NO_SHOW', 'PARKED_SEARCHING'})
+
     def set_state(self, new_state):
         valid = {'WAITING', 'DRIVING', 'CHARGING', 'REQUESTING',
-                 'DRIVING_TO_STATION', 'AT_STATION', 'BREAKDOWN'}
+                 'DRIVING_TO_STATION', 'AT_STATION', 'BREAKDOWN'} | self.PARKED_STATES
         assert new_state in valid, f"État inconnu : {new_state}"
         self.state = new_state
 
@@ -112,6 +122,7 @@ class Car:
         self.cancel_intent = None
         self.reservation_slot = None
         self.reservation_lead = None
+        self.search_retries = 0
 
     def define_autonomy(self):
         """
@@ -260,9 +271,12 @@ class Car:
         self.soc_m = min(self.autonomy, self.soc_m + delta_soc)
 
     def needs_charging(self):
-        # ne pas émettre de requête si déjà en panne
+        # ne pas émettre de requête si déjà en panne.
+        # `PARKED_SEARCHING` est admis : le véhicule s'est arrêté faute de
+        # station ou d'offre et doit pouvoir relancer sa demande. Il ne
+        # consomme pas entre-temps, donc son SoC — et donc `d_n` — reste valide.
         return (self.soc_m <= self.soc_threshold_m
-                and self.state == 'DRIVING'
+                and self.state in ('DRIVING', 'PARKED_SEARCHING')
                 and self.soc_m > self.config.SOC_BREAKDOWN_THRESHOLD)
 
     def draw_reservation_lead(self) -> int:
@@ -306,6 +320,58 @@ class Car:
         self.request = request
         self.nb_request += 1
         return request
+
+    def widen_search(self) -> bool:
+        """
+        Élargit le rayon de recherche pour relancer la demande courante.
+
+        Retourne True si une relance reste possible, False si le budget
+        `MAX_SEARCH_RETRIES` est épuisé — auquel cas l'appelant doit faire
+        renoncer le véhicule plutôt que de le laisser garé indéfiniment.
+
+        Le rayon élargi dépasse volontairement `MAX_RAY_SEARCH`, qui borne la
+        recherche de routine : ici le véhicule est bloqué et cherche plus loin
+        que d'habitude. Il reste borné par la diagonale de la grille.
+
+        Ni `d_n`, ni `g_n`, ni `l_n` ne sont retirés au sort : c'est la *même*
+        demande qui est relancée, et redessiner ces valeurs consommerait de
+        l'aléa à un rythme dépendant de la méthode testée — les flux des
+        véhicules divergeraient entre BRAM-EV et Greedy.
+        """
+        if self.request is None:
+            return False
+        if self.search_retries >= self.config.MAX_SEARCH_RETRIES:
+            return False
+        self.search_retries += 1
+        widened = self.request['r_n'] * self.config.SEARCH_RADIUS_GROWTH
+        self.request['r_n'] = float(min(widened, self.config.max_search_radius()))
+        return True
+
+    def reemit_request(self, current_time):
+        """
+        Relance la demande courante depuis la position actuelle.
+
+        L'identifiant de demande est conservé : du point de vue de l'usager
+        c'est un seul besoin de recharge, dont on mesure la latence de bout en
+        bout. Seule la date d'émission avance, pour que le créneau nominal
+        (`t_n + l_n + trajet`) et le déclencheur d'annulation anticipée
+        (`t_c > reservation_slot`) restent cohérents avec le temps courant.
+
+        Le véhicule étant à l'arrêt depuis la tentative précédente, sa position
+        et son SoC n'ont pas changé : `d_n` reste valide.
+        """
+        if self.request is None:
+            raise RuntimeError("reemit_request sans requête en cours")
+        self.request['t_n'] = current_time
+        self.request['loc'] = (self.x, self.y)
+        self.nb_request += 1
+        return self.request
+
+    def give_up_search(self):
+        """Abandon après épuisement du budget de relances : le véhicule repart."""
+        self.request = None
+        self.search_retries = 0
+        self.set_state('DRIVING')
 
     def update_schedule_requested(self, min_dist):
         """FIX : == → = (affectation)"""

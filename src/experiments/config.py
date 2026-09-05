@@ -145,6 +145,25 @@ class SimulationConfig:
         self.MAX_RAY_SEARCH = 1 * 1e3
         self.COEFF_MAX_DIST = 0.5            # coeff de max distance définie comme max_ray_search
 
+        # ------------------------------------------------------------------ RELANCE DE RECHERCHE
+        # Un véhicule qui ne trouve ni station éligible, ni offre, ni
+        # confirmation ne repart pas au hasard : il s'arrête (PARKED_SEARCHING)
+        # et relance la même demande avec un rayon élargi. S'arrêter évite de
+        # consommer de l'énergie pendant une recherche infructueuse, et de
+        # dériver loin des stations qu'on essaie justement d'atteindre.
+        #
+        # L'élargissement dépasse volontairement MAX_RAY_SEARCH : ce plafond
+        # borne la recherche *de routine*, pas l'élargissement exceptionnel. Le
+        # rayon reste borné par la diagonale de la grille (cf.
+        # `max_search_radius`), au-delà de laquelle il ne peut plus rien
+        # découvrir.
+        self.SEARCH_RADIUS_GROWTH = 1.5
+        # Budget de relances par demande. Au-delà, le véhicule renonce et
+        # repart en DRIVING : sans ce garde-fou, un véhicule immobile dans une
+        # zone sans borne resterait garé indéfiniment, jamais en panne
+        # puisqu'il ne consomme plus, et fausserait les taux de service.
+        self.MAX_SEARCH_RETRIES = 4
+
         self.REDUCE_SPEED_FACTORS = [1.05, 1.25]  # facteurs de réduction si comportement non-présent
 
         # Probabilités de comportement
@@ -548,6 +567,43 @@ class SimulationConfig:
         return max(1, min(self.LATE_CANCEL_REF, relative))
 
 
+    def max_search_radius(self) -> float:
+        """
+        Plafond du rayon élargi : la diagonale de la grille.
+
+        Au-delà, toutes les stations du monde sont déjà éligibles — élargir
+        davantage ne peut plus rien découvrir.
+        """
+        return float(self.C_GRID) * np.sqrt(2.)
+
+
+    def set_SEARCH_RADIUS_GROWTH(self, value: float) -> None:
+        """Facteur d'élargissement du rayon à chaque relance (> 1)."""
+        if not isinstance(value, (int, float)) or isinstance(value, bool):
+            raise TypeError(
+                f"SEARCH_RADIUS_GROWTH doit être un nombre, reçu : "
+                f"{type(value).__name__}"
+            )
+        if float(value) <= 1.:
+            raise ValueError(
+                f"SEARCH_RADIUS_GROWTH doit être > 1 (sinon la relance "
+                f"n'élargit rien), reçu : {value}"
+            )
+        self.SEARCH_RADIUS_GROWTH = float(value)
+
+
+    def set_MAX_SEARCH_RETRIES(self, value: int) -> None:
+        """Budget de relances par demande. 0 = pas de relance."""
+        if not isinstance(value, int) or isinstance(value, bool):
+            raise TypeError(
+                f"MAX_SEARCH_RETRIES doit être un int, reçu : "
+                f"{type(value).__name__}"
+            )
+        if value < 0:
+            raise ValueError(f"MAX_SEARCH_RETRIES doit être >= 0, reçu : {value}")
+        self.MAX_SEARCH_RETRIES = int(value)
+
+
     def min_lead_for_early_cancel(self) -> int:
         """
         Plus petit délai requête → arrivée permettant une annulation *observée*
@@ -597,6 +653,8 @@ class SimulationConfig:
             'min_ray_search':        self.MIN_RAY_SEARCH,
             'max_ray_search':        self.MAX_RAY_SEARCH,
             'coeff_max_dist':        self.COEFF_MAX_DIST,
+            'search_radius_growth':  self.SEARCH_RADIUS_GROWTH,
+            'max_search_retries':    self.MAX_SEARCH_RETRIES,
             'late_cancel_ref':       self.LATE_CANCEL_REF,
             'late_cancel_fraction':  self.LATE_CANCEL_FRACTION,
             'reservation_lead':      dict(self.RESERVATION_LEAD_PARAMS),

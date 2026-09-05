@@ -16,6 +16,7 @@ import numpy as np
 
 import src.env.offer as off
 import src.env.utils as utils
+from src.env.car import Car
 from src.experiments.config import SimulationConfig
 from src.experiments.run import define_agents
 from src.experiments.seeding import STREAM_CODES, RngHub
@@ -782,6 +783,189 @@ def test_8_neither_arm_is_diagnosed_when_configured_deliberately():
     assert traite['diagnostics'] == [], (
         f"diagnostic injustifié sur le bras traité : {traite['diagnostics']}"
     )
+
+
+# ----------------------------------------------------------------------
+# 9. États à l'arrêt : no-show garé, relance de recherche
+# ----------------------------------------------------------------------
+
+def test_9_no_show_parks_instead_of_roaming():
+    """
+    Un no-show renonce à son trajet, pas seulement à sa recharge : il reste
+    immobile tant qu'il détient son créneau, puis repart une fois libéré.
+
+    La continuité est suivie par l'objet réservation : un véhicule peut sortir
+    de l'état garé, rouler, puis s'y regarer avec une *nouvelle* réservation au
+    cours du même pas — comparer deux fins de slot ne suffit pas.
+    """
+    cfg = small_config(scenario='pessimistic', nb_car=30, total_time=12 * 12,
+                       seed=91)
+    cfg.set_BASE_CANCEL_PROB({'pres': 1, 'abs': 97, 'early': 1, 'late': 1,
+                              'noise': 0.0})
+    spec = generate_world_spec(cfg, cfg.SEED)
+    cars, stations, societies = build_world(spec, cfg)
+    sim = Simulation(cars=cars, stations=stations, societies=societies,
+                     t_max=cfg.TOTAL_TIME, config=cfg)
+
+    episodes = {}     # idx -> (réservation, x, y, soc)
+    vus = 0
+    log = io.StringIO()
+    for t in range(cfg.TOTAL_TIME):
+        sim.current_t = t
+        sim.step(t, 10 ** 6, file=log)
+        for car in sim.cars:
+            if car.cancel_intent == 'abs' and car.reservation is not None:
+                assert car.state == 'PARKED_NO_SHOW', (
+                    f"car_{car.idx} détient un créneau no-show mais est "
+                    f"{car.state}"
+                )
+                courant = (car.reservation, car.x, car.y, car.soc_m)
+                if episodes.get(car.idx, (None,))[0] is car.reservation:
+                    assert episodes[car.idx] == courant, (
+                        f"car_{car.idx} garé a bougé ou consommé"
+                    )
+                else:
+                    vus += 1
+                episodes[car.idx] = courant
+            else:
+                episodes.pop(car.idx, None)
+
+    assert vus > 0, "aucun no-show observé : test non concluant"
+    assert sim.behaviors.outcomes.get('abs', 0) > 0
+
+
+def test_9_no_phase_moves_a_parked_vehicle():
+    """
+    L'invariant central des deux états à l'arrêt : aucune phase de `step` ne
+    doit déplacer un véhicule garé. Vérifié à la source — `update_state` est le
+    seul point de déplacement et de consommation.
+    """
+    cfg = small_config(scenario='pessimistic', nb_car=30, total_time=12 * 12,
+                       seed=94)
+    spec = generate_world_spec(cfg, cfg.SEED)
+    cars, stations, societies = build_world(spec, cfg)
+    sim = Simulation(cars=cars, stations=stations, societies=societies,
+                     t_max=cfg.TOTAL_TIME, config=cfg)
+
+    original = Car.update_state
+    fautes = []
+
+    def surveille(self, loc=None):
+        if self.state in Car.PARKED_STATES:
+            fautes.append((self.idx, self.state))
+        return original(self, loc)
+
+    vus = set()
+    Car.update_state = surveille
+    try:
+        log = io.StringIO()
+        for t in range(cfg.TOTAL_TIME):
+            sim.current_t = t
+            sim.step(t, 10 ** 6, file=log)
+            vus |= {c.state for c in sim.cars if c.state in Car.PARKED_STATES}
+    finally:
+        Car.update_state = original
+
+    assert not fautes, f"véhicules garés déplacés : {fautes[:5]}"
+    assert vus, "aucun état garé observé : test non concluant"
+
+
+def test_9_failed_search_parks_and_widens_the_radius():
+    """
+    Faute de station ou d'offre, le véhicule s'arrête et relance la *même*
+    demande avec un rayon élargi — il ne repart pas au hasard.
+    """
+    cfg = small_config(seed=92)
+    cfg.set_SEARCH_RADIUS_GROWTH(1.5)
+    cfg.set_MAX_SEARCH_RETRIES(3)
+    spec = generate_world_spec(cfg, cfg.SEED)
+    car = build_world(spec, cfg)[0][0]
+
+    car.emit_request(0, (car.x, car.y), 'd0')
+    r0 = car.request['r_n']
+    rayons = [r0]
+    for k in range(3):
+        assert car.widen_search(), f"relance {k + 1} refusée à tort"
+        rayons.append(car.request['r_n'])
+        assert car.search_retries == k + 1
+
+    assert not car.widen_search(), "le budget de relances doit être borné"
+    assert car.search_retries == 3
+
+    plafond = cfg.max_search_radius()
+    for avant, apres in zip(rayons, rayons[1:]):
+        attendu = min(avant * 1.5, plafond)
+        assert abs(apres - attendu) < 1e-6, f"{avant} -> {apres}, attendu {attendu}"
+    assert rayons[-1] <= plafond + 1e-9
+
+    # L'identité de la demande et ses autres paramètres sont préservés : une
+    # relance est la même demande, pas une nouvelle.
+    assert car.request['n'] == 'd0'
+
+
+def test_9_retry_keeps_one_demand_per_need():
+    """
+    Une demande relancée reste *une* demande. Sans cela, chaque tentative
+    gonflerait `nb_demands` et effondrerait le taux de confirmation sans qu'un
+    besoin supplémentaire ait été exprimé.
+    """
+    def campaign(retries):
+        cfg = small_config(scenario='pessimistic', nb_car=40,
+                           total_time=12 * 20, seed=71)
+        cfg.set_MAX_SEARCH_RETRIES(retries)
+        sim = run_sim(cfg, 'bramev')
+        recs = list(sim.metrics.demand_timings.values())
+        return {
+            'demandes':   len(recs),
+            'confirmées': sum(1 for r in recs if r.confirmed),
+            'relances':   sum(r.nb_search_retries for r in recs),
+            'resa':       sim.behaviors.report()['nb_reservations'],
+        }
+
+    sans = campaign(0)
+    avec = campaign(4)
+
+    assert sans['relances'] == 0, "budget nul : aucune relance possible"
+    assert avec['relances'] > 0, "aucune relance déclenchée : test non concluant"
+    assert avec['demandes'] < sans['demandes'], (
+        f"la relance doit regrouper les tentatives : {avec['demandes']} "
+        f"vs {sans['demandes']}"
+    )
+    # Le nombre de besoins servis ne doit pas s'effondrer : on regroupe des
+    # tentatives, on ne supprime pas des réservations.
+    assert avec['resa'] >= 0.9 * sans['resa'], (
+        f"réservations perdues : {avec['resa']} vs {sans['resa']}"
+    )
+
+
+def test_9_search_gives_up_and_never_deadlocks():
+    """
+    Le budget de relances doit être effectif : aucun véhicule ne doit rester
+    garé jusqu'à la fin de l'horizon sans jamais renoncer.
+    """
+    cfg = small_config(scenario='balance', nb_car=25, total_time=12 * 10,
+                       seed=93)
+    cfg.set_MAX_SEARCH_RETRIES(2)
+    spec = generate_world_spec(cfg, cfg.SEED)
+    cars, stations, societies = build_world(spec, cfg)
+    sim = Simulation(cars=cars, stations=stations, societies=societies,
+                     t_max=cfg.TOTAL_TIME, config=cfg)
+
+    log = io.StringIO()
+    consecutifs = {c.idx: 0 for c in sim.cars}
+    for t in range(cfg.TOTAL_TIME):
+        sim.current_t = t
+        sim.step(t, 10 ** 6, file=log)
+        for car in sim.cars:
+            if car.state == 'PARKED_SEARCHING':
+                consecutifs[car.idx] += 1
+                assert car.search_retries <= cfg.MAX_SEARCH_RETRIES
+            else:
+                consecutifs[car.idx] = 0
+            assert consecutifs[car.idx] <= cfg.MAX_SEARCH_RETRIES + 1, (
+                f"car_{car.idx} garé {consecutifs[car.idx]} slots d'affilée : "
+                f"le budget de relances n'est pas appliqué"
+            )
 
 
 # ----------------------------------------------------------------------

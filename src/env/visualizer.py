@@ -12,6 +12,8 @@ COLORS = {
     'WAITING':            (136, 135, 128),  # gris
     'BREAKDOWN':          (220, 53, 69),    # rouge
     'AT_STATION':         (212, 83, 126),   # rose / magenta
+    'PARKED_SEARCHING':   (146, 109, 222),  # violet — garé, cherche plus loin
+    'PARKED_NO_SHOW':     (120, 118, 112),  # gris foncé — garé, ne viendra pas
 }
 
 STATION_COLOR = (216, 90, 48)

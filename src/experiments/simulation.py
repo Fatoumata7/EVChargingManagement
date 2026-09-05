@@ -174,10 +174,22 @@ class Simulation:
             # Identifiant de demande unique : (slot, véhicule). Auparavant
             # `t_c * len(cars)`, identique pour tous les véhicules d'un même
             # slot — les enregistrements de latence s'écrasaient mutuellement.
-            id_demand = self._demand_id(t_c, car.idx)
+            # Une relance conserve l'identifiant : du point de vue de l'usager
+            # c'est un seul besoin de recharge, dont on mesure la latence de
+            # bout en bout. Réémettre sous un nouvel identifiant gonflerait le
+            # nombre de demandes et ferait chuter le taux de confirmation sans
+            # qu'aucun besoin supplémentaire n'ait été exprimé.
+            retrying = car.state == 'PARKED_SEARCHING'
+            if retrying:
+                req = car.reemit_request(t_c)
+                id_demand = req['n']
+            else:
+                id_demand = self._demand_id(t_c, car.idx)
+                req = car.emit_request(t_c, (car.x, car.y), id_demand)
 
-            print(f'\ncar_{car.idx} NEED CHARGING (soc:{car.soc_m * 1e-3:.2f}km < {car.soc_threshold_m * 1e-3:.2f}km)', file=file)
-            req = car.emit_request(t_c, (car.x, car.y), id_demand)
+            print(f'\ncar_{car.idx} NEED CHARGING (soc:{car.soc_m * 1e-3:.2f}km < {car.soc_threshold_m * 1e-3:.2f}km)'
+                  + (f' [RELANCE {car.search_retries}/{self.config.MAX_SEARCH_RETRIES}]'
+                     if retrying else ''), file=file)
             print(f'\n-> REQUEST {req['n']}'
                   f' | DURATION: {req['d_n']} slots '
                   f'-> {req['d_n'] // self.config.NB_SLOTS_IN_ONE_HOUR}H '
@@ -199,18 +211,21 @@ class Simulation:
             # ou la plus proche seulement (Greedy).
             targets = eligible if self.broadcast else ([min_s] if min_s else [])
 
-            self.metrics.record_demand_emitted(
-                id_demand, car_id=car.idx, slot=t_c,
-                nb_stations_contacted=len(targets)
-            )
-            self.nb_demands += 1
+            if retrying:
+                self.metrics.record_demand_retry(
+                    id_demand, nb_stations_contacted=len(targets))
+            else:
+                self.metrics.record_demand_emitted(
+                    id_demand, car_id=car.idx, slot=t_c,
+                    nb_stations_contacted=len(targets)
+                )
+                self.nb_demands += 1
 
-            # --- fix: si rayon de recherche trop petit et pas d'eligible station,
-            #     le véhicule continue de rouler
+            # Aucune station dans le rayon : le véhicule s'arrête et relance
+            # avec un rayon élargi plutôt que de repartir au hasard.
             if not targets:
-                self.metrics.record_demand_selection(id_demand)
-                self.metrics.record_demand_confirmation(id_demand, False, 0)
-                car.set_state('DRIVING')
+                self._retry_or_give_up(car, id_demand, 'aucune station éligible',
+                                       t_c, file)
                 continue
 
             car.update_schedule_requested(min_d)
@@ -280,6 +295,37 @@ class Simulation:
             self.viz.draw(self.cars, self.stations, t_c)
 
     # ------------------------------------------------------------------
+    # Relance de recherche
+    # ------------------------------------------------------------------
+
+    def _retry_or_give_up(self, car, demand_id, reason, t_c, file=None):
+        """
+        Échec de recherche : le véhicule se gare et relance avec un rayon
+        élargi, ou renonce si son budget de relances est épuisé.
+
+        S'arrêter plutôt que de reprendre la route a deux effets : le véhicule
+        ne consomme plus pendant une recherche infructueuse — il ne peut donc
+        pas tomber en panne faute d'avoir trouvé une borne — et il ne dérive
+        pas loin des stations qu'il essaie d'atteindre.
+        """
+        if car.widen_search():
+            car.set_state('PARKED_SEARCHING')
+            if file is not None:
+                print(f'\ncar_{car.idx} PARKED_SEARCHING ({reason}) '
+                      f'-> rayon élargi à {car.request["r_n"] * 1e-3:.2f}km '
+                      f'[{car.search_retries}/{self.config.MAX_SEARCH_RETRIES}]',
+                      file=file)
+            return True
+
+        self.metrics.record_demand_selection(demand_id)
+        self.metrics.record_demand_confirmation(demand_id, False, 0)
+        if file is not None:
+            print(f'\ncar_{car.idx} ABANDON RECHERCHE ({reason}) après '
+                  f'{car.search_retries} relance(s)', file=file)
+        car.give_up_search()
+        return False
+
+    # ------------------------------------------------------------------
     # Sélection & confirmation
     # ------------------------------------------------------------------
 
@@ -301,9 +347,7 @@ class Simulation:
         car.nb_rejected += max(0, len(eligible) - len(offers))
 
         if not offers:
-            self.metrics.record_demand_selection(demand_id)
-            self.metrics.record_demand_confirmation(demand_id, False, 0)
-            car.set_state('DRIVING')
+            self._retry_or_give_up(car, demand_id, 'aucune offre reçue', t_c, file)
             return
 
         ranked = car.rank_offers(offers, car.request, min_d, self.offer_choice)
@@ -328,7 +372,8 @@ class Simulation:
         self.metrics.record_demand_confirmation(demand_id, chosen is not None, attempts)
 
         if chosen is None:
-            car.set_state('DRIVING')
+            self._retry_or_give_up(car, demand_id, 'aucune confirmation acceptée',
+                                   t_c, file)
             return
 
         print(f'\n----- CHOOSEN OFFER:', file=file)
@@ -346,8 +391,12 @@ class Simulation:
 
         if behavior == 'abs':
             # La réservation reste active dans le planning : le créneau est
-            # perdu jusqu'à t_dep. Le véhicule ne se présentera jamais.
-            car.set_state('DRIVING')
+            # perdu jusqu'à t_dep. Le véhicule ne se présentera jamais et reste
+            # immobile jusque-là (PARKED_NO_SHOW) — il a renoncé à son trajet,
+            # pas seulement à sa recharge. Conséquence importante : un no-show
+            # ne consomme plus pendant toute la durée de son créneau gelé, et
+            # ne peut donc plus tomber en panne de ce fait.
+            car.set_state('PARKED_NO_SHOW')
             return
 
         # `t_hat_arr` inclut l'horizon de planification : le délai voulu par le

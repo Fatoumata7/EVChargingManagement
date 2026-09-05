@@ -1,0 +1,13 @@
+scenario,nb_cars,method,seed,world_seed,grid_seed,station_id,society_id,nb_charg_spot,alpha,score_index,score_weighting,nb_request,nb_rejected_request,nb_offer_issued,nb_offer_expired,nb_confirm_refused,nb_stale_confirm,nb_reservations,nb_pres,nb_no_show,nb_early_canc,nb_late_canc,nb_breakdown_canc,nb_unresolved,nb_slots_reserved,nb_slots_served,occupancy_rate,service_rate,demand_kwh
+pessimistic,20,bramev_event_score,42,42,42,0,0,5,0.3427,0,event,20,12,8,2,0,0,6,4,0,1,1,0,0,213,141,0.1479,0.0979,11.15
+pessimistic,20,bramev_event_score,42,42,42,1,1,5,0.2839,1,event,24,15,9,6,0,0,3,0,0,0,3,0,0,71,0,0.0493,0.0,3.55
+pessimistic,20,bramev_event_score,42,42,42,2,1,5,0.714,1,event,17,11,6,4,0,0,2,1,0,1,0,0,0,73,33,0.0507,0.0229,2.983
+pessimistic,20,bramev_event_score,42,42,42,3,1,5,0.8498,1,event,21,6,15,1,0,0,14,6,2,2,4,0,0,419,171,0.291,0.1187,17.958
+pessimistic,20,bramev_event_score,42,42,42,4,2,5,0.1427,2,event,23,12,11,5,0,0,6,3,0,1,2,0,0,243,110,0.1688,0.0764,9.533
+pessimistic,20,bramev_event_score,42,42,42,5,0,4,0.2787,0,event,18,12,6,4,0,0,2,1,1,0,0,0,0,102,45,0.0885,0.0391,2.25
+pessimistic,20,bramev_event_score,42,42,42,6,0,6,0.7186,0,event,23,11,12,11,0,0,1,1,0,0,0,0,0,34,34,0.0197,0.0197,1.7
+pessimistic,20,bramev_event_score,42,42,42,7,0,6,0.5945,0,event,15,12,3,3,0,0,0,0,0,0,0,0,0,0,0,0.0,0.0,0.0
+pessimistic,20,bramev_event_score,42,42,42,8,0,5,0.808,0,event,25,9,16,5,0,0,11,3,2,1,5,0,0,340,76,0.2361,0.0528,14.0
+pessimistic,20,bramev_event_score,42,42,42,9,1,4,0.4875,1,event,23,10,13,8,0,0,5,1,0,0,4,0,0,223,68,0.1936,0.059,8.858
+pessimistic,20,bramev_event_score,42,42,42,10,0,5,0.3555,0,event,22,17,5,4,0,0,1,0,0,0,1,0,0,2,0,0.0014,0.0,0.083
+pessimistic,20,bramev_event_score,42,42,42,11,0,4,0.306,0,event,32,20,12,1,0,0,11,3,4,2,2,0,0,359,106,0.3116,0.092,11.45

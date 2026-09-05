@@ -48,6 +48,10 @@ class DemandLatencyRecord:
     t_confirmation: float = 0.0
     nb_stations_contacted: int = 0
     nb_confirm_attempts: int = 0
+    #: Relances de recherche (rayon élargi) consommées pour cette demande.
+    #: Une demande relancée reste *une* demande : c'est un seul besoin de
+    #: recharge, dont on mesure la latence de bout en bout.
+    nb_search_retries: int = 0
     confirmed: bool = False
 
     # ---- dérivés
@@ -117,6 +121,7 @@ class DemandLatencyRecord:
             'car_id':          self.car_id,
             'slot':            self.slot,
             'nb_stations':     self.nb_stations_contacted,
+            'search_retries':  self.nb_search_retries,
             'nb_offers':       self.nb_offers_received,
             'confirmed':       self.confirmed,
             'confirm_attempts': self.nb_confirm_attempts,
@@ -244,6 +249,25 @@ class MetricsCollector:
         rec = self.demand_timings.get(demand_id)
         if rec is not None:
             rec.offer_receptions.append((station_id, time.perf_counter()))
+
+    def record_demand_retry(self, demand_id, nb_stations_contacted: int = 0):
+        """
+        Relance d'une demande avec un rayon élargi.
+
+        La demande n'est pas recréée : on incrémente son compteur de relances et
+        on retient le nombre de stations finalement contactées. `t_emission`
+        reste celui de la première tentative, pour que la latence mesure le
+        temps de satisfaction du besoin, relances comprises.
+        """
+        rec = self.demand_timings.get(demand_id)
+        if rec is None:
+            raise ValueError(
+                f"Relance d'une demande inconnue : {demand_id!r}. Une relance "
+                "doit conserver l'identifiant de la demande d'origine."
+            )
+        rec.nb_search_retries += 1
+        rec.nb_stations_contacted = nb_stations_contacted
+        return rec
 
     def record_demand_selection(self, demand_id):
         """Le véhicule a fini de classer les offres reçues."""
