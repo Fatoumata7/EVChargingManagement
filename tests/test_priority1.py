@@ -8,15 +8,17 @@ Chaque test porte le numéro du point corrigé.
 """
 
 import io
+import math
 import sys
 import traceback
 
 import numpy as np
 
 import src.env.offer as off
+import src.env.utils as utils
 from src.experiments.config import SimulationConfig
 from src.experiments.run import define_agents
-from src.experiments.seeding import RngHub
+from src.experiments.seeding import STREAM_CODES, RngHub
 from src.experiments.simulation import Simulation
 from src.experiments.simulation_greedy import SimulationGreedy
 from src.experiments.world import generate_world_spec, build_world
@@ -494,6 +496,292 @@ def test_7_invariant_holds_for_both_methods():
         sim = run_sim(cfg, method)
         ok, errors = sim.check_reservation_invariant()
         assert ok, f"{method} : invariant violé — {errors[:3]}"
+
+
+# ----------------------------------------------------------------------
+# 8. Horizon de planification (annulation anticipée atteignable)
+# ----------------------------------------------------------------------
+
+def test_8_nominal_arrival_is_the_single_source_of_truth():
+    """
+    Station, utilité et métrique doivent lire le même créneau nominal.
+
+    La formule était dupliquée avec un `int()` côté station et un `ceil()`
+    ailleurs : sur cette grille le trajet dure moins d'un slot, donc les deux
+    vues divergeaient systématiquement d'un slot et l'attente mesurée était
+    faussée.
+    """
+    cfg = small_config()
+    for dist in (0., 1., 1e3, 4.167e3, 9e3):
+        for lead in (0, 1, 7):
+            arr = utils.nominal_arrival(10, lead, dist, cfg)
+            assert arr == math.ceil(10 + lead + dist / cfg.CAR_SPEED)
+            # un véhicule ne peut pas être arrivé avant d'avoir roulé
+            assert arr >= 10 + lead
+
+
+def test_8_lead_is_drawn_within_bounds():
+    cfg = small_config(seed=81)
+    cfg.set_RESERVATION_LEAD_PARAMS({'low': 3, 'high': 9})
+    spec = generate_world_spec(cfg, cfg.SEED)
+    car = build_world(spec, cfg)[0][0]
+    leads = [car.draw_reservation_lead() for _ in range(200)]
+    assert min(leads) >= 3 and max(leads) <= 9, f"hors bornes : {min(leads)}-{max(leads)}"
+    assert len(set(leads)) > 1, "l'horizon doit varier d'une requête à l'autre"
+
+    cfg.set_RESERVATION_LEAD_PARAMS({'low': 0, 'high': 0})
+    car = build_world(spec, cfg)[0][0]
+    assert {car.draw_reservation_lead() for _ in range(50)} == {0}
+
+
+def test_8_lead_uses_a_dedicated_stream():
+    """
+    L'horizon doit venir d'un flux propre : partagé avec `car_request`, il
+    décalerait durée, rayon et patience de toutes les requêtes suivantes, et les
+    deux bras de l'ablation ne différeraient plus seulement par l'horizon.
+    """
+    def requests(lead_params, nb=6):
+        cfg = small_config(seed=83)
+        cfg.set_RESERVATION_LEAD_PARAMS(lead_params)
+        spec = generate_world_spec(cfg, cfg.SEED)
+        car = build_world(spec, cfg)[0][0]
+        out = []
+        for k in range(nb):
+            r = car.emit_request(k, (0., 0.), k)
+            out.append((r['d_n'], r['r_n'], r['g_n']))
+        return out
+
+    temoin = requests({'low': 0, 'high': 0})
+    traite = requests({'low': 0, 'high': 12})
+    assert temoin == traite, (
+        "activer l'horizon a décalé les autres paramètres de requête : "
+        "le flux n'est pas dédié"
+    )
+    assert STREAM_CODES['car_lead'] == 9, "les codes de flux sont figés"
+
+
+def test_8_min_lead_for_early_cancel_matches_the_threshold():
+    cfg = SimulationConfig()
+    min_lead = cfg.min_lead_for_early_cancel()
+    assert min_lead == 3, f"attendu 3 avec fraction 0.5, reçu {min_lead}"
+    # en dessous, la branche est démontrablement inatteignable
+    for lead in range(1, min_lead):
+        assert lead - 1 <= cfg.late_cancel_threshold(lead)
+    assert min_lead - 1 > cfg.late_cancel_threshold(min_lead)
+    # la propriété doit suivre la fraction, pas une constante codée en dur
+    cfg.LATE_CANCEL_FRACTION = 0.9
+    assert cfg.min_lead_for_early_cancel() > min_lead
+
+
+def test_8_reservation_lead_opens_the_early_branch():
+    """
+    Le coeur de la correction : sans horizon, `t_arr` colle à la requête et
+    *toutes* les intentions `early` sont reclassées `late`. Avec un horizon,
+    elles doivent être réalisées telles quelles.
+    """
+    def outcomes(lead_params):
+        cfg = small_config(scenario='pessimistic', nb_car=40,
+                           total_time=12 * 20, seed=71)
+        cfg.set_RESERVATION_LEAD_PARAMS(lead_params)
+        sim = run_sim(cfg, 'bramev')
+        assert sim.check_reservation_invariant()[0], "invariant violé"
+        return sim.behaviors.report()
+
+    sans = outcomes({'low': 0, 'high': 0})
+    avec = outcomes({'low': 6, 'high': 12})
+
+    assert sans['intent_counts'].get('early', 0) > 0
+    assert sans['observed_counts'].get('early', 0) == 0, (
+        "sans horizon, aucune annulation ne peut être anticipée"
+    )
+    assert sans['reclassified'].get('early->late', 0) == sans['intent_counts']['early']
+
+    assert avec['observed_counts'].get('early', 0) > 0, (
+        "avec un horizon, la branche anticipée doit être atteinte"
+    )
+    assert avec['reclassified'].get('early->late', 0) < sans['reclassified']['early->late']
+    assert avec['mean_lead_slots'] > sans['mean_lead_slots']
+
+
+def test_8_planned_lead_is_not_counted_as_waiting():
+    """
+    L'horizon voulu par le conducteur n'est pas de l'attente subie.
+
+    Vérifié structurellement, pas en agrégat : décaler *conjointement* la
+    requête et le créneau de `l_n` slots doit laisser l'attente et l'utilité
+    inchangées. En agrégat, l'attente mesurée augmente bel et bien avec
+    l'horizon — mais parce que les réservations sont détenues plus longtemps et
+    que la contention monte, ce qui est un effet du modèle et non un biais de
+    mesure.
+    """
+    cfg = small_config()
+    spec = generate_world_spec(cfg, cfg.SEED)
+    car = build_world(spec, cfg)[0][0]
+
+    dist = 2.5e3
+    base = {'n': 1, 'car_idx': car.idx, 't_n': 20, 'd_n': 12,
+            'loc': (0., 0.), 'r_n': 5e3, 'g_n': 12, 'l_n': 0}
+    t_arr0 = utils.nominal_arrival(base['t_n'], 0, dist, cfg)
+    offer0 = off.Offer(station_id=0, charger_id=0, t_arr=t_arr0,
+                       t_dep=t_arr0 + 12, d_prop=12, distance=dist)
+
+    lead = 10
+    shifted = dict(base, l_n=lead)
+    t_arr1 = utils.nominal_arrival(shifted['t_n'], lead, dist, cfg)
+    assert t_arr1 == t_arr0 + lead, "le créneau nominal doit suivre l'horizon"
+    offer1 = off.Offer(station_id=0, charger_id=0, t_arr=t_arr1,
+                       t_dep=t_arr1 + 12, d_prop=12, distance=dist)
+
+    u0 = car.compute_utility(offer0, base, min_dist=1e3)
+    u1 = car.compute_utility(offer1, shifted, min_dist=1e3)
+    assert u0 == u1, (
+        f"l'horizon planifié dégrade l'utilité ({u0} -> {u1}) : il est compté "
+        "comme de l'attente subie"
+    )
+    assert u1 > 0, "utilité écrasée à zéro par la normalisation de l'attente"
+
+    # Un horizon ignoré par compute_utility produirait waitingTime = l_n, donc
+    # un ratio > 1 sur maxWaitingTime = g_n : c'est la signature du bug.
+    naive = car.compute_utility(offer1, base, min_dist=1e3)
+    assert naive < u1, "le test ne discrimine pas : vérifier la construction"
+
+
+def test_8_measured_waiting_stays_far_below_the_planned_horizon():
+    """
+    Garde-fou d'agrégat : si l'horizon était compté comme attente, l'attente
+    mesurée vaudrait environ l'horizon moyen. Elle doit en rester loin.
+    """
+    cfg = small_config(scenario='balance', nb_car=40, total_time=12 * 20, seed=71)
+    cfg.set_RESERVATION_LEAD_PARAMS({'low': 6, 'high': 12})
+    sim = run_sim(cfg, 'bramev')
+    beh = sim.behaviors.report()
+    wait_slots = (sim.metrics.report()['mean_waiting_time_h'] * 60
+                  / cfg.SLOT_DURATION)
+    assert wait_slots < 0.25 * beh['mean_lead_slots'], (
+        f"attente mesurée {wait_slots:.2f} slots pour un horizon moyen "
+        f"{beh['mean_lead_slots']} : l'horizon fuit dans la métrique"
+    )
+
+    served = [c for c in sim.cars if c.nb_sessions > 0]
+    assert served and any(c.u_total > 0 for c in served), (
+        "toutes les utilités sont nulles : le classement des offres est dégénéré"
+    )
+
+
+def test_8_zero_lead_is_the_control_arm():
+    """
+    `{0, 0}` n'est pas un réglage neutre mais le bras de contrôle de l'ablation :
+    l'annulation anticipée doit y être démontrablement inatteignable, et le run
+    doit rester déterministe.
+    """
+    def run():
+        cfg = small_config(scenario='pessimistic', nb_car=40,
+                           total_time=12 * 20, seed=71)
+        cfg.set_RESERVATION_LEAD_PARAMS({'low': 0, 'high': 0})
+        sim = run_sim(cfg, 'bramev')
+        return sim.behaviors.report(), sim.metrics.report()
+
+    a_beh, a_met = run()
+    b_beh, b_met = run()
+    assert a_beh['observed_counts'] == b_beh['observed_counts']
+    assert a_met['mean_travel_distance_km'] == b_met['mean_travel_distance_km']
+
+    assert a_beh['intent_counts'].get('early', 0) > 0, "aucune intention early"
+    assert a_beh['observed_counts'].get('early', 0) == 0, (
+        "sans horizon, aucune annulation ne peut être qualifiée d'anticipée"
+    )
+
+
+def test_8_diagnostic_separates_structure_from_sampling():
+    """
+    Le diagnostic doit affirmer une impossibilité *structurelle*, jamais
+    extrapoler depuis une poignée d'intentions.
+
+    Il criait au faux positif sur les grilles minuscules des tests : une seule
+    intention `early` non réalisée déclenchait un message annonçant un délai
+    « quasi nul » alors que le délai médian valait 2 à 3 slots.
+    """
+    from src.metrics.metrics import BehaviorTracker
+
+    cfg = SimulationConfig()
+    min_lead = cfg.min_lead_for_early_cancel()
+
+    # (a) Délais suffisants, une seule intention non réalisée -> muet.
+    cfg.set_RESERVATION_LEAD_PARAMS({'low': 0, 'high': 12})
+    petit = BehaviorTracker(cfg)
+    for _ in range(7):
+        petit.record_intent('pres', min_lead + 2)
+    petit.record_intent('early', 1)
+    petit.record_outcome('early', 'late')
+    assert petit.anticipable_share() > 0
+    assert petit.diagnostics() == [], (
+        f"faux positif sur un échantillon de 1 : {petit.diagnostics()}"
+    )
+
+    # (b) Horizon demandé mais jamais obtenu -> signalé, quel que soit le
+    #     nombre d'intentions, avec la cause actionnable.
+    cfg.set_RESERVATION_LEAD_PARAMS({'low': 0, 'high': 12})
+    struct = BehaviorTracker(cfg)
+    for _ in range(8):
+        struct.record_intent('pres', 1)
+    struct.record_intent('early', 1)
+    struct.record_outcome('early', 'late')
+    assert struct.anticipable_share() == 0.
+    assert any('horizon de simulation trop court' in d.lower()
+               for d in struct.diagnostics()), (
+        f"cause non signalée : {struct.diagnostics()}"
+    )
+
+    # (b') Même situation, mais anticipation volontairement désactivée -> muet.
+    cfg.set_RESERVATION_LEAD_PARAMS({'low': 0, 'high': 0})
+    controle = BehaviorTracker(cfg)
+    for _ in range(8):
+        controle.record_intent('pres', 1)
+    controle.record_intent('early', 1)
+    controle.record_outcome('early', 'late')
+    assert controle.anticipable_share() == 0.
+    assert controle.diagnostics() == [], (
+        f"le bras de contrôle ne doit rien signaler : {controle.diagnostics()}"
+    )
+
+    # (c) Délais suffisants mais aucune des N intentions réalisée -> anomalie.
+    anomalie = BehaviorTracker(cfg)
+    for _ in range(20):
+        anomalie.record_intent('pres', min_lead + 5)
+    for _ in range(BehaviorTracker.MIN_EARLY_SAMPLE):
+        anomalie.record_intent('early', min_lead + 5)
+        anomalie.record_outcome('early', 'late')
+    diags = anomalie.diagnostics()
+    assert any('intentions' in d for d in diags), f"anomalie non signalée : {diags}"
+    assert not any('Augmenter RESERVATION_LEAD_PARAMS' in d for d in diags), (
+        "ne pas imputer à la structure ce qui n'est pas structurel"
+    )
+
+
+def test_8_neither_arm_is_diagnosed_when_configured_deliberately():
+    """
+    Bout en bout : ni le bras de contrôle ni le bras traité ne doit produire de
+    diagnostic. Désactiver l'anticipation est un choix, pas une anomalie — et
+    `ExperimentParams.validate` l'a déjà signalé à la configuration.
+    """
+    def diagnose(lead_params):
+        cfg = small_config(scenario='pessimistic', nb_car=40,
+                           total_time=12 * 20, seed=71)
+        cfg.set_RESERVATION_LEAD_PARAMS(lead_params)
+        return run_sim(cfg, 'bramev').behaviors.report()
+
+    controle = diagnose({'low': 0, 'high': 0})
+    assert controle['anticipable_share'] == 0., "le contrôle doit être stérile"
+    assert controle['diagnostics'] == [], (
+        f"le bras de contrôle est délibéré, pas anormal : {controle['diagnostics']}"
+    )
+
+    traite = diagnose({'low': 0, 'high': 12})
+    assert traite['anticipable_share'] > 0.5
+    assert traite['observed_counts'].get('early', 0) > 0
+    assert traite['diagnostics'] == [], (
+        f"diagnostic injustifié sur le bras traité : {traite['diagnostics']}"
+    )
 
 
 # ----------------------------------------------------------------------

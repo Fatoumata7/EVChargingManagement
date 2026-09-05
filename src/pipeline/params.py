@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import os
+import warnings
 from dataclasses import dataclass, asdict, field, fields, replace
 from pathlib import Path
 from typing import Any, Iterator, Mapping, Sequence
@@ -87,6 +88,13 @@ class ExperimentParams:
     # ---- protocole
     offer_ttl_slots: int = 1
     late_cancel_fraction: float = 0.5
+    #: Horizon de planification (slots) entre l'émission d'une requête et le
+    #: créneau souhaité, tiré uniformément dans [low, high]. (0, 0) désactive
+    #: l'anticipation — réservation pour le créneau immédiat, d'où un délai nul
+    #: et des annulations toutes qualifiées « tardives » : c'est le bras de
+    #: contrôle de l'ablation, pas un réglage neutre.
+    reservation_lead_low: int = 0
+    reservation_lead_high: int = 12
     society_update_interval: int | None = None
     #: Alpha commun imposé aux méthodes à alpha fixe (`bramev_fixed_alpha`).
     #: Sans effet sur les autres : leur alpha vient du monde partagé.
@@ -236,6 +244,34 @@ class ExperimentParams:
         if not 0 < self.late_cancel_fraction <= 1:
             errors.append("late_cancel_fraction doit être dans ]0, 1]")
 
+        for name, value in (('reservation_lead_low', self.reservation_lead_low),
+                            ('reservation_lead_high', self.reservation_lead_high)):
+            if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+                errors.append(f"{name} doit être un entier >= 0, reçu {value!r}")
+        if (isinstance(self.reservation_lead_low, int)
+                and isinstance(self.reservation_lead_high, int)
+                and self.reservation_lead_low > self.reservation_lead_high):
+            errors.append(
+                f"reservation_lead_low ({self.reservation_lead_low}) doit être "
+                f"<= reservation_lead_high ({self.reservation_lead_high})"
+            )
+        # Avertissement structurel, pas une erreur : un horizon trop court est
+        # licite mais laisse la branche `early` inatteignable. Le délai effectif
+        # vaut `l_n + ceil(trajet)`, soit au moins `l_n + 1`, à comparer au
+        # minimum déduit du seuil (cf. `min_lead_for_early_cancel`).
+        probe = cfg_module.SimulationConfig()
+        probe.LATE_CANCEL_FRACTION = self.late_cancel_fraction
+        min_lead = probe.min_lead_for_early_cancel()
+        if 0 < self.reservation_lead_high and self.reservation_lead_high + 1 < min_lead:
+            warnings.warn(
+                f"reservation_lead_high={self.reservation_lead_high} : aucun "
+                f"horizon tiré ne permettra une annulation anticipée "
+                f"(délai minimal {min_lead} slots pour "
+                f"late_cancel_fraction={self.late_cancel_fraction}). "
+                "Toutes les annulations seront qualifiées « tardives ».",
+                stacklevel=2,
+            )
+
         if self.society_update_interval is not None and self.society_update_interval <= 0:
             errors.append("society_update_interval doit être > 0 ou nul (défaut)")
 
@@ -312,6 +348,8 @@ class ExperimentParams:
         config.set_STRATEGY_NOISE(self.strategy_noise)
         config.set_OFFER_TTL_SLOTS(self.offer_ttl_slots)
         config.LATE_CANCEL_FRACTION = self.late_cancel_fraction
+        config.set_RESERVATION_LEAD_PARAMS({'low': self.reservation_lead_low,
+                                            'high': self.reservation_lead_high})
         config.set_ALPHA_FIXED(self.alpha_fixed)
         if self.society_update_interval is not None:
             config.SOCIETY_UPDATE_INTERVAL = self.society_update_interval
@@ -332,5 +370,7 @@ class ExperimentParams:
             f"flottes={list(self.fleet_sizes)} | méthodes={list(self.methods)} | "
             f"{self.total_time} slots ({self.total_time / SLOTS_PER_DAY:.1f} j) | "
             f"{self.nb_stations} stations / {self.nb_societies} sociétés | "
+            f"horizon de réservation [{self.reservation_lead_low}, "
+            f"{self.reservation_lead_high}] slots | "
             f"{self.nb_cases} runs"
         )

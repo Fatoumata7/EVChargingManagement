@@ -32,11 +32,11 @@ Ordre d'un slot
 8. apprentissage collectif
 """
 
-import math
 import time
 import numpy as np
 from loguru import logger
 
+import src.env.utils as utils
 import src.experiments.config as cfg
 import src.experiments.methods as methods
 from src.metrics.metrics import MetricsCollector, BreakdownTracker, BehaviorTracker
@@ -107,7 +107,7 @@ class Simulation:
         self.metrics = MetricsCollector(cars, stations, config)
 
         self.breakdowns = BreakdownTracker()
-        self.behaviors  = BehaviorTracker()
+        self.behaviors  = BehaviorTracker(config)
         self._broken_cars = set()   # car.idx des voitures actuellement en panne
 
     # ------------------------------------------------------------------
@@ -183,7 +183,8 @@ class Simulation:
                   f'-> {req['d_n'] // self.config.NB_SLOTS_IN_ONE_HOUR}H '
                   f'{(req['d_n'] % self.config.NB_SLOTS_IN_ONE_HOUR) * self.config.SLOT_DURATION}min'
                   f' | RAY: {req['r_n']*1e-3:.2f}km'
-                  f' | PATIENCE: {req['g_n']*5:.2f}min', file=file)
+                  f' | PATIENCE: {req['g_n']*5:.2f}min'
+                  f' | LEAD: {req['l_n']} slots', file=file)
             car.set_state('REQUESTING')
 
             eligible, min_d, min_s = self._get_eligible_stations(
@@ -349,7 +350,12 @@ class Simulation:
             car.set_state('DRIVING')
             return
 
-        t_hat_arr     = math.ceil(car.request['t_n'] + chosen.distance / self.config.CAR_SPEED)
+        # `t_hat_arr` inclut l'horizon de planification : le délai voulu par le
+        # conducteur n'est pas de l'attente subie et ne doit pas dégrader la
+        # métrique de qualité de service.
+        t_hat_arr     = utils.nominal_arrival(car.request['t_n'],
+                                              car.request.get('l_n', 0),
+                                              chosen.distance, self.config)
         waiting_slots = max(0, chosen.t_arr - t_hat_arr)
         self.metrics.record_offer_accepted(car, chosen, waiting_slots)
 

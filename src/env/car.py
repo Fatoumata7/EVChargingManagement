@@ -3,7 +3,6 @@ car.py — Agent véhicule électrique
 """
 
 import numpy as np
-import math
 import random
 
 import src.env.utils as utils
@@ -23,10 +22,11 @@ class Car:
             tirage n'a lieu ici : le véhicule est reconstructible à l'identique
             pour chaque méthode comparée.
         rng_hub : RngHub | None
-            Fabrique de flux aléatoires. Fournit trois flux indépendants pour ce
-            véhicule (déplacement / comportement / requête), ce qui permet de
-            comparer deux méthodes sur le *même* aléa : la divergence des
-            décisions ne décale pas les tirages des autres usages.
+            Fabrique de flux aléatoires. Fournit quatre flux indépendants pour
+            ce véhicule (déplacement / comportement / requête / horizon de
+            planification), ce qui permet de comparer deux méthodes sur le
+            *même* aléa : la divergence des décisions ne décale pas les tirages
+            des autres usages.
         """
 
         self.config = config
@@ -37,10 +37,12 @@ class Car:
             self.rng_move     = rng_hub.stream('car_move', idx)
             self.rng_behavior = rng_hub.stream('car_behavior', idx)
             self.rng_request  = rng_hub.stream('car_request', idx)
+            self.rng_lead     = rng_hub.stream('car_lead', idx)
         else:
             self.rng_move     = np.random.default_rng()
             self.rng_behavior = np.random.default_rng()
             self.rng_request  = np.random.default_rng()
+            self.rng_lead     = np.random.default_rng()
 
         if spec is not None:
             self.loc = np.asarray(spec['loc'], dtype=float)
@@ -263,6 +265,25 @@ class Car:
                 and self.state == 'DRIVING'
                 and self.soc_m > self.config.SOC_BREAKDOWN_THRESHOLD)
 
+    def draw_reservation_lead(self) -> int:
+        """
+        Horizon de planification de la requête courante, en slots.
+
+        Le conducteur ne réserve pas systématiquement pour l'instant présent :
+        il vise un créneau situé `l_n` slots plus tard. C'est ce délai qui rend
+        l'annulation *anticipée* possible — sans lui, `t_arr = t_n` et toute
+        annulation est mécaniquement tardive (cf. `utils.nominal_arrival` et
+        `SimulationConfig.late_cancel_threshold`).
+
+        Tiré sur `rng_lead`, un flux **dédié**. Le partager avec `rng_request`
+        décalerait durée, rayon et patience de toutes les requêtes suivantes dès
+        que l'horizon est activé : les deux bras de l'ablation ne différeraient
+        plus seulement par l'horizon. Flux séparé = intervention propre, ce qui
+        est la raison d'être de `seeding.STREAM_CODES`.
+        """
+        p = self.config.RESERVATION_LEAD_PARAMS
+        return int(self.rng_lead.integers(p['low'], p['high'] + 1))
+
     def emit_request(self, current_time, loc_n, id_demand):
         charging_duration = self.generate_charging_duration_request(
             self.config.CHARGING_DURATION_PARAMS)
@@ -279,7 +300,8 @@ class Car:
             'd_n':     charging_duration,
             'loc':     (x_n, y_n),
             'r_n':     r_n,
-            'g_n':     max_waiting_time
+            'g_n':     max_waiting_time,
+            'l_n':     self.draw_reservation_lead()
         }
         self.request = request
         self.nb_request += 1
@@ -287,7 +309,9 @@ class Car:
 
     def update_schedule_requested(self, min_dist):
         """FIX : == → = (affectation)"""
-        t_arr = math.ceil(self.request['t_n'] + min_dist / self.config.CAR_SPEED)
+        t_arr = utils.nominal_arrival(self.request['t_n'],
+                                      self.request.get('l_n', 0),
+                                      min_dist, self.config)
         t_dep = int(t_arr + self.request['d_n'])
         t_arr = min(t_arr, self.config.TOTAL_TIME - 1)
         t_dep = min(t_dep, self.config.TOTAL_TIME)
@@ -303,7 +327,13 @@ class Car:
             return 1.0   # impossible d'avoir maxEnergyDif = 0
         r_n = request['r_n']
         g_n = request['g_n']
-        t_hat_arr = math.ceil(request['t_n'] + offer.distance / self.config.CAR_SPEED)
+        # L'horizon de planification `l_n` doit entrer ici : sans lui, le délai
+        # voulu par le conducteur serait compté comme de l'attente subie,
+        # `waitingTime / maxWaitingTime` dépasserait 1 et le `max(0., u)` final
+        # écraserait *toutes* les utilités à zéro — le classement des offres
+        # deviendrait arbitraire, sans erreur ni avertissement.
+        t_hat_arr = utils.nominal_arrival(request['t_n'], request.get('l_n', 0),
+                                          offer.distance, self.config)
 
         energyDif    = d_n - offer.d_prop
         maxEnergyDif = d_n - 1

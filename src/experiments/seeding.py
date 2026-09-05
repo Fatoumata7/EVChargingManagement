@@ -44,6 +44,7 @@ STREAM_CODES = {
     'society_init': 6,   # tirage d'une société de la grille partagée
     'station_init': 7,   # tirage d'une station de la grille partagée
     'car_init':     8,   # tirage des attributs statiques d'un véhicule
+    'car_lead':     9,   # horizon de planification d'une requête (l_n)
 }
 
 DEFAULT_SEED = 20260101

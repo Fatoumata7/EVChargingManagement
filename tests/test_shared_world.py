@@ -65,6 +65,12 @@ def tiny_params(**overrides) -> ExperimentParams:
         total_time=12 * 3,
         nb_stations=6,
         nb_societies=2,
+        # Bras de contrôle explicite : cette fixture teste le partage du monde,
+        # pas l'anticipation. Sur 36 slots, un horizon de planification n'est
+        # jamais servi (les créneaux visés tombent hors de la fenêtre ILP) et
+        # produirait un diagnostic légitime mais hors sujet ici.
+        reservation_lead_low=0,
+        reservation_lead_high=0,
         keep_logs=False,
         figures=False,
         log_every=12,

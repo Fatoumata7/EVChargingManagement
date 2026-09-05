@@ -8,7 +8,7 @@ class SimulationConfig:
 
     # ------------------------------------------------------------------ GRILLE
     # 3×3 km : taille raisonnable pour une zone urbaine dense.
-    C_GRID = 3 * 1e3            # 2000 km^2 (1/5 Paris)
+    C_GRID = 3 * 1e3            # 9 km^2 (1/10e de Paris)
 
     # ------------------------------------------------------------------ TEMPS
     SLOT_DURATION = 5               # 5 minutes, doit être multiple de 60
@@ -41,7 +41,7 @@ class SimulationConfig:
         'high': 500
     }
 
-    LATE_CANCEL_REF = 24    # annulation tardive si < 2h = 24 slots
+    LATE_CANCEL_REF = 12    # annulation tardive si < 1h = 12 slots
 
     # Consommation énergétique : 10 kWh / 100 km
     ENERGY_CONSUMPTION = {
@@ -94,6 +94,29 @@ class SimulationConfig:
         # est considérée tardive, quand ce délai est plus court que
         # LATE_CANCEL_REF (cf. late_cancel_threshold).
         self.LATE_CANCEL_FRACTION = 0.5
+
+        # ------------------------------------------------------------------ HORIZON DE PLANIFICATION
+        # Nombre de slots entre l'émission d'une requête et le créneau souhaité
+        # (`request['l_n']`, tiré par requête dans `Car.emit_request`). Le
+        # conducteur ne demande plus « charger maintenant » mais « charger dans
+        # l_n slots » : le créneau nominal devient t_n + l_n + trajet
+        # (cf. `utils.nominal_arrival`).
+        #
+        # Atteignabilité de l'annulation anticipée : elle se déclenche au plus
+        # tôt en t_n + 1, donc slots_left = lead - 1, à comparer au seuil
+        # late_cancel_threshold(lead). Il faut un délai effectif >= 3 slots
+        # (cf. min_lead_for_early_cancel), et ce délai vaut l_n + ceil(trajet),
+        # soit l_n + 1 sur cette grille : l_n >= 2 suffit donc ici. Au-delà de
+        # 24, le gain est nul — la fenêtre ILP est plafonnée par la patience g_n.
+        #
+        # `low = 0` est délibéré : une partie des requêtes reste « je charge
+        # maintenant » (conducteur déjà à court d'autonomie), ce qui conserve
+        # dans chaque exécution un groupe témoin non anticipable et garde
+        # observable la reclassification `early -> late`.
+        #
+        # {'low': 0, 'high': 0} désactive l'horizon : c'est le bras de contrôle
+        # de l'ablation, celui où l'annulation anticipée est inatteignable.
+        self.RESERVATION_LEAD_PARAMS = {'low': 12, 'high': 48}
 
         self.VISUALIZE = True
 
@@ -467,6 +490,46 @@ class SimulationConfig:
         self.OFFER_TTL_SLOTS = value
 
 
+    def set_RESERVATION_LEAD_PARAMS(self, value: dict) -> None:
+        """
+        Bornes du tirage de l'horizon de planification, en slots.
+
+        Parameters
+        ----------
+        value : dict
+            `{'low': int, 'high': int}`, bornes inclusives avec 0 <= low <= high.
+            `{'low': 0, 'high': 0}` reproduit le comportement historique
+            (réservation pour le créneau immédiat).
+        """
+        if not isinstance(value, dict):
+            raise TypeError(
+                f"RESERVATION_LEAD_PARAMS doit être un dict, reçu : "
+                f"{type(value).__name__}"
+            )
+
+        missing = {'low', 'high'} - set(value)
+        if missing:
+            raise ValueError(f"Clés manquantes : {missing}")
+
+        low, high = value['low'], value['high']
+        for name, v in (('low', low), ('high', high)):
+            if not isinstance(v, int) or isinstance(v, bool):
+                raise TypeError(
+                    f"RESERVATION_LEAD_PARAMS['{name}'] doit être un int, "
+                    f"reçu : {type(v).__name__}"
+                )
+            if v < 0:
+                raise ValueError(
+                    f"RESERVATION_LEAD_PARAMS['{name}'] doit être >= 0, reçu : {v}"
+                )
+        if low > high:
+            raise ValueError(
+                f"RESERVATION_LEAD_PARAMS : low ({low}) doit être <= high ({high})"
+            )
+
+        self.RESERVATION_LEAD_PARAMS = {'low': int(low), 'high': int(high)}
+
+
     def late_cancel_threshold(self, lead: int) -> int:
         """
         Seuil (en slots avant l'arrivée prévue) séparant annulation anticipée et
@@ -483,6 +546,31 @@ class SimulationConfig:
         lead = max(0, int(lead))
         relative = int(lead * self.LATE_CANCEL_FRACTION)
         return max(1, min(self.LATE_CANCEL_REF, relative))
+
+
+    def min_lead_for_early_cancel(self) -> int:
+        """
+        Plus petit délai requête → arrivée permettant une annulation *observée*
+        comme anticipée.
+
+        L'annulation anticipée se déclenche au plus tôt au slot suivant la
+        réservation (`t_c = reservation_slot + 1`, cf.
+        `Simulation._process_cancellations`), d'où `slots_left = lead - 1`.
+        Elle n'est qualifiée `early` que si `slots_left > late_cancel_threshold(lead)`.
+        En dessous de ce seuil, une intention `early` est nécessairement
+        réalisée en `late` : la branche est inatteignable, ce qui était le
+        comportement observé sur toute la grille (`reclassified` saturé à 100 %).
+
+        Vaut 3 avec `LATE_CANCEL_FRACTION = 0.5`. Renvoie -1 si aucun délai ne
+        convient (fraction trop proche de 1).
+
+        Le délai effectif est `l_n + ceil(trajet)` : sur une grille où le trajet
+        dure moins d'un slot il vaut `l_n + 1`, donc `l_n >= 2` suffit ici.
+        """
+        for lead in range(1, 3 * self.LATE_CANCEL_REF + 2):
+            if lead - 1 > self.late_cancel_threshold(lead):
+                return lead
+        return -1
 
 
     def summary(self) -> dict:
@@ -511,6 +599,7 @@ class SimulationConfig:
             'coeff_max_dist':        self.COEFF_MAX_DIST,
             'late_cancel_ref':       self.LATE_CANCEL_REF,
             'late_cancel_fraction':  self.LATE_CANCEL_FRACTION,
+            'reservation_lead':      dict(self.RESERVATION_LEAD_PARAMS),
             'offer_ttl_slots':       self.OFFER_TTL_SLOTS,
             'alpha_fixed':           self.ALPHA_FIXED,
         }

@@ -558,12 +558,21 @@ class BehaviorTracker:
 
     OUTCOMES = ('pres', 'abs', 'early', 'late', 'breakdown', 'unresolved')
 
-    def __init__(self):
+    #: En dessous de ce nombre d'intentions `early`, l'absence d'annulation
+    #: anticipée observée n'est pas interprétable : c'est un échantillon, pas un
+    #: symptôme. Le diagnostic reste muet.
+    MIN_EARLY_SAMPLE = 5
+
+    def __init__(self, config=None):
         self.intents = Counter()      # comportement tiré à la réservation
         self.outcomes = Counter()     # issue observée
         self.pairs = Counter()        # (intention, issue)
         self.reclassified = Counter() # intentions réalisées autrement
         self.leads = []               # délai requête → arrivée (slots)
+        # Sert aux diagnostics : le délai minimal rendant l'annulation
+        # anticipée atteignable se déduit de LATE_CANCEL_FRACTION, il ne peut
+        # pas être codé en dur ici.
+        self.config = config
 
     def record_intent(self, intent: str, lead: int | None = None):
         self.intents[intent] += 1
@@ -577,6 +586,42 @@ class BehaviorTracker:
         self.pairs[(intent, outcome)] += 1
         if intent is not None and intent != outcome and outcome in ('early', 'late', 'abs', 'pres'):
             self.reclassified[(intent, outcome)] += 1
+
+    # ------------------------------------------------------------------
+    def min_lead_for_early(self) -> int:
+        """Délai minimal rendant l'annulation anticipée atteignable."""
+        if self.config is None:
+            return 3    # valeur pour LATE_CANCEL_FRACTION = 0.5
+        return self.config.min_lead_for_early_cancel()
+
+    def _anticipation_requested(self) -> bool:
+        """
+        L'expérimentateur a-t-il demandé un horizon capable de produire des
+        annulations anticipées ?
+
+        Sépare le bras de contrôle — anticipation volontairement désactivée,
+        rien à signaler — du cas où l'horizon est demandé mais jamais obtenu.
+        Le délai effectif vaut `l_n + ceil(trajet)`, soit au moins `l_n + 1`.
+        """
+        if self.config is None:
+            return True
+        high = self.config.RESERVATION_LEAD_PARAMS['high']
+        return high + 1 >= self.min_lead_for_early()
+
+    def anticipable_share(self) -> float | None:
+        """
+        Part des réservations dont le délai autorisait une annulation anticipée.
+
+        C'est la mesure qui sépare une impossibilité structurelle (part nulle :
+        aucune réservation n'avait d'avance à perdre) d'un simple aléa
+        d'échantillonnage.
+        """
+        if not self.leads:
+            return None
+        threshold = self.min_lead_for_early()
+        if threshold < 0:
+            return 0.
+        return sum(1 for l in self.leads if l >= threshold) / len(self.leads)
 
     # ------------------------------------------------------------------
     def _rates(self, counter: Counter) -> dict:
@@ -600,27 +645,46 @@ class BehaviorTracker:
 
         early_intent = self.intents.get('early', 0)
         early_obs = self.outcomes.get('early', 0)
-        early_to_late = self.reclassified.get(('early', 'late'), 0)
+        share = self.anticipable_share()
+        min_lead = self.min_lead_for_early()
 
-        if early_intent > 0 and early_obs == 0:
-            # Message volontairement sans compteur : il est structurel, donc
-            # identique pour tous les cas d'une campagne (regroupement en sortie).
+        # 1. Horizon demandé mais jamais obtenu. On ne signale que l'écart entre
+        #    l'intention de l'expérimentateur et le résultat : désactiver
+        #    l'anticipation (bras de contrôle) est un choix délibéré, pas une
+        #    anomalie — `ExperimentParams.validate` l'a déjà signalé au moment
+        #    de la configuration. Message sans compteur : il est identique pour
+        #    tous les cas d'une campagne (regroupement en sortie).
+        if share == 0. and early_intent > 0 and self._anticipation_requested():
             warnings.append(
-                "Aucune annulation anticipée réalisée alors que le scénario en "
-                "prévoit : toutes sont reclassées en tardives. Une annulation ne "
-                "peut être anticipée que si la réservation est prise "
-                "suffisamment à l'avance ; avec un délai requête → arrivée "
-                "quasi nul, la distinction anticipé / tardif n'est pas mesurable "
-                "et la probabilité 'early' du scénario se réalise en 'late'. "
-                "Voir 'reclassified' et 'median_lead_slots'."
+                "Horizon de planification demandé mais aucune réservation n'a "
+                f"obtenu un délai suffisant (>= {min_lead} slots) : la "
+                "distinction anticipé / tardif n'est pas mesurable et la "
+                "probabilité 'early' du scénario se réalise nécessairement en "
+                "'late'. Cause probable : horizon de simulation trop court "
+                "devant RESERVATION_LEAD_PARAMS + durée de recharge — les "
+                "créneaux visés tombent hors de la fenêtre. Voir "
+                "'median_lead_slots'."
             )
 
-        if self.leads and float(np.mean(self.leads)) < 1.0:
+        # 2. Anomalie d'échantillon — le paramétrage le permettait, mais aucune
+        #    intention ne s'est réalisée. Muet en dessous de MIN_EARLY_SAMPLE :
+        #    sur une poignée d'intentions, l'absence d'issue `early` est du
+        #    bruit, pas un symptôme.
+        elif (early_intent >= self.MIN_EARLY_SAMPLE and early_obs == 0
+                and share):
             warnings.append(
-                "Délai moyen requête → arrivée prévue < 1 slot : les stations "
-                "proposent des créneaux immédiats (rayon de recherche petit "
-                "devant la vitesse par slot). Aucune réservation n'est prise à "
-                "l'avance."
+                f"Aucune des {early_intent} intentions 'early' n'a été réalisée "
+                f"comme telle, alors que {share:.0%} des réservations avaient un "
+                f"délai suffisant (>= {min_lead} slots). Écart à examiner : voir "
+                "'reclassified'."
+            )
+
+        if (self.leads and float(np.mean(self.leads)) < 1.0
+                and self._anticipation_requested()):
+            warnings.append(
+                "Délai moyen requête → arrivée prévue < 1 slot alors qu'un "
+                "horizon est demandé : rayon de recherche petit devant la "
+                "vitesse par slot."
             )
 
         unresolved = self.outcomes.get('unresolved', 0)
@@ -642,6 +706,8 @@ class BehaviorTracker:
             'reclassified':      {f"{i}->{o}": n for (i, o), n in self.reclassified.items()},
             'mean_lead_slots':   round(float(np.mean(self.leads)), 3) if self.leads else None,
             'median_lead_slots': round(float(np.median(self.leads)), 3) if self.leads else None,
+            'anticipable_share': (round(self.anticipable_share(), 4)
+                                  if self.anticipable_share() is not None else None),
             'diagnostics':       self.diagnostics(),
         }
 

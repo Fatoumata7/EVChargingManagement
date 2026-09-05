@@ -15,6 +15,7 @@ import json
 import sys
 import tempfile
 import traceback
+import warnings
 from pathlib import Path
 
 import numpy as np
@@ -80,6 +81,9 @@ def test_params_reject_invalid_values():
         {'nb_societies': 99, 'nb_stations': 10},
         {'late_cancel_fraction': 1.5},
         {'nb_charg_spot_low': 8, 'nb_charg_spot_high': 4},
+        {'reservation_lead_low': -1},
+        {'reservation_lead_low': 12, 'reservation_lead_high': 6},
+        {'reservation_lead_high': 3.5},
     ]
     for kwargs in bad_cases:
         try:
@@ -87,6 +91,49 @@ def test_params_reject_invalid_values():
         except ParamsError:
             continue
         raise AssertionError(f"aurait dû être refusé : {kwargs}")
+
+
+def test_params_reservation_lead_reaches_the_config():
+    """L'horizon déclaré doit atteindre la config simulée, et {0,0} être neutre."""
+    params = ExperimentParams(reservation_lead_low=4, reservation_lead_high=9)
+    config = params.build_config('balance', 50)
+    assert config.RESERVATION_LEAD_PARAMS == {'low': 4, 'high': 9}
+    # tracé avec les résultats : sans cela l'horizon d'un run est irrécupérable
+    assert config.summary()['reservation_lead'] == {'low': 4, 'high': 9}
+
+    # Le défaut doit rendre l'annulation anticipée atteignable : c'est tout
+    # l'objet de l'horizon. Un défaut nul reconduirait le régime « tout
+    # tardif ».
+    default = ExperimentParams().build_config('balance', 50)
+    high = default.RESERVATION_LEAD_PARAMS['high']
+    assert high + 1 >= default.min_lead_for_early_cancel(), (
+        f"horizon par défaut trop court ({high}) : la branche anticipée reste "
+        f"inatteignable (minimum {default.min_lead_for_early_cancel()} slots)"
+    )
+    assert default.RESERVATION_LEAD_PARAMS['low'] == 0, (
+        "low = 0 conserve un groupe témoin non anticipable dans chaque run"
+    )
+
+
+def test_params_warn_when_the_early_branch_stays_unreachable():
+    """
+    Un horizon trop court est licite mais rend l'annulation anticipée
+    impossible : le pipeline doit le dire plutôt que produire un run muet.
+    """
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter('always')
+        ExperimentParams(reservation_lead_low=1, reservation_lead_high=1)
+    assert any('anticipée' in str(w.message) for w in caught), (
+        f"aucun avertissement émis, reçu : {[str(w.message) for w in caught]}"
+    )
+
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter('always')
+        ExperimentParams(reservation_lead_low=0, reservation_lead_high=0)
+        ExperimentParams(reservation_lead_low=6, reservation_lead_high=12)
+    assert not caught, (
+        f"avertissement injustifié : {[str(w.message) for w in caught]}"
+    )
 
 
 def test_params_reject_unknown_keys():

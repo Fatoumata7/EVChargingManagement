@@ -129,6 +129,15 @@ def _add_run(subparsers) -> None:
     proto.add_argument('--late-cancel-fraction', type=float, default=None,
                        help='Fraction du délai requête→arrivée séparant '
                             'annulation anticipée et tardive.')
+    proto.add_argument('--reservation-lead-low', type=int, default=None,
+                       help="Borne basse de l'horizon de planification, en "
+                            'slots (délai entre la requête et le créneau '
+                            'souhaité).')
+    proto.add_argument('--reservation-lead-high', type=int, default=None,
+                       help="Borne haute de l'horizon de planification. 0 "
+                            '(défaut) = réservation immédiate, comportement '
+                            "historique ; >= 3 pour que l'annulation anticipée "
+                            'soit atteignable.')
     proto.add_argument('--society-update-interval', type=int, default=None,
                        help="Période d'apprentissage collectif, en slots.")
     proto.add_argument('--alpha-fixed', type=float, default=None,
@@ -228,7 +237,8 @@ def _add_run_selector(p: argparse.ArgumentParser) -> None:
 PARAM_OPTIONS = ('seed', 'scenarios', 'fleet_sizes', 'methods',
                  'total_time', 'nb_stations', 'nb_societies', 'nb_charg_spot_low',
                  'nb_charg_spot_high', 'strategy_noise', 'offer_ttl_slots',
-                 'late_cancel_fraction', 'society_update_interval', 'alpha_fixed',
+                 'late_cancel_fraction', 'reservation_lead_low',
+                 'reservation_lead_high', 'society_update_interval', 'alpha_fixed',
                  'output_root', 'label', 'keep_logs', 'save_latency',
                  'save_tables', 'figures', 'log_every')
 

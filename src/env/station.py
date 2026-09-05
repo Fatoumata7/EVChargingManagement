@@ -187,10 +187,14 @@ class Station:
             dist = np.sqrt((x_m - x_n) ** 2 + (y_m - y_n) ** 2)
             distance[n] = dist
 
-            arr = req['t_n'] + dist / self.config.CAR_SPEED
-            dep = arr + req['d_n']
-            t_hat_arr[n] = int(arr)
-            t_hat_dep[n] = int(dep)
+            # Créneau nominal = émission + horizon de planification + trajet.
+            # `t_max_n`, la fenêtre de `a[n,j,t]` et la pénalité `D` de
+            # l'objectif sont tous définis relativement à `t_hat_arr` : ils
+            # suivent le décalage sans modification.
+            arr = utils.nominal_arrival(req['t_n'], req.get('l_n', 0),
+                                        dist, self.config)
+            t_hat_arr[n] = arr
+            t_hat_dep[n] = arr + req['d_n']
             d_n[n] = req['d_n']
             g_n[n] = req['g_n']
             scores[n] = float(car.score[self.score_index])
