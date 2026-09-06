@@ -43,7 +43,7 @@ SUMMARY_FIELDS: tuple[str, ...] = (
     'early_intent_realized_late', 'mean_lead_slots',
     # protocole d'offre & stations
     'nb_offer_issued', 'nb_offer_expired', 'nb_confirm_refused',
-    'nb_stale_confirm', 'nb_rejected_request', 'nb_station_requests',
+    'nb_stale_confirm', 'nb_station_level_rejections', 'nb_station_requests',
     'mean_occupancy_rate', 'mean_service_rate', 'nb_slots_reserved',
     'nb_slots_served', 'slot_waste_rate', 'total_station_demand_kwh',
     # santé du run
@@ -120,19 +120,19 @@ def summary_row(result: Mapping[str, Any]) -> dict:
         'mean_processing_ms':      (round(sum(proc.values()) / len(proc), 3)
                                     if proc else None),
 
-        'nb_reservations':     total('nb_reservations'),
-        'nb_pres':             total('nb_pres'),
-        'nb_no_show':          total('nb_no_show'),
-        'nb_early_canc':       total('nb_early_canc'),
-        'nb_late_canc':        total('nb_late_canc'),
-        'nb_breakdown_canc':   total('nb_breakdown_canc'),
-        'nb_unresolved':       total('nb_unresolved'),
-        'nb_offer_issued':     total('nb_offer_issued'),
-        'nb_offer_expired':    total('nb_offer_expired'),
-        'nb_confirm_refused':  total('nb_confirm_refused'),
-        'nb_stale_confirm':    total('nb_stale_confirm'),
-        'nb_rejected_request': total('nb_rejected_request'),
-        'nb_station_requests': total('nb_request'),
+        'nb_reservations':             total('nb_reservations'),
+        'nb_pres':                     total('nb_pres'),
+        'nb_no_show':                  total('nb_no_show'),
+        'nb_early_canc':               total('nb_early_canc'),
+        'nb_late_canc':                total('nb_late_canc'),
+        'nb_breakdown_canc':           total('nb_breakdown_canc'),
+        'nb_unresolved':               total('nb_unresolved'),
+        'nb_offer_issued':             total('nb_offer_issued'),
+        'nb_offer_expired':            total('nb_offer_expired'),
+        'nb_confirm_refused':          total('nb_confirm_refused'),
+        'nb_stale_confirm':            total('nb_stale_confirm'),
+        'nb_station_level_rejections': total('nb_station_level_rejections'),
+        'nb_station_requests':         total('nb_request'),
         'mean_occupancy_rate': round(
             sum(s['occupancy_rate'] for s in stations) / nb_stations, 4),
         'mean_service_rate': round(

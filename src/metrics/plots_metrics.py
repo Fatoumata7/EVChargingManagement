@@ -1106,7 +1106,7 @@ def plot_society_station_rejected_request(societies, scenario_name,
         for station in society.stations:
 
             station_ids.append(station.m)
-            station_nb_rej_req.append(station.nb_rejected_request)
+            station_nb_rej_req.append(station.nb_station_level_rejections)
 
         if len(station_nb_rej_req) == 0:
             continue

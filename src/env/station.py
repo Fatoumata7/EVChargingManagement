@@ -65,7 +65,7 @@ class Station:
         self.nb_late_canc = 0
         self.nb_reservations = 0
 
-        self.nb_rejected_request = 0
+        self.nb_station_level_rejections = 0
         self.nb_request = 0
 
         # --- occupation cumulée
@@ -292,14 +292,14 @@ class Station:
                 None
             )
             if j_selected is None:
-                self.nb_rejected_request += 1
+                self.nb_station_level_rejections += 1
                 continue
 
             times = sorted(t for (nn, j, t), var in a.items()
                            if nn == n and j == j_selected and var.solution_value() > 0.5)
             if not times:
                 # demande qui n'a pas pu être satisfaite
-                self.nb_rejected_request += 1
+                self.nb_station_level_rejections += 1
                 continue
 
             t_arr, t_dep = times[0], times[-1] + 1
@@ -463,27 +463,27 @@ class Station:
         """Issues des réservations confirmées + santé du protocole d'offre."""
         capacity = max(1, self.slot_capacity())
         return {
-            'station_id':          self.m,
-            'society_id':          self.society_id,
-            'nb_charg_spot':       self.nb_charg_spot,
-            'alpha':               round(float(self.alpha), 4),
-            'score_index':         self.score_index,
-            'score_weighting':     self.score_weighting,
-            'nb_request':          self.nb_request,
-            'nb_rejected_request': self.nb_rejected_request,
-            'nb_offer_issued':     self.nb_offer_issued,
-            'nb_offer_expired':    self.nb_offer_expired,
-            'nb_confirm_refused':  self.nb_confirm_refused,
-            'nb_stale_confirm':    self.nb_stale_confirm,
-            'nb_reservations':     self.nb_reservations,
-            'nb_pres':             self.nb_pres,
-            'nb_no_show':          self.nb_no_show,
-            'nb_early_canc':       self.nb_early_canc,
-            'nb_late_canc':        self.nb_late_canc,
-            'nb_breakdown_canc':   self.nb_breakdown_canc,
-            'nb_unresolved':       self.nb_unresolved,
-            'nb_slots_reserved':   self.nb_slots_reserved,
-            'nb_slots_served':     self.nb_slots_served,
+            'station_id':                  self.m,
+            'society_id':                  self.society_id,
+            'nb_charg_spot':               self.nb_charg_spot,
+            'alpha':                       round(float(self.alpha), 4),
+            'score_index':                 self.score_index,
+            'score_weighting':             self.score_weighting,
+            'nb_request':                  self.nb_request,
+            'nb_station_level_rejections': self.nb_station_level_rejections,
+            'nb_offer_issued':             self.nb_offer_issued,
+            'nb_offer_expired':            self.nb_offer_expired,
+            'nb_confirm_refused':          self.nb_confirm_refused,
+            'nb_stale_confirm':            self.nb_stale_confirm,
+            'nb_reservations':             self.nb_reservations,
+            'nb_pres':                     self.nb_pres,
+            'nb_no_show':                  self.nb_no_show,
+            'nb_early_canc':               self.nb_early_canc,
+            'nb_late_canc':                self.nb_late_canc,
+            'nb_breakdown_canc':           self.nb_breakdown_canc,
+            'nb_unresolved':               self.nb_unresolved,
+            'nb_slots_reserved':           self.nb_slots_reserved,
+            'nb_slots_served':             self.nb_slots_served,
             # Part de la capacité de l'horizon réservée / réellement utilisée.
             # Leur écart chiffre les slots bloqués puis perdus.
             'occupancy_rate':      round(self.nb_slots_reserved / capacity, 4),
