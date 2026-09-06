@@ -1,16 +1,32 @@
-# Étude d'ablation : les 4 configurations de l'échelle, sur la grille du rapport.
+# Étude d'ablation : les 4 barreaux de l'échelle + les 3 baselines de référence.
 #
 #   python -m src.pipeline.cli run --config experiments/ablation.yaml
 #   python -m src.pipeline.cli ablation --latest
 #
-# Chaque barreau n'ajoute qu'un composant au précédent, sur le *même* monde
+# Deux questions, une seule campagne — les deux se lisent sur le *même* monde
 # (même graine, même grille, même flotte, mêmes tirages de comportement) :
-# l'écart entre deux barreaux consécutifs est la contribution du composant.
+#
+#   Échelle (`ablation`) — chaque barreau n'ajoute qu'un composant au précédent,
+#   donc l'écart entre deux barreaux consécutifs *est* la contribution du
+#   composant :
+#       greedy -> multistation -> multistation_rep -> bramev
+#
+#   Baselines (`baselines`) — politiques de choix pures, comparées à BRAM-EV.
+#   Elles partagent le protocole de `multistation` (diffusion aux stations du
+#   rayon de recherche, sans réputation ni adaptation) et n'en diffèrent que par
+#   la règle de sélection de l'offre. À périmètre d'information identique,
+#   l'écart mesuré est donc imputable à la règle seule :
+#       min_waiting      offre dont l'attente est la plus faible
+#       load_aware       offre de la station la moins chargée à venir
+#       random_feasible  offre tirée au hasard parmi les offres reçues
+#
+# `greedy` (une seule station contactée) reste le plancher de l'échelle et sert
+# aussi de baseline mono-station : il est déjà inclus par le groupe `ablation`.
 label: ablation
 seed: 42
 scenarios: [optimistic, balance, pessimistic]
 fleet_sizes: [50, 100, 150, 200, 250]
-methods: [ablation]        # greedy -> multistation -> multistation_rep -> bramev
+methods: [ablation, baselines]
 
 total_time: 1440          # 5 jours en slots de 5 min
 nb_stations: 40

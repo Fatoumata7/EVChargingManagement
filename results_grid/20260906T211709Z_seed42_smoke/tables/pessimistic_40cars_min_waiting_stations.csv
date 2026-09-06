@@ -1,0 +1,13 @@
+scenario,nb_cars,method,seed,world_seed,grid_seed,station_id,society_id,nb_charg_spot,alpha,score_index,score_weighting,nb_request,nb_station_level_rejections,nb_offer_issued,nb_offer_expired,nb_confirm_refused,nb_stale_confirm,nb_reservations,nb_pres,nb_no_show,nb_early_canc,nb_late_canc,nb_breakdown_canc,nb_unresolved,nb_slots_reserved,nb_slots_served,occupancy_rate,service_rate,demand_kwh
+pessimistic,40,min_waiting,42,42,42,0,0,5,0.291,0,duration,37,15,22,4,0,0,18,8,4,1,5,0,0,540,250,0.375,0.1736,22.842
+pessimistic,40,min_waiting,42,42,42,1,1,5,0.2613,1,duration,37,12,25,19,0,0,6,3,1,0,2,0,0,189,120,0.1313,0.0833,6.642
+pessimistic,40,min_waiting,42,42,42,2,1,5,0.7392,1,duration,24,15,9,7,0,0,2,1,1,0,0,0,0,90,33,0.0625,0.0229,1.65
+pessimistic,40,min_waiting,42,42,42,3,1,5,0.8901,1,duration,37,10,27,2,0,0,25,12,4,3,6,0,0,791,390,0.5493,0.2708,34.275
+pessimistic,40,min_waiting,42,42,42,4,2,5,0.1427,2,duration,34,9,25,10,0,0,15,6,3,1,5,0,0,476,216,0.3306,0.15,20.358
+pessimistic,40,min_waiting,42,42,42,5,0,4,0.2198,0,duration,29,15,14,10,0,0,4,1,2,1,0,0,0,173,45,0.1502,0.0391,3.583
+pessimistic,40,min_waiting,42,42,42,6,0,6,0.7086,0,duration,25,11,14,11,0,0,3,2,0,1,0,0,0,99,71,0.0573,0.0411,4.642
+pessimistic,40,min_waiting,42,42,42,7,0,6,0.5708,0,duration,21,14,7,7,0,0,0,0,0,0,0,0,0,0,0,0.0,0.0,0.0
+pessimistic,40,min_waiting,42,42,42,8,0,5,0.808,0,duration,28,10,18,14,0,0,4,2,0,1,1,0,0,111,41,0.0771,0.0285,4.908
+pessimistic,40,min_waiting,42,42,42,9,1,4,0.4875,1,duration,34,10,24,17,0,0,7,2,0,1,4,0,0,345,105,0.2995,0.0911,12.842
+pessimistic,40,min_waiting,42,42,42,10,0,5,0.3053,0,duration,27,10,17,10,0,0,7,1,3,1,2,0,0,234,33,0.1625,0.0229,5.383
+pessimistic,40,min_waiting,42,42,42,11,0,4,0.2502,0,duration,34,8,26,5,0,0,21,8,4,3,6,0,0,696,280,0.6042,0.2431,28.667

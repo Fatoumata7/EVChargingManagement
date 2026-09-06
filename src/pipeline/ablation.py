@@ -83,6 +83,11 @@ VARIANT_MECHANISM: Mapping[str, str] = {
     'bramev_event_score':   'Score proportionnel à la durée',
 }
 
+#: Libellé de chaque baseline dans les tables, tel que publié.
+BASELINE_LABEL: Mapping[str, str] = {
+    name: methods.label(name) for name in methods.BASELINES
+}
+
 ROW_FIELDS: tuple[str, ...] = (
     'kind', 'scenario', 'nb_cars', 'metric', 'metric_label', 'goal', 'unit',
     'step', 'component', 'from_method', 'to_method',
@@ -211,9 +216,32 @@ def variant_rows(rows: Rows, metrics: Sequence[Metric] = METRICS) -> list[dict]:
     return out
 
 
+def baseline_rows(rows: Rows, metrics: Sequence[Metric] = METRICS) -> list[dict]:
+    """
+    Écart de `bramev` à chaque baseline de référence.
+
+    Le sens de lecture est inverse de celui des variantes : « baseline ->
+    BRAM-EV », de sorte qu'un `improvement` vrai signifie que BRAM-EV fait
+    mieux que la baseline. C'est la question posée à une baseline, alors qu'une
+    variante répond à « ce mécanisme sert-il à quelque chose ? ».
+    """
+    index = index_by_world(rows)
+    couples = [(name, 'bramev', BASELINE_LABEL.get(name, name))
+               for name in methods.BASELINES]
+    out: list[dict] = []
+    for world, component, before, after in _pairs(index, couples):
+        for metric in metrics:
+            row = _delta_row('baseline', world, component, 0, before, after, metric)
+            if row is not None:
+                out.append(row)
+    return out
+
+
 def detail_rows(rows: Rows, metrics: Sequence[Metric] = METRICS) -> list[dict]:
-    """Table détaillée complète : échelle d'ablation puis variantes."""
-    return ladder_rows(rows, metrics) + variant_rows(rows, metrics)
+    """Table détaillée complète : échelle d'ablation, baselines, puis variantes."""
+    return (ladder_rows(rows, metrics)
+            + baseline_rows(rows, metrics)
+            + variant_rows(rows, metrics))
 
 
 def mean_rows(detail: Rows) -> list[dict]:
@@ -331,13 +359,15 @@ def render_mean_table(means: Rows,
     out = [line(headers, 'Composant'),
            line(['-' * w for w in widths], '-' * name_width)]
 
-    for kind in ('ladder', 'variant'):
+    for kind in ('ladder', 'baseline', 'variant'):
         keys = sorted(k for k in by_component if k[0] == kind)
         if not keys:
             continue
-        title = ("Échelle d'ablation (contribution du composant ajouté)"
-                 if kind == 'ladder'
-                 else "Variantes de BRAM-EV (effet du mécanisme neutralisé)")
+        title = {
+            'ladder':   "Échelle d'ablation (contribution du composant ajouté)",
+            'baseline': "Baselines de référence (écart de la baseline à BRAM-EV)",
+            'variant':  "Variantes de BRAM-EV (effet du mécanisme neutralisé)",
+        }[kind]
         out.append('')
         out.append(title)
         for key in keys:

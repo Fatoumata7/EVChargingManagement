@@ -27,6 +27,17 @@ Variantes de BRAM-EV (un mécanisme interne remplacé, le reste inchangé)
     bramev_event_score    pénalité par événement au lieu d'une pénalité
                           proportionnelle à la durée réservée
 
+Baselines de référence (politiques de choix pures)
+-------------------------------------------------
+    min_waiting           offre dont l'attente est la plus faible
+    load_aware            offre de la station la moins chargée à venir
+    random_feasible       offre tirée au hasard parmi les offres reçues
+
+Elles partagent le protocole de `multistation` — diffusion aux stations du
+rayon de recherche, sans réputation ni adaptation — et n'en diffèrent que par
+la règle de sélection de l'offre. À périmètre d'information identique, un écart
+mesuré est donc imputable à la règle seule.
+
 Compatibilité
 -------------
 `greedy` reste le nom canonique du premier barreau : les runs, tables et
@@ -40,7 +51,7 @@ from dataclasses import asdict, dataclass
 from typing import Iterable, Mapping
 
 # Valeurs admissibles des drapeaux non booléens.
-OFFER_CHOICES = ('utility', 'nearest')
+OFFER_CHOICES = ('utility', 'nearest', 'waiting', 'load', 'random')
 ALPHA_MODES = ('sampled', 'fixed')
 REPUTATION_SCOPES = ('society', 'global')
 SCORE_WEIGHTINGS = ('duration', 'event')
@@ -65,7 +76,7 @@ class MethodSpec:
     collective_learning: bool     # les sociétés propagent l'alpha de leur meilleure station
 
     # ---- mécanismes internes (variantes)
-    offer_choice: str = 'utility'       # 'utility' | 'nearest'
+    offer_choice: str = 'utility'       # cf. OFFER_CHOICES
     alpha_mode: str = 'sampled'         # 'sampled' | 'fixed'
     reputation_scope: str = 'society'   # 'society' | 'global'
     score_weighting: str = 'duration'   # 'duration' | 'event'
@@ -146,6 +157,38 @@ _SPECS: tuple[MethodSpec, ...] = (
              "entre stations d'une même société.",
     ),
 
+    # ---- baselines de référence --------------------------------------
+    # Elles diffusent la requête aux stations du rayon de recherche `r_n`,
+    # exactement comme `multistation`, et ne diffèrent de lui *que* par la règle
+    # de sélection de l'offre. Aucune n'utilise la réputation ni l'adaptation :
+    # ce sont des politiques de choix pures. Ce périmètre identique est ce qui
+    # rend la comparaison lisible — un écart mesuré vient de la règle, pas d'un
+    # avantage d'information.
+    MethodSpec(
+        name='min_waiting', label='Minimum Waiting Time',
+        broadcast=True, use_reputation=False, collective_learning=False,
+        offer_choice='waiting', family='baseline',
+        note="Le véhicule interroge les stations de son rayon de recherche et "
+             "retient l'offre dont l'attente est la plus faible — écart entre "
+             "le créneau proposé et le créneau visé.",
+    ),
+    MethodSpec(
+        name='load_aware', label='Load-Aware',
+        broadcast=True, use_reputation=False, collective_learning=False,
+        offer_choice='load', family='baseline',
+        note="Le véhicule interroge les stations de son rayon de recherche et "
+             "retient l'offre de la station dont le taux d'occupation futur "
+             "est le plus faible.",
+    ),
+    MethodSpec(
+        name='random_feasible', label='Random Feasible',
+        broadcast=True, use_reputation=False, collective_learning=False,
+        offer_choice='random', family='baseline',
+        note="Le véhicule tire au hasard parmi les offres reçues, toutes "
+             "faisables par construction. Plancher de référence : ce que "
+             "rapporte le protocole d'offre sans aucune politique de choix.",
+    ),
+
     # ---- variantes de BRAM-EV ----------------------------------------
     MethodSpec(
         name='bramev_nearest_offer', label='BRAM-EV / offre la plus proche',
@@ -207,12 +250,19 @@ LADDER_STEPS: tuple[tuple[str, str, str], ...] = (
 #: Variantes de BRAM-EV, comparées à `bramev`.
 VARIANTS: tuple[str, ...] = tuple(s.name for s in _SPECS if s.family == 'variant')
 
+#: Baselines de référence, comparées à `bramev`. `greedy` n'en fait pas partie :
+#: c'est le premier barreau de l'échelle d'ablation, et il y garde son rôle.
+BASELINES: tuple[str, ...] = tuple(s.name for s in _SPECS if s.family == 'baseline')
+
 #: Raccourcis utilisables partout où une liste de méthodes est attendue.
 METHOD_GROUPS: Mapping[str, tuple[str, ...]] = {
-    'ablation': LADDER,
-    'variants': VARIANTS,
-    'baseline': ('greedy', 'bramev'),
-    'all':      METHOD_NAMES,
+    'ablation':  LADDER,
+    'variants':  VARIANTS,
+    'baselines': BASELINES,
+    #: Comparaison de référence : BRAM-EV face à toutes les baselines.
+    'reference': ('bramev',) + BASELINES + ('greedy',),
+    'baseline':  ('greedy', 'bramev'),
+    'all':       METHOD_NAMES,
 }
 
 #: Tout ce qu'une CLI ou un fichier YAML peut écrire dans `methods`.
@@ -281,19 +331,22 @@ def label(name: str) -> str:
 def describe_table() -> str:
     """Table du plan d'ablation, telle qu'affichée par `cli.py methods`."""
     header = (f"  {'méthode':<22}{'multi-stations':>15}{'réputation':>12}"
-              f"{'adaptation':>12}   {'libellé'}")
+              f"{'adaptation':>12}{'choix offre':>13}   {'libellé'}")
     lines = [header, '  ' + '-' * (len(header) - 2)]
-    for family in ('ablation', 'variant'):
+    titres = {'ablation': 'échelle d ablation', 'baseline': 'baselines',
+              'variant': 'variantes'}
+    for family in ('ablation', 'baseline', 'variant'):
         group = [s for s in _SPECS if s.family == family]
         if not group:
             continue
-        lines.append(f"  [{'échelle d ablation' if family == 'ablation' else 'variantes'}]")
+        lines.append(f"  [{titres[family]}]")
         for spec in group:
             lines.append(
                 f"  {spec.name:<22}"
                 f"{'oui' if spec.broadcast else 'non':>15}"
                 f"{'oui' if spec.use_reputation else 'non':>12}"
                 f"{'oui' if spec.collective_learning else 'non':>12}"
+                f"{spec.offer_choice:>13}"
                 f"   {spec.label}"
             )
     return '\n'.join(lines)

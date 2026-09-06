@@ -67,27 +67,27 @@ The goal is to jointly optimize charging allocation, user satisfaction, and oper
 │       ├── store.py               # Run layout and artifact persistence
 │       ├── runner.py              # Case and grid execution
 │       ├── tables.py              # Tidy tables extracted from a simulation
-│       ├── ablation.py            # Per-component decomposition of the gains
+│       ├── ablation.py            # Decomposition: components, baselines, variants
 │       ├── figures.py             # Figures built from tables, never from objects
 │       └── cli.py                 # run / report / show / runs / scenarios /
 │                                  #   methods / ablation
 │
 ├── experiments                    # Ready-made campaign configurations
-│   ├── ablation.yaml              # The four configurations, full grid
+│   ├── ablation.yaml              # The four rungs + the three baselines
 │   ├── ablation_variants.yaml     # BRAM-EV with one mechanism replaced
-│   ├── full_grid.yaml
+│   ├── full_grid.yaml             # BRAM-EV vs every baseline (published grid)
 │   └── smoke.yaml
 │
 ├── notebooks
 │   ├── explore_run.ipynb          # Interactive exploration of a finished run
-│   ├── ablation.ipynb             # The four configurations, component by component
+│   ├── ablation.ipynb             # Components one by one, then the baselines
 │   └── ablation_variants.ipynb    # BRAM-EV with one mechanism replaced
 │
 ├── tests                          # uv run python -m tests
 │   ├── test_priority1.py          # Model fixes
 │   ├── test_shared_world.py       # One grid & one fleet across all scenarios
 │   ├── test_pipeline.py           # Params, storage, runner, figures, CLI
-│   └── test_ablation.py           # Components, variants, decomposition
+│   └── test_ablation.py           # Components, baselines, variants, decomposition
 │
 ├── results_grid/                  # Run outputs (gitignored)
 ├── outputs/                       # Visualizer logs (gitignored)
@@ -120,19 +120,19 @@ Everything runs through one entry point. `uv run main.py` and
 ### The campaigns
 
 ```bash
-# 1. Smoke campaign — run this first: 1 scenario x 2 fleets x all 8 methods.
+# 1. Smoke campaign — run this first: 1 scenario x 2 fleets x all 11 methods.
 #    Validates the whole chain in about two minutes.
 uv run main.py run --config experiments/smoke.yaml
 
-# 2. Ablation ladder — 3 scenarios x 5 fleet sizes x the 4 configurations,
-#    5 simulated days. This is the long one: check the plan before launching.
+# 2. Ablation ladder + reference baselines — 3 scenarios x 5 fleet sizes x
+#    7 methods, 5 simulated days. This is the long one: check the plan first.
 uv run main.py run --dry-run --config experiments/ablation.yaml
 uv run main.py run --config experiments/ablation.yaml
 
 # 3. BRAM-EV variants — one internal mechanism replaced at a time.
 uv run main.py run --config experiments/ablation_variants.yaml
 
-# 4. Historical two-method grid (Nearest vs BRAM-EV Full only).
+# 4. Published comparison grid: BRAM-EV against every baseline.
 uv run main.py run --config experiments/full_grid.yaml
 ```
 
@@ -193,7 +193,12 @@ not tell you where the gap comes from — and the most likely explanation is als
 the least interesting one: simply asking several stations instead of one.
 The ablation answers that question by construction.
 
-## The four configurations
+Two plans run in the same campaign, on the same worlds. The **ladder** takes
+BRAM-EV apart one component at a time. The **baselines** put it back against
+simple, published selection rules. Both are declared once, in
+`src/experiments/methods.py`, and read by a single `Simulation` class.
+
+## The ablation ladder
 
 Each rung adds **exactly one component** to the previous one:
 
@@ -206,12 +211,54 @@ Each rung adds **exactly one component** to the previous one:
 
 ```bash
 uv run main.py methods                    # the full plan, with the notes
-uv run main.py run --methods ablation     # the four configurations
+uv run main.py run --methods ablation     # the four rungs
 ```
 
 `greedy` and `bramev` keep their historical names, so earlier runs, tables and
 figures stay readable; the ladder simply inserts the two missing rungs between
 them.
+
+## Reference baselines
+
+The ladder answers "what does this component buy?". The baselines answer a
+different question: **does BRAM-EV beat a simpler rule at all?**
+
+All three share the exact protocol of `multistation` — the request is broadcast
+to the stations within the vehicle's search radius `r_n`, with no reputation
+and no adaptation — and differ from it by **one thing only: the rule used to
+pick an offer**. Same information, same protocol, so a measured gap is
+attributable to the rule and not to an information advantage.
+
+| Baseline | Method name | Picks the offer with... |
+| --- | --- | --- |
+| Minimum Waiting Time | `min_waiting` | the lowest waiting time (proposed slot vs. targeted slot) |
+| Load-Aware | `load_aware` | the lowest *future* occupancy at its station |
+| Random Feasible | `random_feasible` | a uniform draw among the offers received |
+
+`greedy` completes the set as the single-station floor: it is the only method
+that contacts one station instead of broadcasting.
+
+```bash
+uv run main.py run --methods baselines    # the three rules
+uv run main.py run --methods reference    # BRAM-EV + the three + greedy
+```
+
+Three implementation points make these comparable rather than merely present:
+
+* **Feasibility is not a filter.** Every offer a vehicle receives is feasible by
+  construction — the station built it from its own calendar and revalidates it
+  at confirmation. `random_feasible` therefore draws among all offers received,
+  and is a genuine floor: what the offer protocol yields with no policy at all.
+* **Future occupancy, not lifetime occupancy.** `Station.future_occupancy_rate`
+  measures the share of charger-slots already booked *from the current slot
+  onwards*. The `occupancy_rate` reported in the tables spans the whole horizon,
+  past included, and tells a vehicle looking for a plug nothing useful. The value
+  travels on the offer, so ranking stays a pure function of what the vehicle
+  received.
+* **The random draw is reproducible and order-free.** It uses a dedicated RNG
+  stream (`car_choice`), so enabling it does not shift any other draw of the
+  vehicle, and offers are sorted by station id before being permuted — otherwise
+  the "random" pick would inherit the order in which stations answered.
 
 ## BRAM-EV variants
 
@@ -229,12 +276,20 @@ does?".
 
 ```bash
 uv run main.py run --methods bramev variants
-uv run main.py run --methods all          # ladder + variants, 8 methods
+uv run main.py run --methods all          # ladder + baselines + variants, 11 methods
 ```
 
 `bramev_fixed_alpha` keeps collective learning switched on, but it becomes
 inert: with every alpha equal, the best station has nothing to propagate. The
 variant therefore isolates the contribution of alpha *heterogeneity* itself.
+
+> **Contention is the prerequisite.** None of these comparisons — ladder,
+> baselines or variants — can separate anything on a grid where every request
+> fits. With 40 stations and 5 chargers each, roughly half of the station-side
+> MILP batches hold a single demand, and no arbitration ever happens: every
+> method then returns the same allocation. Check `mean_offers_per_demand` and
+> `mean_service_rate` before concluding that a component "does not help"; if the
+> methods are tied, lower `nb_stations` or raise the fleet until they are not.
 
 ## Why the numbers are attributable
 
@@ -269,7 +324,17 @@ Composant                       Satisfaction exacte   Taux de no-show   Taux de 
 Recherche multi-stations                 +4.1% (92%)      -2.7% (83%)        +6.0% (92%)
 Réputation                               +0.6% (58%)     -11.4% (100%)       +2.2% (75%)
 Adaptation entre stations                +0.2% (50%)      -0.4% (58%)        +0.3% (50%)
+
+Baselines de référence (écart de la baseline à BRAM-EV)
+Minimum Waiting Time                     +0.3% (67%)      -1.1% (75%)        +0.8% (58%)
+Load-Aware                               +0.5% (75%)      -0.9% (67%)        +1.4% (75%)
+Random Feasible                          +2.6% (100%)     -3.4% (92%)        +5.6% (100%)
 ```
+
+The baseline block reads **`baseline -> bramev`**, the opposite direction to the
+variants: `improvement = true` means BRAM-EV does better than the baseline. That
+is the question one asks a baseline; a variant instead answers "does this
+mechanism need to work this way?".
 
 Each cell carries the mean relative gap **and, in parentheses, the share of
 worlds where the component actually improves that metric**. The parenthesis is
@@ -283,7 +348,7 @@ sub-command without simulating:
 
 | File | Content |
 | --- | --- |
-| `ablation.csv` | one line per (world, component, metric): both values, delta, relative delta, improvement |
+| `ablation.csv` | one line per (world, component, metric): both values, delta, relative delta, improvement. The `kind` column separates `ladder`, `baseline` and `variant` rows |
 | `ablation_mean.csv` | one line per (component, metric): mean delta, `nb_improved`, `share_improved` |
 
 Both are rewritten after **every case**, like `summary.csv`: a full grid takes
@@ -291,7 +356,8 @@ hours, so the decomposition has to be readable while the campaign is still
 running, and an interrupted campaign has to stay analysable.
 
 Figures `ablation_components.png`, `ablation_variants.png` and
-`ablation_ladder_<scenario>.png` are produced with the rest.
+`ablation_ladder_<scenario>.png` are produced with the rest. Baseline rows land
+in `ablation.csv` and in the text report; they have no dedicated figure yet.
 
 ## Notebooks
 
@@ -299,7 +365,7 @@ Two notebooks read those artifacts and run no simulation of their own:
 
 | Notebook | Reads | Answers |
 | --- | --- | --- |
-| `notebooks/ablation.ipynb` | a run holding the four rungs | where the Nearest → BRAM-EV gap comes from |
+| `notebooks/ablation.ipynb` | a run holding the four rungs, and the baselines if present | where the Nearest → BRAM-EV gap comes from, and whether BRAM-EV beats a simpler rule |
 | `notebooks/ablation_variants.ipynb` | a run holding `bramev` and its variants | whether each internal mechanism earns its place |
 
 Both pick their run with `RunStore.latest_with_methods(...)`: the most recent

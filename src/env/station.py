@@ -337,7 +337,8 @@ class Station:
             offer_id=f"s{self.m}-o{self._offer_counter:06d}",
             t_issued=t_c,
             t_expire=t_c + self.config.OFFER_TTL_SLOTS,
-            charger_version=int(self.charger_version[charger_id])
+            charger_version=int(self.charger_version[charger_id]),
+            station_load=self.future_occupancy_rate(t_c)
         )
 
     # ------------------------------------------------------------------
@@ -451,6 +452,25 @@ class Station:
             if np.any(self.schedule[j, t_c:] == car_id):
                 return False
         return True
+
+    def future_occupancy_rate(self, t_c: int) -> float:
+        """
+        Part des créneaux-bornes déjà réservés entre `t_c` et la fin de
+        l'horizon.
+
+        Mesure la charge *à venir* de la station, la seule qui compte pour un
+        véhicule qui cherche où se brancher : `occupancy_rate` (rapport de
+        sortie) porte sur tout l'horizon, passé compris.
+
+        Le calendrier n'étant écrit qu'à la confirmation
+        (`confirm_reservation`), les offres en attente ne sont pas comptées :
+        deux véhicules servis dans le même lot voient donc la même charge.
+        """
+        t = max(0, min(int(t_c), self.T))
+        remaining = self.schedule[:, t:]
+        if remaining.size == 0:
+            return 1.
+        return float(np.count_nonzero(remaining != -1) / remaining.size)
 
     def total_nb_allocated_slot(self):
         return int(np.sum(self.schedule != -1))

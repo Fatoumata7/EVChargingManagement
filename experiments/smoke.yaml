@@ -2,8 +2,9 @@
 #
 #   python -m src.pipeline.cli run --config experiments/smoke.yaml
 #
-# Couvre les 8 méthodes : l'échelle d'ablation et les variantes de BRAM-EV
-# passent ainsi toutes par le chemin d'exécution avant une campagne longue.
+# Couvre les 11 méthodes : échelle d'ablation, baselines de référence et
+# variantes de BRAM-EV passent toutes par le chemin d'exécution avant une
+# campagne longue.
 label: smoke
 seed: 42
 scenarios: [pessimistic]

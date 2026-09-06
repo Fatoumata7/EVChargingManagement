@@ -37,12 +37,16 @@ Rows = Sequence[Row]
 
 # Couleurs par méthode, stables d'une figure à l'autre. Les quatre barreaux de
 # l'échelle d'ablation vont du chaud (Nearest) au froid (BRAM-EV complet) ; les
-# variantes reprennent des teintes distinctes pour ne pas se confondre avec eux.
+# baselines de référence puis les variantes reprennent des teintes distinctes
+# pour ne pas se confondre avec eux.
 METHOD_COLORS = {
     'greedy':               '#d9822b',
     'multistation':         '#c9a227',
     'multistation_rep':     '#6a9a3a',
     'bramev':               '#3b7dd8',
+    'min_waiting':          '#4a9c8c',
+    'load_aware':           '#9c7b4a',
+    'random_feasible':      '#8a8a8a',
     'bramev_nearest_offer': '#8e5bd0',
     'bramev_fixed_alpha':   '#12a5a5',
     'bramev_global_rep':    '#d1467f',
@@ -70,7 +74,7 @@ def _scenarios(rows: Rows) -> list[str]:
 
 
 def _methods(rows: Rows) -> list[str]:
-    """Méthodes présentes, dans l'ordre du registre (échelle puis variantes)."""
+    """Méthodes présentes, dans l'ordre du registre (échelle, baselines, variantes)."""
     order = list(methods.METHOD_NAMES)
     present = {r['method'] for r in rows}
     return [m for m in order if m in present] + sorted(present - set(order))

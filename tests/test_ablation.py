@@ -19,6 +19,7 @@ Ce que ces tests protègent, dans l'ordre d'importance :
 
 from __future__ import annotations
 
+import io
 import sys
 import tempfile
 import traceback
@@ -361,9 +362,207 @@ def test_variants_config_actually_runs_the_variants():
         f'methods={list(params.methods)}')
 
 
-def test_ablation_config_runs_the_four_configurations():
+def test_ablation_config_runs_the_ladder_and_the_baselines():
+    """
+    Le preset d ablation porte deux plans à la fois : l échelle complète — sans
+    quoi aucune contribution de composant n est calculable — et les trois
+    baselines, qui se comparent à `bramev`. Les deux se lisent sur le même
+    monde, ce qui est tout l intérêt de les exécuter dans la même campagne.
+    """
     params = ExperimentParams.from_file('experiments/ablation.yaml')
-    assert params.methods == methods.LADDER, f'methods={list(params.methods)}'
+    manquants = set(methods.LADDER) - set(params.methods)
+    assert not manquants, f'échelle incomplète, manque {sorted(manquants)}'
+    manquants = set(methods.BASELINES) - set(params.methods)
+    assert not manquants, f'baselines manquantes : {sorted(manquants)}'
+    # L échelle garde son ordre : les barreaux se lisent dans l ordre d ajout.
+    rang = {m: i for i, m in enumerate(params.methods)}
+    assert [rang[m] for m in methods.LADDER] == sorted(rang[m] for m in methods.LADDER)
+
+
+def test_reference_config_compares_bramev_to_every_baseline():
+    """`full_grid.yaml` est la comparaison publiée : BRAM-EV face aux baselines."""
+    params = ExperimentParams.from_file('experiments/full_grid.yaml')
+    assert 'bramev' in params.methods, 'sans bramev, aucun écart calculable'
+    manquants = set(methods.BASELINES) - set(params.methods)
+    assert not manquants, f'baselines manquantes : {sorted(manquants)}'
+    assert 'greedy' in params.methods, 'le plancher mono-station doit rester lisible'
+
+
+# ----------------------------------------------------------------------
+# Baselines de référence
+# ----------------------------------------------------------------------
+
+def test_baselines_are_pure_choice_policies():
+    """
+    Les trois baselines ne doivent différer de `multistation` que par la règle
+    de sélection de l offre. Même diffusion, même rayon, ni réputation ni
+    adaptation : à périmètre d information identique, un écart mesuré est
+    imputable à la règle seule.
+    """
+    assert set(methods.BASELINES) == {'min_waiting', 'load_aware',
+                                      'random_feasible'}
+    reference = methods.resolve('multistation')
+    partages = ('broadcast', 'use_reputation', 'collective_learning',
+                'alpha_mode', 'reputation_scope', 'score_weighting')
+
+    for name in methods.BASELINES:
+        spec = methods.resolve(name)
+        assert spec.family == 'baseline'
+        derive = [f for f in partages if getattr(spec, f) != getattr(reference, f)]
+        assert not derive, (
+            f'{name} diffère de multistation sur {derive} : une baseline ne '
+            'doit se distinguer que par sa règle de choix')
+        assert spec.offer_choice != reference.offer_choice, (
+            f'{name} : une baseline ne doit pas utiliser l utilité BRAM-EV')
+
+    choix = {methods.resolve(n).offer_choice for n in methods.BASELINES}
+    assert choix == {'waiting', 'load', 'random'}, (
+        f'chaque baseline doit avoir sa propre règle, reçu {choix}')
+
+
+def test_baselines_see_the_same_stations_as_multistation():
+    """
+    Le périmètre de diffusion doit être *identique* à celui de `multistation` :
+    c est ce qui rend l écart imputable à la règle de choix et non à un
+    avantage d information.
+    """
+    params = tiny_params()
+    contactees = {}
+    for name in ('multistation', 'min_waiting', 'load_aware', 'random_feasible'):
+        (cars, stations, societies), config = build_agents(params)
+        sim = Simulation(cars, stations, societies, config.TOTAL_TIME, config,
+                         mode=name)
+        vues = []
+        original = Simulation._get_eligible_stations
+
+        def espion(self, x, y, r_n, _v=vues, _o=original):
+            eligible, min_d, min_s = _o(self, x, y, r_n)
+            _v.append((round(float(r_n), 6), len(eligible)))
+            return eligible, min_d, min_s
+
+        Simulation._get_eligible_stations = espion
+        try:
+            sim.run(io.StringIO(), print_metrics=False)
+        finally:
+            Simulation._get_eligible_stations = original
+        contactees[name] = vues
+
+    assert contactees['multistation'], 'aucune requête émise : test non concluant'
+    for name in methods.BASELINES:
+        assert contactees[name] == contactees['multistation'], (
+            f'{name} ne voit pas le même périmètre que multistation')
+
+    # ... et ce périmètre reste borné par le rayon de recherche.
+    assert max(n for _, n in contactees['multistation']) <= params.nb_stations
+    assert min(n for _, n in contactees['multistation']) < params.nb_stations, (
+        'le rayon devrait exclure au moins une station sur cette grille')
+
+
+def test_each_baseline_applies_its_own_rule():
+    """Chaque règle doit classer les offres selon son propre critère."""
+    params = tiny_params()
+    (cars, stations, societies), config = build_agents(params)
+    car = cars[0]
+    request = {'n': 'test', 't_n': 0, 'd_n': 6, 'loc': (0., 0.),
+               'r_n': 5000., 'g_n': 12, 'l_n': 0}
+
+    # Trois offres où attente, charge et distance ordonnent différemment.
+    offres = [
+        Offer(station_id=1, charger_id=0, t_arr=9, t_dep=15, d_prop=6,
+              distance=100., station_load=0.9),
+        Offer(station_id=2, charger_id=0, t_arr=1, t_dep=7, d_prop=6,
+              distance=4000., station_load=0.5),
+        Offer(station_id=3, charger_id=0, t_arr=5, t_dep=11, d_prop=6,
+              distance=2000., station_load=0.1),
+    ]
+
+    par_attente = car.rank_offers(offres, request, 100., criterion='waiting')
+    assert par_attente[0][0].station_id == 2, 'min_waiting : attente la plus faible'
+
+    par_charge = car.rank_offers(offres, request, 100., criterion='load')
+    assert par_charge[0][0].station_id == 3, 'load_aware : station la moins chargée'
+
+    par_distance = car.rank_offers(offres, request, 100., criterion='nearest')
+    assert par_distance[0][0].station_id == 1
+
+    # Les trois règles doivent bien désigner des gagnants différents ici.
+    assert len({par_attente[0][0].station_id, par_charge[0][0].station_id,
+                par_distance[0][0].station_id}) == 3
+
+    # Toutes les offres reçues restent classées, aucune n est écartée.
+    for classement in (par_attente, par_charge, par_distance):
+        assert len(classement) == len(offres)
+
+
+def test_random_feasible_is_random_but_reproducible():
+    """
+    Le tirage doit varier d une requête à l autre, être identique à graine
+    égale, et ne pas dépendre de l ordre d arrivée des offres — qui suit
+    l ordre des stations et n a aucun sens pour le véhicule.
+    """
+    params = tiny_params()
+    request = {'n': 'test', 't_n': 0, 'd_n': 6, 'loc': (0., 0.),
+               'r_n': 5000., 'g_n': 12, 'l_n': 0}
+
+    def offres():
+        return [Offer(station_id=i, charger_id=0, t_arr=2, t_dep=8, d_prop=6,
+                      distance=100. * (i + 1), station_load=0.1 * i)
+                for i in range(6)]
+
+    def tirages(car, n=15, ordre=None):
+        out = []
+        for _ in range(n):
+            lot = offres()
+            if ordre is not None:
+                lot = [lot[i] for i in ordre]
+            out.append(car.rank_offers(lot, request, 100.,
+                                       criterion='random')[0][0].station_id)
+        return out
+
+    (cars_a, *_), config = build_agents(params)
+    (cars_b, *_), _ = build_agents(params)
+
+    a = tirages(cars_a[0])
+    assert len(set(a)) > 1, 'le tirage doit varier d une requête à l autre'
+
+    b = tirages(cars_b[0])
+    assert a == b, 'à graine égale, le tirage doit être reproductible'
+
+    # Ordre d arrivée inversé : le résultat ne doit pas changer.
+    (cars_c, *_), _ = build_agents(params)
+    c = tirages(cars_c[0], ordre=list(reversed(range(6))))
+    assert a == c, "le tirage ne doit pas dépendre de l ordre d arrivée des offres"
+
+
+def test_baseline_rows_compare_bramev_to_each_baseline():
+    """
+    La table doit lire « baseline -> BRAM-EV » : un `improvement` vrai signifie
+    que BRAM-EV fait mieux, ce qui est la question posée à une baseline.
+    """
+    monde = {'scenario': 'balance', 'nb_cars': 50, 'seed': 1,
+             'world_seed': 1, 'grid_seed': 1}
+    rows = [dict(monde, method='bramev', exact_satisfaction=0.90),
+            dict(monde, method='min_waiting', exact_satisfaction=0.70),
+            dict(monde, method='load_aware', exact_satisfaction=0.95),
+            dict(monde, method='random_feasible', exact_satisfaction=0.60)]
+
+    metric = ablation.METRICS_BY_COLUMN['exact_satisfaction']
+    produites = ablation.baseline_rows(rows, [metric])
+    par_methode = {r['from_method']: r for r in produites}
+
+    assert set(par_methode) == set(methods.BASELINES)
+    for r in produites:
+        assert r['kind'] == 'baseline'
+        assert r['to_method'] == 'bramev'
+
+    assert par_methode['min_waiting']['improvement'] is True
+    assert par_methode['load_aware']['improvement'] is False, (
+        'une baseline qui bat BRAM-EV doit apparaître comme telle')
+    assert abs(par_methode['random_feasible']['delta'] - 0.30) < 1e-9
+
+    # Les baselines rejoignent la table détaillée complète.
+    kinds = {r['kind'] for r in ablation.detail_rows(rows, [metric])}
+    assert 'baseline' in kinds
 
 
 # ----------------------------------------------------------------------

@@ -19,10 +19,18 @@ Cycle de vie
 class Offer:
 
     def __init__(self, station_id, charger_id, t_arr, t_dep, d_prop, distance,
-                 offer_id=None, t_issued=0, t_expire=None, charger_version=0):
+                 offer_id=None, t_issued=0, t_expire=None, charger_version=0,
+                 station_load=0.):
 
         self.station_id = station_id
         self.charger_id = charger_id
+
+        # Taux d'occupation *futur* de la station au moment de l'émission :
+        # part des créneaux-bornes déjà réservés de `t_issued` à la fin de
+        # l'horizon. Porté par l'offre — et non lu sur la station — pour que le
+        # classement des offres reste une fonction pure de ce que le véhicule a
+        # reçu (baseline `load_aware`, cf. `Car.rank_offers`).
+        self.station_load = float(station_load)
 
         self.t_arr = t_arr
         self.t_dep = t_dep
@@ -75,6 +83,7 @@ class Offer:
     def display_offer(self, file):
 
         print(f"offer_id   = {self.offer_id}", file=file)
+        print(f"load       = {self.station_load:.3f}", file=file)
         print(f"station_id = {self.station_id}", file=file)
         print(f"charger_id = {self.charger_id}", file=file)
 

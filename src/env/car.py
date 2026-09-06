@@ -10,6 +10,11 @@ import src.env.utils as utils
 import src.experiments.config as config
 
 
+#: Critères de sélection d'une offre par le véhicule. `methods.py` en est
+#: la source de vérité (`OFFER_CHOICES`) ; ce tuple doit rester aligné.
+OFFER_CRITERIA = ('utility', 'nearest', 'waiting', 'load', 'random')
+
+
 class Car:
 
     def __init__(self, idx: int, nb_society: int, config: config.SimulationConfig,
@@ -39,11 +44,13 @@ class Car:
             self.rng_behavior = rng_hub.stream('car_behavior', idx)
             self.rng_request  = rng_hub.stream('car_request', idx)
             self.rng_lead     = rng_hub.stream('car_lead', idx)
+            self.rng_choice   = rng_hub.stream('car_choice', idx)
         else:
             self.rng_move     = np.random.default_rng()
             self.rng_behavior = np.random.default_rng()
             self.rng_request  = np.random.default_rng()
             self.rng_lead     = np.random.default_rng()
+            self.rng_choice   = np.random.default_rng()
 
         if spec is not None:
             self.loc = np.asarray(spec['loc'], dtype=float)
@@ -513,31 +520,59 @@ class Car:
 
         Parameters
         ----------
-        criterion : {'utility', 'nearest'}
+        criterion : {'utility', 'nearest', 'waiting', 'load', 'random'}
             `'utility'` — utilité multicritère décroissante (défaut, BRAM-EV).
             `'nearest'` — distance croissante : la variante
             `bramev_nearest_offer` de l'étude d'ablation, qui mesure ce que
             l'arbitrage énergie/distance/attente apporte réellement.
+            `'waiting'` — attente croissante (baseline `min_waiting`).
+            `'load'` — taux d'occupation futur croissant (baseline `load_aware`).
+            `'random'` — tirage uniforme parmi les offres reçues (baseline
+            `random_feasible`). Toute offre reçue est faisable par
+            construction : la station l'a produite depuis son propre calendrier
+            et la revalide à la confirmation.
 
-        L'utilité est calculée dans les deux cas : elle reste la mesure de
+        L'utilité est calculée dans tous les cas : elle reste la mesure de
         satisfaction reportée (`car.u_total`), même quand elle ne pilote pas
         le choix.
+
+        Les départages sont explicites et déterministes (utilité, puis
+        identifiant de station) : deux exécutions du même monde classent à
+        l'identique. Le critère `'random'` tire sur `rng_choice`, un flux dédié,
+        pour ne pas décaler les autres tirages du véhicule.
         """
-        if criterion not in ('utility', 'nearest'):
+        if criterion not in OFFER_CRITERIA:
             raise ValueError(
                 f"Critère de sélection inconnu : {criterion!r}. "
-                "Attendu 'utility' ou 'nearest'."
+                f"Attendu parmi {list(OFFER_CRITERIA)}."
             )
         scored = [(offer, self.compute_utility(offer, request, min_dist))
                   for offer in offers]
+
         if criterion == 'nearest':
-            # Départage stable : distance, puis utilité, puis identifiant de
-            # station — deux exécutions du même monde classent à l'identique.
             scored.sort(key=lambda pair: (pair[0].distance, -pair[1],
                                           pair[0].station_id))
+        elif criterion == 'waiting':
+            scored.sort(key=lambda pair: (self._waiting_slots(pair[0], request),
+                                          -pair[1], pair[0].station_id))
+        elif criterion == 'load':
+            scored.sort(key=lambda pair: (pair[0].station_load, -pair[1],
+                                          pair[0].station_id))
+        elif criterion == 'random':
+            # Ordre canonique d'abord : la permutation ne doit pas dépendre de
+            # l'ordre d'arrivée des offres, qui suit celui des stations.
+            scored.sort(key=lambda pair: pair[0].station_id)
+            order = self.rng_choice.permutation(len(scored))
+            scored = [scored[i] for i in order]
         else:
             scored.sort(key=lambda pair: pair[1], reverse=True)
         return scored
+
+    def _waiting_slots(self, offer, request) -> int:
+        """Attente subie : écart entre le créneau proposé et le créneau visé."""
+        t_hat_arr = utils.nominal_arrival(request['t_n'], request.get('l_n', 0),
+                                          offer.distance, self.config)
+        return max(0, offer.t_arr - t_hat_arr)
 
     def choose_offer(self, offers, request, min_dist, criterion='utility'):
         ranked = self.rank_offers(offers, request, min_dist, criterion)
