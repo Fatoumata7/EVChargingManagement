@@ -1,31 +1,32 @@
 """
-store.py — Disposition et persistance des artefacts d'un run.
+store.py — Layout and persistence of the artifacts of a run.
 
-Un run est un dossier autonome : les paramètres, les mondes initiaux, les
-résultats, les tables et les figures y cohabitent, de sorte qu'un run puisse
-être archivé, transmis ou re-analysé sans dépendre de la commande qui l'a créé.
+A run is a self-contained directory: the parameters, the initial worlds, the
+results, the tables and the figures live together in it, so that a run can be
+archived, shared or re-analysed without depending on the command that created
+it.
 
-    <output_root>/<horodatage>_seed<seed>[_<label>]/
-        params.json                      paramètres de la campagne
-        manifest.json                    environnement, progression, timings
-        summary.csv                      une ligne par cas (table pivot)
-        grid.json                        infrastructure partagée par TOUS les cas
-        fleets/fleet_<n>cars.json        population de véhicules, par flotte
-        worlds/<scenario>_<n>cars.json   monde composé (grille + flotte + scénario)
-        results/<tag>.json               métriques complètes d'un cas
-        tables/grid_stations.csv         grille, à plat : positions, sociétés, alpha
-        tables/grid_societies.csv        sociétés : position et stratégie de points
-        tables/fleet_<n>cars.csv         flotte, à plat : positions initiales…
-        tables/<tag>_<table>.csv         tables tidy d'un cas (latence, stations…)
-        logs/<tag>.txt                   journal détaillé (option --keep-logs)
-        figures/*.png                    figures régénérables sans re-simuler
+    <output_root>/<timestamp>_seed<seed>[_<label>]/
+        params.json                      parameters of the campaign
+        manifest.json                    environment, progress, timings
+        summary.csv                      one row per case (pivot table)
+        grid.json                        infrastructure shared by ALL the cases
+        fleets/fleet_<n>cars.json        vehicle population, per fleet
+        worlds/<scenario>_<n>cars.json   composed world (grid + fleet + scenario)
+        results/<tag>.json               complete metrics of one case
+        tables/grid_stations.csv         the grid, flat: positions, companies, alpha
+        tables/grid_societies.csv        companies: position and point strategy
+        tables/fleet_<n>cars.csv         the fleet, flat: initial positions…
+        tables/<tag>_<table>.csv         tidy tables of a case (latency, stations…)
+        logs/<tag>.txt                   detailed log (--keep-logs option)
+        figures/*.png                    figures regenerable without re-simulating
 
-`grid.json` et `fleets/` sont les *primitives* : les mondes de `worlds/` en sont
-entièrement dérivés (cf. `src/experiments/world.compose_world_spec`) et ne sont
-persistés que pour la traçabilité.
+`grid.json` and `fleets/` are the *primitives*: the worlds in `worlds/` are
+entirely derived from them (see `src/experiments/world.compose_world_spec`) and
+are persisted for traceability only.
 
-`RunStore` est la seule à connaître cette disposition : aucun autre module ne
-construit de chemin à la main.
+`RunStore` is the only place that knows this layout: no other module builds a
+path by hand.
 """
 
 from __future__ import annotations
@@ -52,7 +53,7 @@ def _utc_stamp() -> str:
 
 
 def git_commit() -> str | None:
-    """Commit courant, pour tracer le code qui a produit les résultats."""
+    """Current commit, to trace the code that produced the results."""
     try:
         out = subprocess.check_output(['git', 'rev-parse', 'HEAD'],
                                       stderr=subprocess.DEVNULL, timeout=5)
@@ -71,18 +72,18 @@ def git_is_dirty() -> bool | None:
 
 
 class RunStore:
-    """Accès en lecture/écriture aux artefacts d'un run."""
+    """Read/write access to the artifacts of a run."""
 
     def __init__(self, root: str | Path):
         self.root = Path(root)
 
     # ------------------------------------------------------------------
-    # Création / ouverture
+    # Creation / opening
     # ------------------------------------------------------------------
 
     @classmethod
     def create(cls, params: ExperimentParams) -> "RunStore":
-        """Crée le dossier du run et y écrit les paramètres et le manifeste."""
+        """Create the run directory and write the parameters and manifest in it."""
         name = f"{_utc_stamp()}_seed{params.seed}"
         if params.label:
             name = f"{name}_{_slug(params.label)}"
@@ -119,30 +120,30 @@ class RunStore:
     def latest(cls, output_root: str | Path = 'results_grid') -> "RunStore":
         runs = cls.list_runs(output_root)
         if not runs:
-            raise FileNotFoundError(f"Aucun run trouvé dans {output_root}")
+            raise FileNotFoundError(f"No run found in {output_root}")
         return cls.open(runs[-1])
 
     @classmethod
     def latest_with_methods(cls, methods: Sequence[str],
                             output_root: str | Path = 'results_grid') -> "RunStore":
         """
-        Run le plus récent dont le `summary.csv` contient toutes ces méthodes.
+        Most recent run whose `summary.csv` contains all of these methods.
 
-        Une campagne ne porte pas forcément toutes les méthodes du registre :
-        `latest()` peut donc désigner un run où la comparaison demandée est
-        impossible. Ce sélecteur évite d'analyser un run muet sur la question
-        posée — et, en cas d'échec, dit quelles méthodes chaque run contient
-        plutôt que de laisser un tableau vide s'expliquer tout seul.
+        A campaign does not necessarily carry every method of the registry:
+        `latest()` may therefore designate a run where the requested comparison
+        is impossible. This selector avoids analysing a run that is silent on
+        the question asked — and, on failure, says which methods each run
+        contains rather than leaving an empty table to explain itself.
 
         Parameters
         ----------
         methods : Sequence[str]
-            Noms canoniques exigés (cf. `src/experiments/methods.py`).
+            Canonical names required (see `src/experiments/methods.py`).
 
         Raises
         ------
         FileNotFoundError
-            Aucun run ne les contient toutes.
+            No run contains all of them.
         """
         required = set(methods)
         inventory: list[tuple[Path, set[str]]] = []
@@ -155,11 +156,11 @@ class RunStore:
             inventory.append((path, present))
 
         detail = '\n'.join(
-            f"  {path.name} : {', '.join(sorted(present)) or 'aucun cas'}"
-            for path, present in inventory) or '  (aucun run)'
+            f"  {path.name} : {', '.join(sorted(present)) or 'no case'}"
+            for path, present in inventory) or '  (no run)'
         raise FileNotFoundError(
-            f"Aucun run de {output_root} ne contient toutes les méthodes "
-            f"{sorted(required)}.\nRuns disponibles :\n{detail}"
+            f"No run in {output_root} contains all the methods "
+            f"{sorted(required)}.\nAvailable runs:\n{detail}"
         )
 
     @staticmethod
@@ -227,7 +228,7 @@ class RunStore:
         return self.worlds_dir / f'{scenario}_{nb_cars}cars.json'
 
     def shared_table_path(self, name: str) -> Path:
-        """Table de campagne (grille, flotte), par opposition à celle d'un cas."""
+        """Campaign table (grid, fleet), as opposed to the table of a case."""
         return self.tables_dir / f'{name}.csv'
 
     def result_path(self, case: CaseParams) -> Path:
@@ -243,7 +244,7 @@ class RunStore:
         return self.figures_dir / f'{name}.png'
 
     # ------------------------------------------------------------------
-    # Paramètres & manifeste
+    # Parameters & manifest
     # ------------------------------------------------------------------
 
     def write_params(self, params: ExperimentParams) -> None:
@@ -260,8 +261,8 @@ class RunStore:
         return _read_json(self.manifest_path)
 
     def record_case(self, entry: Mapping[str, Any]) -> None:
-        """Ajoute un cas terminé au manifeste (écrit à chaque cas : un run
-        interrompu reste exploitable)."""
+        """Append a finished case to the manifest (written at every case: an
+        interrupted run stays usable)."""
         manifest = self.read_manifest()
         manifest['cases'].append(dict(entry))
         manifest['nb_cases_done'] = len(manifest['cases'])
@@ -274,11 +275,11 @@ class RunStore:
         self.write_manifest(manifest)
 
     # ------------------------------------------------------------------
-    # Grille, flottes, mondes & résultats
+    # Grid, fleets, worlds & results
     # ------------------------------------------------------------------
 
     def save_grid(self, spec) -> Path:
-        """Persiste l'infrastructure partagée par toute la campagne."""
+        """Persist the infrastructure shared by the whole campaign."""
         spec.save(str(self.grid_path))
         return self.grid_path
 
@@ -333,7 +334,7 @@ class RunStore:
 
     def write_shared_table(self, name: str,
                            rows: Sequence[Mapping[str, Any]]) -> Path | None:
-        """Écrit une table de campagne (grille, flotte). `None` si vide."""
+        """Write a campaign table (grid, fleet). `None` if empty."""
         if not rows:
             return None
         path = self.shared_table_path(name)
@@ -341,7 +342,7 @@ class RunStore:
         return path
 
     def read_shared_table(self, name: str) -> list[dict]:
-        """Relit une table de campagne ; liste vide si elle n'existe pas."""
+        """Read back a campaign table; empty list if it does not exist."""
         path = self.shared_table_path(name)
         if not path.is_file():
             return []
@@ -350,12 +351,12 @@ class RunStore:
                     for row in csv.DictReader(fh)]
 
     def root_table_path(self, name: str) -> Path:
-        """Table de campagne écrite à la racine du run (ex. `ablation.csv`)."""
+        """Campaign table written at the root of the run (e.g. `ablation.csv`)."""
         return self.root / f'{name}.csv'
 
     def write_root_table(self, name: str, rows: Sequence[Mapping[str, Any]],
                          fieldnames: Sequence[str] | None = None) -> Path | None:
-        """Écrit une table de campagne à la racine. `None` si elle est vide."""
+        """Write a campaign table at the root. `None` if it is empty."""
         if not rows:
             return None
         path = self.root_table_path(name)
@@ -389,7 +390,7 @@ class RunStore:
 
 
 # ----------------------------------------------------------------------
-# Entrées/sorties de bas niveau
+# Low-level input/output
 # ----------------------------------------------------------------------
 
 def _write_json(path: Path, data: dict, default=None) -> None:
@@ -397,7 +398,7 @@ def _write_json(path: Path, data: dict, default=None) -> None:
     tmp = path.with_suffix(path.suffix + '.tmp')
     with tmp.open('w', encoding='utf-8') as fh:
         json.dump(data, fh, indent=2, ensure_ascii=False, default=default)
-    # Écriture atomique : un run interrompu ne laisse pas de JSON tronqué.
+    # Atomic write: an interrupted run leaves no truncated JSON behind.
     tmp.replace(path)
 
 

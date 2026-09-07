@@ -1,5 +1,5 @@
 """
-metrics.py — Métriques d'évaluation de la simulation
+metrics.py — Evaluation metrics of the simulation
 """
 
 import time
@@ -10,34 +10,34 @@ from typing import List, Tuple, Dict, Optional
 
 
 # ------------------------------------------------------------------
-# Structures de données pour la collecte
+# Data structures for the collection
 # ------------------------------------------------------------------
 
 @dataclass
 class AcceptanceRecord:
-    """Enregistre chaque acceptation d'offre (n, m)."""
+    """Records each offer acceptance (n, m)."""
     car_id:      int
     station_id:  int
-    distance_km: float   # d_{n,m} au moment de l'acceptation
-    waiting_time_h: float  # w_{n,m} estimé (en heures)
+    distance_km: float   # d_{n,m} at acceptance time
+    waiting_time_h: float  # estimated w_{n,m} (in hours)
 
 
 @dataclass
 class DemandLatencyRecord:
     """
-    Chronologie complète d'une demande, pour la mesure de latence.
+    Complete timeline of a demand, for the latency measurement.
 
-    Tous les horodatages sont des `time.perf_counter()` (secondes, monotone).
-    Une demande peut n'avoir aucune offre (`offer_receptions` vide) ou ne jamais
-    être confirmée (`t_confirmation == 0`) : les agrégats ignorent alors la
-    demande pour l'étape concernée, au lieu de compter un zéro.
+    Every timestamp is a `time.perf_counter()` (seconds, monotonic). A demand
+    may receive no offer (`offer_receptions` empty) or never be confirmed
+    (`t_confirmation == 0`): the aggregates then ignore the demand for the stage
+    concerned, instead of counting a zero.
 
-    Étapes mesurées :
-      t_emission     émission de la requête par le véhicule
-      offer_receptions  (station_id, t) pour *chaque* offre reçue
-      t_last_offer   réception de la dernière offre
-      t_selection    fin du classement des offres par le véhicule
-      t_confirmation confirmation acceptée par la station
+    Stages measured:
+      t_emission     emission of the request by the vehicle
+      offer_receptions  (station_id, t) for *each* offer received
+      t_last_offer   reception of the last offer
+      t_selection    end of the offer ranking by the vehicle
+      t_confirmation confirmation accepted by the station
     """
     demand_id:   str
     car_id:      int = -1
@@ -48,13 +48,13 @@ class DemandLatencyRecord:
     t_confirmation: float = 0.0
     nb_stations_contacted: int = 0
     nb_confirm_attempts: int = 0
-    #: Relances de recherche (rayon élargi) consommées pour cette demande.
-    #: Une demande relancée reste *une* demande : c'est un seul besoin de
-    #: recharge, dont on mesure la latence de bout en bout.
+    #: Search retries (widened radius) consumed by this demand.
+    #: A retried demand stays *one* demand: it is a single charging need, whose
+    #: end-to-end latency is being measured.
     nb_search_retries: int = 0
     confirmed: bool = False
 
-    # ---- dérivés
+    # ---- derived
     @property
     def nb_offers_received(self) -> int:
         return len(self.offer_receptions)
@@ -75,43 +75,43 @@ class DemandLatencyRecord:
 
     @property
     def first_offer_ms(self) -> Optional[float]:
-        """Émission → première offre reçue."""
+        """Emission → first offer received."""
         return self._ms(self.t_first_offer)
 
     @property
     def last_offer_ms(self) -> Optional[float]:
-        """Émission → dernière offre reçue (temps de réponse du réseau)."""
+        """Emission → last offer received (network response time)."""
         return self._ms(self.t_last_offer)
 
     @property
     def selection_ms(self) -> Optional[float]:
-        """Dernière offre → décision du véhicule."""
+        """Last offer → decision of the vehicle."""
         return self._ms(self.t_selection, self.t_last_offer)
 
     @property
     def confirmation_ms(self) -> Optional[float]:
-        """Décision → confirmation acceptée par la station."""
+        """Decision → confirmation accepted by the station."""
         return self._ms(self.t_confirmation, self.t_selection)
 
     @property
     def total_ms(self) -> Optional[float]:
-        """Émission → confirmation (latence de bout en bout)."""
+        """Emission → confirmation (end-to-end latency)."""
         return self._ms(self.t_confirmation)
 
-    # ---- Compatibilité : anciens noms utilisés par plots_metrics
+    # ---- Compatibility: former names used by plots_metrics
     @property
     def t_response(self) -> float:
-        """Alias historique : horodatage de la DERNIÈRE offre reçue."""
+        """Historical alias: timestamp of the LAST offer received."""
         return self.t_last_offer
 
     @property
     def response_time_ms(self) -> float:
-        """Alias historique : émission → dernière offre reçue (0. si aucune)."""
+        """Historical alias: emission → last offer received (0. if none)."""
         return self.last_offer_ms or 0.0
 
     @property
     def per_offer_ms(self) -> List[float]:
-        """Émission → réception, offre par offre."""
+        """Emission → reception, offer by offer."""
         return [(t - self.t_emission) * 1000.0
                 for _, t in self.offer_receptions if t > 0]
 
@@ -133,13 +133,13 @@ class DemandLatencyRecord:
         }
 
 
-# Conservé pour compatibilité avec l'ancien nom.
+# Kept for compatibility with the former name.
 DemandTimingRecord = DemandLatencyRecord
 
 
 @dataclass
 class StationTimingRecord:
-    """Enregistre le temps de traitement ILP par station."""
+    """Records the ILP processing time per station."""
     station_id:   int
     demand_id:    str
     t_start:      float
@@ -162,7 +162,7 @@ def _pct(values, q) -> Optional[float]:
 
 
 # ------------------------------------------------------------------
-# Collecteur central (à attacher à Simulation)
+# Central collector (to be attached to Simulation)
 # ------------------------------------------------------------------
 
 class MetricsCollector:
@@ -172,45 +172,45 @@ class MetricsCollector:
         self.stations = stations
         self.config   = config
 
-        # Pour User Request Satisfaction
-        # schedule_demand[car_id] = np.array binaire (TOTAL_TIME,)  déjà dans car.schedule_requested
-        # schedule_offer[car_id]  = np.array binaire (TOTAL_TIME,)
+        # For User Request Satisfaction
+        # schedule_demand[car_id] = binary np.array (TOTAL_TIME,)  already in car.schedule_requested
+        # schedule_offer[car_id]  = binary np.array (TOTAL_TIME,)
         self.schedule_offer: Dict[int, np.ndarray] = {
             c.idx: np.zeros(config.TOTAL_TIME, dtype=int)
             for c in cars
         }
 
-        # Pour Station Demand
-        # station_charging_log[station_id] = liste de (car_id, t_start, t_end, d_prop)
+        # For Station Demand
+        # station_charging_log[station_id] = list of (car_id, t_start, t_end, d_prop)
         self.station_charging_log: Dict[int, List[Tuple]] = {
             s.m: [] for s in stations
         }
 
-        # Pour Mean Relative Travel Distance & Waiting Time
+        # For Mean Relative Travel Distance & Waiting Time
         self.acceptance_records: List[AcceptanceRecord] = []
 
-        # Pour scalabilité / latence
+        # For scalability / latency
         self.demand_timings: Dict[str, DemandLatencyRecord] = {}
         self.station_timings: List[StationTimingRecord]    = []
 
     # ------------------------------------------------------------------
-    # Méthodes d'enregistrement (appelées depuis Simulation)
+    # Recording methods (called from Simulation)
     # ------------------------------------------------------------------
 
     def record_offer_accepted(self, car, offer, waiting_time_slots: float):
         """
-        Appelé quand un véhicule accepte une offre.
-        waiting_time_slots : offer.t_arr - t_hat_arr (en slots)
+        Called when a vehicle accepts an offer.
+        waiting_time_slots : offer.t_arr - t_hat_arr (in slots)
         """
-        # Planning offre
+        # Offer schedule
         t_s = min(offer.t_arr, self.config.TOTAL_TIME)
         t_e = min(offer.t_dep, self.config.TOTAL_TIME)
         self.schedule_offer[car.idx][t_s:t_e] = 1
 
-        # Distance en km (grille en mètres)
+        # Distance in km (grid in meters)
         dist_km = offer.distance / 1000.0
 
-        # Temps d'attente en heures
+        # Waiting time in hours
         wait_h = max(0., waiting_time_slots) * self.config.SLOT_DURATION / 60.0
 
         self.acceptance_records.append(AcceptanceRecord(
@@ -220,20 +220,20 @@ class MetricsCollector:
             waiting_time_h=wait_h
         ))
 
-        # Log recharge station
+        # Station charging log
         self.station_charging_log[offer.station_id].append(
             (car.idx, offer.t_arr, offer.t_dep, offer.d_prop)
         )
 
-    # ---- Latence ------------------------------------------------------
+    # ---- Latency ------------------------------------------------------
 
     def record_demand_emitted(self, demand_id, car_id: int = -1, slot: int = -1,
                               nb_stations_contacted: int = 0):
         if demand_id in self.demand_timings:
             raise ValueError(
-                f"Identifiant de demande déjà utilisé : {demand_id!r}. "
-                "Les identifiants doivent être uniques pour que la latence soit "
-                "mesurable demande par demande."
+                f"Demand identifier already used: {demand_id!r}. "
+                "Identifiers must be unique for the latency to be measurable "
+                "demand by demand."
             )
         self.demand_timings[demand_id] = DemandLatencyRecord(
             demand_id=demand_id,
@@ -245,39 +245,39 @@ class MetricsCollector:
         return self.demand_timings[demand_id]
 
     def record_demand_responded(self, demand_id, station_id: int):
-        """Réception d'une offre. Appelé une fois par offre, pas par demande."""
+        """Reception of an offer. Called once per offer, not per demand."""
         rec = self.demand_timings.get(demand_id)
         if rec is not None:
             rec.offer_receptions.append((station_id, time.perf_counter()))
 
     def record_demand_retry(self, demand_id, nb_stations_contacted: int = 0):
         """
-        Relance d'une demande avec un rayon élargi.
+        Retry of a demand with a widened radius.
 
-        La demande n'est pas recréée : on incrémente son compteur de relances et
-        on retient le nombre de stations finalement contactées. `t_emission`
-        reste celui de la première tentative, pour que la latence mesure le
-        temps de satisfaction du besoin, relances comprises.
+        The demand is not recreated: its retry counter is incremented and the
+        number of stations finally contacted is kept. `t_emission` stays the one
+        of the first attempt, so that the latency measures the time to satisfy
+        the need, retries included.
         """
         rec = self.demand_timings.get(demand_id)
         if rec is None:
             raise ValueError(
-                f"Relance d'une demande inconnue : {demand_id!r}. Une relance "
-                "doit conserver l'identifiant de la demande d'origine."
+                f"Retry of an unknown demand: {demand_id!r}. A retry must keep "
+                "the identifier of the original demand."
             )
         rec.nb_search_retries += 1
         rec.nb_stations_contacted = nb_stations_contacted
         return rec
 
     def record_demand_selection(self, demand_id):
-        """Le véhicule a fini de classer les offres reçues."""
+        """The vehicle has finished ranking the offers received."""
         rec = self.demand_timings.get(demand_id)
         if rec is not None:
             rec.t_selection = time.perf_counter()
 
     def record_demand_confirmation(self, demand_id, confirmed: bool,
                                    nb_attempts: int = 1):
-        """Issue de la phase de confirmation auprès de la station."""
+        """Outcome of the confirmation phase with the station."""
         rec = self.demand_timings.get(demand_id)
         if rec is not None:
             rec.nb_confirm_attempts = nb_attempts
@@ -303,15 +303,15 @@ class MetricsCollector:
     def station_demand(self) -> Dict[int, float]:
         """
         E_m = sum_{n in N_m} P_n * d_n
-        P_n : puissance de recharge en kW (charging_power en km/slot → kW via conso)
-        d_n : durée allouée en heures
+        P_n : charging power in kW (charging_power in km/slot → kW via consumption)
+        d_n : allocated duration in hours
         """
-        car_power = {}  # car_id → puissance kW
+        car_power = {}  # car_id → power in kW
         for car in self.cars:
-            # charging_power en km/slot, consommation = 10 kWh/100 km
+            # charging_power in km/slot, consumption = 10 kWh/100 km
             kw = car.charging_power * \
                 (self.config.ENERGY_CONSUMPTION['quantity_kW'] / \
-                 (self.config.ENERGY_CONSUMPTION['distance_unit_m'] * 1e-3))  # kWh par slot → kW (slot = 5 min = 1/12 h)
+                 (self.config.ENERGY_CONSUMPTION['distance_unit_m'] * 1e-3))  # kWh per slot → kW (slot = 5 min = 1/12 h)
             car_power[car.idx] = kw
 
         result = {}
@@ -319,7 +319,7 @@ class MetricsCollector:
             e_m = 0.0
             for (car_id, t_start, t_end, d_prop) in self.station_charging_log[s.m]:
                 p_n = car_power.get(car_id, 0.)
-                d_h = d_prop * self.config.SLOT_DURATION / 60.0  # slots → heures
+                d_h = d_prop * self.config.SLOT_DURATION / 60.0  # slots → hours
                 e_m += p_n * d_h
             result[s.m] = round(e_m, 3)
         return result
@@ -330,7 +330,7 @@ class MetricsCollector:
 
     def user_request_satisfaction(self) -> Dict[str, float]:
         """
-        Retourne la satisfaction exacte moyenne et la satisfaction des besoins moyenne.
+        Return the mean exact satisfaction and the mean needs satisfaction.
         """
         exact_list, needs_list = [], []
 
@@ -340,7 +340,7 @@ class MetricsCollector:
 
             demand_slots = int(np.sum(s_demand))
             if demand_slots == 0:
-                continue  # véhicule n'a jamais émis de demande
+                continue  # the vehicle never emitted a demand
 
             offer_slots = int(np.sum(s_offer))
             inter_slots = int(np.sum((s_demand == 1) & (s_offer == 1)))
@@ -364,7 +364,7 @@ class MetricsCollector:
 
     def mean_relative_travel_distance(self) -> float:
         """
-        Distance moyenne (km) parcourue par les véhicules pour rejoindre une station.
+        Mean distance (km) driven by the vehicles to reach a station.
         """
         if not self.acceptance_records:
             return 0.
@@ -377,7 +377,7 @@ class MetricsCollector:
 
     def mean_relative_waiting_time(self) -> float:
         """
-        Temps d'attente moyen (heures) estimé à la station.
+        Mean waiting time (hours) estimated at the station.
         """
         if not self.acceptance_records:
             return 0.
@@ -385,24 +385,24 @@ class MetricsCollector:
         return round(float(np.mean(waits)), 4)
 
     # ------------------------------------------------------------------
-    # 5. Scalabilité — latence
+    # 5. Scalability — latency
     # ------------------------------------------------------------------
 
     def mean_response_time_ms(self) -> float:
         """
-        Temps moyen entre l'émission d'une demande et la réception de la
-        DERNIÈRE offre. Ne porte que sur les demandes ayant reçu au moins une
-        offre (une demande sans réponse n'a pas de temps de réponse).
+        Mean time between the emission of a demand and the reception of the LAST
+        offer. Covers only the demands that received at least one offer (a
+        demand with no answer has no response time).
         """
         value = _mean(r.last_offer_ms for r in self.demand_timings.values())
         return value if value is not None else 0.
 
     def latency_report(self) -> dict:
         """
-        Décomposition complète de la latence, étape par étape.
+        Complete decomposition of the latency, stage by stage.
 
-        Chaque étape est agrégée indépendamment sur les demandes pour lesquelles
-        elle est définie ; `nb_*` indique l'effectif correspondant.
+        Each stage is aggregated independently over the demands for which it is
+        defined; `nb_*` gives the corresponding count.
         """
         recs = list(self.demand_timings.values())
         answered = [r for r in recs if r.nb_offers_received > 0]
@@ -419,18 +419,18 @@ class MetricsCollector:
             'confirm_rate':          round(len(confirmed) / len(recs), 4) if recs else 0.,
             'mean_offers_per_demand': round(float(np.mean(
                 [r.nb_offers_received for r in recs])), 3) if recs else 0.,
-            # émission → offre, toutes offres confondues
+            # emission → offer, all offers taken together
             'offer_ms_mean':         _mean(per_offer),
             'offer_ms_p95':          _pct(per_offer, 95),
-            # émission → première / dernière offre
+            # emission → first / last offer
             'first_offer_ms_mean':   _mean(r.first_offer_ms for r in recs),
             'last_offer_ms_mean':    _mean(r.last_offer_ms for r in recs),
             'last_offer_ms_p95':     _pct([r.last_offer_ms for r in recs], 95),
-            # dernière offre → sélection
+            # last offer → selection
             'selection_ms_mean':     _mean(r.selection_ms for r in recs),
-            # sélection → confirmation
+            # selection → confirmation
             'confirmation_ms_mean':  _mean(r.confirmation_ms for r in recs),
-            # bout en bout
+            # end to end
             'total_ms_mean':         _mean(r.total_ms for r in recs),
             'total_ms_p95':          _pct([r.total_ms for r in recs], 95),
             'mean_confirm_attempts': round(float(np.mean(
@@ -438,11 +438,11 @@ class MetricsCollector:
         }
 
     def latency_rows(self) -> List[dict]:
-        """Détail par demande (export CSV / analyse fine)."""
+        """Per-demand detail (CSV export / fine-grained analysis)."""
         return [r.as_row() for r in self.demand_timings.values()]
 
     # ------------------------------------------------------------------
-    # 6. Scalabilité — Temps de traitement moyen par station (ms)
+    # 6. Scalability — Mean processing time per station (ms)
     # ------------------------------------------------------------------
 
     def mean_processing_time_per_station(self) -> Dict[int, float]:
@@ -456,7 +456,7 @@ class MetricsCollector:
         }
 
     # ------------------------------------------------------------------
-    # Rapport complet
+    # Complete report
     # ------------------------------------------------------------------
 
     def report(self) -> dict:
@@ -475,7 +475,7 @@ class MetricsCollector:
 
     def print_report(self):
         r = self.report()
-        print("\n========== MÉTRIQUES ==========")
+        print("\n========== METRICS ==========")
 
         print("\n--- Station Demand (kWh) ---")
         for sid, e in r['station_demand_kWh'].items():
@@ -483,28 +483,28 @@ class MetricsCollector:
 
         print("\n--- User Request Satisfaction ---")
         sat = r['user_request_satisfaction']
-        print(f"  Satisfaction exacte  : {sat['exact_satisfaction']*100:.1f}%")
-        print(f"  Satisfaction besoins : {sat['needs_satisfaction']*100:.1f}%")
-        print(f"  Véhicules évalués    : {sat['nb_cars_evaluated']}")
+        print(f"  Exact satisfaction : {sat['exact_satisfaction']*100:.1f}%")
+        print(f"  Needs satisfaction : {sat['needs_satisfaction']*100:.1f}%")
+        print(f"  Vehicles evaluated : {sat['nb_cars_evaluated']}")
 
         print("\n--- Travel & Waiting ---")
-        print(f"  Distance moy. : {r['mean_travel_distance_km']:.3f} km")
-        print(f"  Attente moy.  : {r['mean_waiting_time_h']*60:.1f} min")
+        print(f"  Mean distance : {r['mean_travel_distance_km']:.3f} km")
+        print(f"  Mean waiting  : {r['mean_waiting_time_h']*60:.1f} min")
 
         lat = r['latency']
-        print("\n--- Scalabilité / latence ---")
-        print(f"  Demandes                 : {lat['nb_demands']} "
-              f"(avec offre : {lat['nb_demands_answered']}, "
-              f"confirmées : {lat['nb_demands_confirmed']})")
-        print(f"  Offres reçues / demande  : {lat['mean_offers_per_demand']:.2f}")
-        print(f"  Émission → 1re offre     : {_fmt(lat['first_offer_ms_mean'])}")
-        print(f"  Émission → dern. offre   : {_fmt(lat['last_offer_ms_mean'])}"
+        print("\n--- Scalability / latency ---")
+        print(f"  Demands                  : {lat['nb_demands']} "
+              f"(with an offer: {lat['nb_demands_answered']}, "
+              f"confirmed: {lat['nb_demands_confirmed']})")
+        print(f"  Offers received / demand : {lat['mean_offers_per_demand']:.2f}")
+        print(f"  Emission → 1st offer     : {_fmt(lat['first_offer_ms_mean'])}")
+        print(f"  Emission → last offer    : {_fmt(lat['last_offer_ms_mean'])}"
               f"  (p95 {_fmt(lat['last_offer_ms_p95'])})")
-        print(f"  Dern. offre → sélection  : {_fmt(lat['selection_ms_mean'])}")
-        print(f"  Sélection → confirmation : {_fmt(lat['confirmation_ms_mean'])}")
-        print(f"  Bout en bout             : {_fmt(lat['total_ms_mean'])}"
+        print(f"  Last offer → selection   : {_fmt(lat['selection_ms_mean'])}")
+        print(f"  Selection → confirmation : {_fmt(lat['confirmation_ms_mean'])}")
+        print(f"  End to end               : {_fmt(lat['total_ms_mean'])}"
               f"  (p95 {_fmt(lat['total_ms_p95'])})")
-        print("  Temps traitement / station :")
+        print("  Processing time / station :")
         for sid, ms in r['mean_processing_time_ms'].items():
             print(f"    Station {sid}: {ms:.2f} ms")
         print("================================")
@@ -515,12 +515,12 @@ def _fmt(value):
 
 
 # ------------------------------------------------------------------
-# Métrique panne sèche (à appeler depuis Simulation.step)
+# Breakdown metric (to be called from Simulation.step)
 # ------------------------------------------------------------------
 
 class BreakdownTracker:
     """
-    Suivi des pannes sèches.
+    Tracking of the breakdowns (empty battery).
     """
 
     def __init__(self):
@@ -551,51 +551,51 @@ class BreakdownTracker:
         }
 
     def print_report(self):
-        print("\n--- Pannes sèches ---")
-        print(f"  Nombre de pannes      : {self.count}")
-        print(f"  Véhicules concernés   : {self.nb_unique_cars}")
+        print("\n--- Breakdowns ---")
+        print(f"  Number of breakdowns : {self.count}")
+        print(f"  Vehicles concerned   : {self.nb_unique_cars}")
 
 
 # ------------------------------------------------------------------
-# Comportements : intention tirée vs. issue réellement observée
+# Behaviours: drawn intent vs. actually observed outcome
 # ------------------------------------------------------------------
 
 class BehaviorTracker:
     """
-    Compare l'intention tirée à la réservation et l'issue réellement observée.
+    Compare the intent drawn at reservation time with the outcome observed.
 
-    Motivation : l'intention (`theta`) et l'issue peuvent différer légitimement.
-    Une intention « annulation anticipée » sur une réservation prise 3 slots
-    avant l'arrivée ne *peut pas* être anticipée : elle est réalisée comme une
-    annulation tardive. Sans ce suivi, l'écart entre les probabilités du scénario
-    et les taux mesurés était invisible — et attribué à tort au modèle.
+    Motivation: the intent (`theta`) and the outcome may legitimately differ. An
+    "early cancellation" intent on a reservation taken 3 slots before arrival
+    *cannot* be early: it is realised as a late cancellation. Without this
+    tracking, the gap between the scenario probabilities and the measured rates
+    was invisible — and wrongly attributed to the model.
 
-    Issues possibles
-    ----------------
-    pres       le véhicule s'est présenté et a chargé
-    abs        no-show : créneau occupé jusqu'à t_dep, véhicule jamais venu
-    early      annulation > seuil avant l'arrivée prévue (créneau rendu à temps)
-    late       annulation <= seuil avant l'arrivée prévue
-    breakdown  panne sèche avant la session (réservation libérée)
-    unresolved réservation encore ouverte à la fin de l'horizon
+    Possible outcomes
+    -----------------
+    pres       the vehicle showed up and charged
+    abs        no-show: slot occupied until t_dep, vehicle never came
+    early      cancellation > threshold before the planned arrival (slot given back in time)
+    late       cancellation <= threshold before the planned arrival
+    breakdown  empty battery before the session (reservation released)
+    unresolved reservation still open at the end of the horizon
     """
 
     OUTCOMES = ('pres', 'abs', 'early', 'late', 'breakdown', 'unresolved')
 
-    #: En dessous de ce nombre d'intentions `early`, l'absence d'annulation
-    #: anticipée observée n'est pas interprétable : c'est un échantillon, pas un
-    #: symptôme. Le diagnostic reste muet.
+    #: Below this number of `early` intents, the absence of an observed early
+    #: cancellation is not interpretable: it is a sample, not a symptom. The
+    #: diagnostic stays silent.
     MIN_EARLY_SAMPLE = 5
 
     def __init__(self, config=None):
-        self.intents = Counter()      # comportement tiré à la réservation
-        self.outcomes = Counter()     # issue observée
-        self.pairs = Counter()        # (intention, issue)
-        self.reclassified = Counter() # intentions réalisées autrement
-        self.leads = []               # délai requête → arrivée (slots)
-        # Sert aux diagnostics : le délai minimal rendant l'annulation
-        # anticipée atteignable se déduit de LATE_CANCEL_FRACTION, il ne peut
-        # pas être codé en dur ici.
+        self.intents = Counter()      # behaviour drawn at reservation time
+        self.outcomes = Counter()     # observed outcome
+        self.pairs = Counter()        # (intent, outcome)
+        self.reclassified = Counter() # intents realised otherwise
+        self.leads = []               # request → arrival delay (slots)
+        # Used by the diagnostics: the minimal delay making an early
+        # cancellation reachable is derived from LATE_CANCEL_FRACTION, it cannot
+        # be hard-coded here.
         self.config = config
 
     def record_intent(self, intent: str, lead: int | None = None):
@@ -605,7 +605,7 @@ class BehaviorTracker:
 
     def record_outcome(self, intent: str | None, outcome: str):
         if outcome not in self.OUTCOMES:
-            raise ValueError(f"Issue inconnue : {outcome!r}")
+            raise ValueError(f"Unknown outcome: {outcome!r}")
         self.outcomes[outcome] += 1
         self.pairs[(intent, outcome)] += 1
         if intent is not None and intent != outcome and outcome in ('early', 'late', 'abs', 'pres'):
@@ -613,19 +613,20 @@ class BehaviorTracker:
 
     # ------------------------------------------------------------------
     def min_lead_for_early(self) -> int:
-        """Délai minimal rendant l'annulation anticipée atteignable."""
+        """Minimal delay making an early cancellation reachable."""
         if self.config is None:
-            return 3    # valeur pour LATE_CANCEL_FRACTION = 0.5
+            return 3    # value for LATE_CANCEL_FRACTION = 0.5
         return self.config.min_lead_for_early_cancel()
 
     def _anticipation_requested(self) -> bool:
         """
-        L'expérimentateur a-t-il demandé un horizon capable de produire des
-        annulations anticipées ?
+        Did the experimenter ask for a horizon capable of producing early
+        cancellations?
 
-        Sépare le bras de contrôle — anticipation volontairement désactivée,
-        rien à signaler — du cas où l'horizon est demandé mais jamais obtenu.
-        Le délai effectif vaut `l_n + ceil(trajet)`, soit au moins `l_n + 1`.
+        Separates the control arm — anticipation deliberately disabled, nothing
+        to report — from the case where the horizon is requested but never
+        obtained. The effective delay is `l_n + ceil(travel)`, i.e. at least
+        `l_n + 1`.
         """
         if self.config is None:
             return True
@@ -634,11 +635,11 @@ class BehaviorTracker:
 
     def anticipable_share(self) -> float | None:
         """
-        Part des réservations dont le délai autorisait une annulation anticipée.
+        Share of the reservations whose delay allowed an early cancellation.
 
-        C'est la mesure qui sépare une impossibilité structurelle (part nulle :
-        aucune réservation n'avait d'avance à perdre) d'un simple aléa
-        d'échantillonnage.
+        This is the measure that separates a structural impossibility (zero
+        share: no reservation had any lead to lose) from a mere sampling
+        accident.
         """
         if not self.leads:
             return None
@@ -657,10 +658,10 @@ class BehaviorTracker:
 
     def diagnostics(self) -> list:
         """
-        Signale les écarts structurels entre scénario et issues observées.
+        Report the structural gaps between the scenario and the observed outcomes.
 
-        Sert à ne pas interpréter comme un effet du modèle ce qui est en réalité
-        une impossibilité physique du paramétrage.
+        Its purpose is to avoid interpreting as a model effect what is in fact a
+        physical impossibility of the parameter set.
         """
         warnings = []
         nb = sum(self.intents.values())
@@ -672,50 +673,48 @@ class BehaviorTracker:
         share = self.anticipable_share()
         min_lead = self.min_lead_for_early()
 
-        # 1. Horizon demandé mais jamais obtenu. On ne signale que l'écart entre
-        #    l'intention de l'expérimentateur et le résultat : désactiver
-        #    l'anticipation (bras de contrôle) est un choix délibéré, pas une
-        #    anomalie — `ExperimentParams.validate` l'a déjà signalé au moment
-        #    de la configuration. Message sans compteur : il est identique pour
-        #    tous les cas d'une campagne (regroupement en sortie).
+        # 1. Horizon requested but never obtained. Only the gap between what the
+        #    experimenter intended and the result is reported: disabling
+        #    anticipation (control arm) is a deliberate choice, not an anomaly —
+        #    `ExperimentParams.validate` already reported it at configuration
+        #    time. Message without a counter: it is identical for every case of
+        #    a campaign (grouped on output).
         if share == 0. and early_intent > 0 and self._anticipation_requested():
             warnings.append(
-                "Horizon de planification demandé mais aucune réservation n'a "
-                f"obtenu un délai suffisant (>= {min_lead} slots) : la "
-                "distinction anticipé / tardif n'est pas mesurable et la "
-                "probabilité 'early' du scénario se réalise nécessairement en "
-                "'late'. Cause probable : horizon de simulation trop court "
-                "devant RESERVATION_LEAD_PARAMS + durée de recharge — les "
-                "créneaux visés tombent hors de la fenêtre. Voir "
-                "'median_lead_slots'."
+                "Planning horizon requested but no reservation obtained a "
+                f"sufficient delay (>= {min_lead} slots): the early / late "
+                "distinction is not measurable and the 'early' probability of "
+                "the scenario is necessarily realised as 'late'. Likely cause: "
+                "simulation horizon too short against RESERVATION_LEAD_PARAMS "
+                "+ charging duration — the targeted slots fall outside the "
+                "window. See 'median_lead_slots'."
             )
 
-        # 2. Anomalie d'échantillon — le paramétrage le permettait, mais aucune
-        #    intention ne s'est réalisée. Muet en dessous de MIN_EARLY_SAMPLE :
-        #    sur une poignée d'intentions, l'absence d'issue `early` est du
-        #    bruit, pas un symptôme.
+        # 2. Sample anomaly — the parameter set allowed it, but no intent was
+        #    realised. Silent below MIN_EARLY_SAMPLE: on a handful of intents,
+        #    the absence of an `early` outcome is noise, not a symptom.
         elif (early_intent >= self.MIN_EARLY_SAMPLE and early_obs == 0
                 and share):
             warnings.append(
-                f"Aucune des {early_intent} intentions 'early' n'a été réalisée "
-                f"comme telle, alors que {share:.0%} des réservations avaient un "
-                f"délai suffisant (>= {min_lead} slots). Écart à examiner : voir "
+                f"None of the {early_intent} 'early' intents was realised as "
+                f"such, although {share:.0%} of the reservations had a "
+                f"sufficient delay (>= {min_lead} slots). Gap to examine: see "
                 "'reclassified'."
             )
 
         if (self.leads and float(np.mean(self.leads)) < 1.0
                 and self._anticipation_requested()):
             warnings.append(
-                "Délai moyen requête → arrivée prévue < 1 slot alors qu'un "
-                "horizon est demandé : rayon de recherche petit devant la "
-                "vitesse par slot."
+                "Mean request → planned arrival delay < 1 slot although a "
+                "horizon is requested: search radius small against the speed "
+                "per slot."
             )
 
         unresolved = self.outcomes.get('unresolved', 0)
         if unresolved > 0.05 * nb:
             warnings.append(
-                f"{unresolved}/{nb} réservations non résolues à la fin de "
-                "l'horizon : durée de simulation probablement trop courte."
+                f"{unresolved}/{nb} reservations unresolved at the end of the "
+                "horizon: simulation duration probably too short."
             )
         return warnings
 
@@ -737,13 +736,13 @@ class BehaviorTracker:
 
     def print_report(self, theta_config: dict | None = None):
         r = self.report()
-        print("\n--- Comportements (intention tirée vs. issue observée) ---")
-        print(f"  Réservations confirmées : {r['nb_reservations']}"
-              f"  |  issues enregistrées : {r['nb_resolved']}")
+        print("\n--- Behaviours (drawn intent vs. observed outcome) ---")
+        print(f"  Confirmed reservations : {r['nb_reservations']}"
+              f"  |  outcomes recorded : {r['nb_resolved']}")
         if r['mean_lead_slots'] is not None:
-            print(f"  Délai requête → arrivée : {r['mean_lead_slots']:.2f} slots (moyenne)")
+            print(f"  Request → arrival delay : {r['mean_lead_slots']:.2f} slots (mean)")
 
-        header = f"  {'':<11}{'scénario':>10}{'intention':>12}{'observé':>12}"
+        header = f"  {'':<11}{'scenario':>10}{'intent':>12}{'observed':>12}"
         print(header)
         keys = ('pres', 'abs', 'early', 'late', 'breakdown', 'unresolved')
         for k in keys:
@@ -758,7 +757,7 @@ class BehaviorTracker:
                   f"{('' if obs is None else f'{obs:.3f}'):>12}")
 
         if r['reclassified']:
-            print("  Intentions réalisées autrement :")
+            print("  Intents realised otherwise:")
             for label, n in sorted(r['reclassified'].items(), key=lambda kv: -kv[1]):
                 print(f"    {label} : {n}")
 

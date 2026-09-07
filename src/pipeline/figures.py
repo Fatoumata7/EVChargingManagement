@@ -1,21 +1,21 @@
 """
-figures.py — Figures produites à partir des tables, jamais des objets de simulation.
+figures.py — Figures built from the tables, never from the simulation objects.
 
-Conséquence : `cli.py report --run-dir ...` régénère toutes les figures d'une
-campagne sans relancer une seule simulation. Corriger un axe ou une couleur ne
-coûte plus des heures de calcul.
+Consequence: `cli.py report --run-dir ...` regenerates every figure of a
+campaign without re-running a single simulation. Fixing an axis or a color no
+longer costs hours of computation.
 
-Chaque fonction `fig_*` est une fonction pure (tables -> Figure) et renvoie
-`None` si les données nécessaires sont absentes, afin qu'une campagne partielle
-produise quand même les figures qu'elle peut.
+Each `fig_*` function is a pure function (tables -> Figure) and returns `None`
+when the data it needs is missing, so that a partial campaign still produces the
+figures it can.
 
-Deux familles de tables alimentent ces figures :
+Two families of tables feed these figures:
 
-* `summary.csv` — un résultat par cas, pour les figures de performance ;
-* `grid_stations.csv`, `grid_societies.csv`, `fleet_<n>cars.csv` — la grille et
-  les flottes partagées, écrites avant toute simulation. Les figures
-  correspondantes (`fig_grid`, `fig_fleet`) documentent l'environnement commun
-  à tous les scénarios : c'est la pièce justificative de leur comparabilité.
+* `summary.csv` — one result per case, for the performance figures;
+* `grid_stations.csv`, `grid_societies.csv`, `fleet_<n>cars.csv` — the shared
+  grid and fleets, written before any simulation. The corresponding figures
+  (`fig_grid`, `fig_fleet`) document the environment common to every scenario:
+  they are the supporting evidence of their comparability.
 """
 
 from __future__ import annotations
@@ -24,7 +24,7 @@ from pathlib import Path
 from typing import Any, Callable, Mapping, Sequence
 
 import matplotlib
-matplotlib.use('Agg')          # aucun affichage : le pipeline est non interactif
+matplotlib.use('Agg')          # no display: the pipeline is non-interactive
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.ticker import MaxNLocator
@@ -35,10 +35,10 @@ from src.pipeline import ablation
 Row = Mapping[str, Any]
 Rows = Sequence[Row]
 
-# Couleurs par méthode, stables d'une figure à l'autre. Les quatre barreaux de
-# l'échelle d'ablation vont du chaud (Nearest) au froid (BRAM-EV complet) ; les
-# baselines de référence puis les variantes reprennent des teintes distinctes
-# pour ne pas se confondre avec eux.
+# Colors per method, stable from one figure to the next. The four rungs of the
+# ablation ladder go from warm (Nearest) to cold (full BRAM-EV); the reference
+# baselines and then the variants use distinct hues so as not to be confused
+# with them.
 METHOD_COLORS = {
     'greedy':               '#d9822b',
     'multistation':         '#c9a227',
@@ -74,14 +74,14 @@ def _scenarios(rows: Rows) -> list[str]:
 
 
 def _methods(rows: Rows) -> list[str]:
-    """Méthodes présentes, dans l'ordre du registre (échelle, baselines, variantes)."""
+    """Methods present, in registry order (ladder, baselines, variants)."""
     order = list(methods.METHOD_NAMES)
     present = {r['method'] for r in rows}
     return [m for m in order if m in present] + sorted(present - set(order))
 
 
 def _series(rows: Rows, scenario: str, method: str, column: str):
-    """(x, y) triés par taille de flotte, points manquants exclus."""
+    """(x, y) sorted by fleet size, missing points excluded."""
     pairs = [(r['nb_cars'], r.get(column)) for r in rows
              if r['scenario'] == scenario and r['method'] == method
              and r.get(column) is not None]
@@ -101,7 +101,7 @@ def _plot_lines(ax, rows: Rows, scenario: str, column: str, ylabel: str,
         ax.plot(x, y, marker='o', color=METHOD_COLORS.get(method),
                 label=METHOD_LABELS.get(method, method))
         drawn = True
-    ax.set_xlabel('Nombre de véhicules')
+    ax.set_xlabel('Number of vehicles')
     ax.set_ylabel(ylabel)
     ax.set_title(title, fontweight='bold', fontsize=10)
     ax.grid(alpha=0.3, linestyle=':')
@@ -120,15 +120,15 @@ def _finish(fig) -> Any:
 
 
 # ----------------------------------------------------------------------
-# Figures par scénario
+# Per-scenario figures
 # ----------------------------------------------------------------------
 
 def fig_satisfaction(rows: Rows, scenario: str):
     fig, axes = plt.subplots(1, 2, figsize=FIGSIZE)
     ok = _plot_lines(axes[0], rows, scenario, 'exact_satisfaction', 'Satisfaction (%)',
-                     f'[{_tag(scenario)}] Satisfaction exacte', percent=True)
+                     f'[{_tag(scenario)}] Exact satisfaction', percent=True)
     ok |= _plot_lines(axes[1], rows, scenario, 'needs_satisfaction', 'Satisfaction (%)',
-                      f'[{_tag(scenario)}] Satisfaction des besoins', percent=True)
+                      f'[{_tag(scenario)}] Needs satisfaction', percent=True)
     for ax in axes:
         ax.set_ylim(0, 105)
         ax.axhline(100, color='black', linestyle='--', linewidth=0.8, alpha=0.4)
@@ -138,45 +138,45 @@ def fig_satisfaction(rows: Rows, scenario: str):
 def fig_travel_waiting(rows: Rows, scenario: str):
     fig, axes = plt.subplots(1, 2, figsize=FIGSIZE)
     ok = _plot_lines(axes[0], rows, scenario, 'mean_travel_distance_km',
-                     'Distance (km)', f'[{_tag(scenario)}] Distance moyenne parcourue')
+                     'Distance (km)', f'[{_tag(scenario)}] Mean distance driven')
     ok |= _plot_lines(axes[1], rows, scenario, 'mean_waiting_time_min',
-                      'Attente (min)', f'[{_tag(scenario)}] Attente moyenne en station')
+                      'Waiting (min)', f'[{_tag(scenario)}] Mean waiting time at the station')
     return _finish(fig) if ok else None
 
 
 def fig_latency(rows: Rows, scenario: str):
-    """Décomposition de la latence : réponse réseau, sélection, bout en bout."""
+    """Decomposition of the latency: network response, selection, end to end."""
     fig, axes = plt.subplots(1, 3, figsize=(13, 4.2))
     ok = _plot_lines(axes[0], rows, scenario, 'last_offer_ms_mean', 'ms',
-                     f'[{_tag(scenario)}] Émission → dernière offre')
+                     f'[{_tag(scenario)}] Emission → last offer')
     ok |= _plot_lines(axes[1], rows, scenario, 'selection_ms_mean', 'ms',
-                      f'[{_tag(scenario)}] Sélection par le véhicule')
+                      f'[{_tag(scenario)}] Selection by the vehicle')
     ok |= _plot_lines(axes[2], rows, scenario, 'total_ms_mean', 'ms',
-                      f'[{_tag(scenario)}] Bout en bout (jusqu\'à confirmation)')
+                      f'[{_tag(scenario)}] End to end (up to confirmation)')
     return _finish(fig) if ok else None
 
 
 def fig_demand_funnel(rows: Rows, scenario: str):
-    """Entonnoir : demandes émises, ayant reçu une offre, confirmées."""
+    """Funnel: demands emitted, answered by an offer, confirmed."""
     fig, axes = plt.subplots(1, 2, figsize=FIGSIZE)
     ok = _plot_lines(axes[0], rows, scenario, 'answer_rate',
-                     "Part des demandes (%)",
-                     f'[{_tag(scenario)}] Demandes ayant reçu une offre',
+                     "Share of the demands (%)",
+                     f'[{_tag(scenario)}] Demands that received an offer',
                      percent=True)
     ok |= _plot_lines(axes[1], rows, scenario, 'mean_offers_per_demand',
-                      "Offres / demande",
-                      f'[{_tag(scenario)}] Offres reçues par demande')
+                      "Offers / demand",
+                      f'[{_tag(scenario)}] Offers received per demand')
     axes[0].set_ylim(0, 105)
     return _finish(fig) if ok else None
 
 
 def fig_outcomes(rows: Rows, scenario: str):
     """
-    Issues des réservations, en part du total, méthode par méthode.
+    Reservation outcomes, as a share of the total, method by method.
 
-    Les quatre issues comportementales sont empilées ; `breakdown` et
-    `unresolved` sont exclues car elles ne relèvent pas du comportement de
-    l'usager (panne, fin d'horizon).
+    The four behavioural outcomes are stacked; `breakdown` and `unresolved` are
+    excluded because they do not stem from user behaviour (breakdown, end of
+    horizon).
     """
     methods = _methods(rows)
     fleets = sorted({r['nb_cars'] for r in rows if r['scenario'] == scenario})
@@ -204,10 +204,10 @@ def fig_outcomes(rows: Rows, scenario: str):
                    width=bar_width, color=OUTCOME_COLORS[outcome],
                    label=outcome, alpha=0.9)
             bottom += np.asarray(values)
-        ax.set_title(f'[{_tag(scenario)}] Issues — {METHOD_LABELS.get(method, method)}',
+        ax.set_title(f'[{_tag(scenario)}] Outcomes — {METHOD_LABELS.get(method, method)}',
                      fontweight='bold', fontsize=10)
-        ax.set_xlabel('Nombre de véhicules')
-        ax.set_ylabel('Part des réservations (%)')
+        ax.set_xlabel('Number of vehicles')
+        ax.set_ylabel('Share of the reservations (%)')
         ax.set_ylim(0, 105)
         ax.legend(fontsize=8, ncol=2)
         ax.grid(alpha=0.3, linestyle=':', axis='y')
@@ -215,37 +215,37 @@ def fig_outcomes(rows: Rows, scenario: str):
 
 
 def fig_offer_protocol(rows: Rows, scenario: str):
-    """Santé du protocole d'offre : émises, confirmées, expirées, refusées."""
+    """Health of the offer protocol: issued, confirmed, expired, refused."""
     fig, axes = plt.subplots(1, 2, figsize=FIGSIZE)
-    ok = _plot_lines(axes[0], rows, scenario, 'nb_offer_issued', "Offres",
-                     f'[{_tag(scenario)}] Offres émises')
-    ok |= _plot_lines(axes[0], rows, scenario, 'nb_reservations', "Offres",
-                      f'[{_tag(scenario)}] Offres émises vs confirmées')
+    ok = _plot_lines(axes[0], rows, scenario, 'nb_offer_issued', "Offers",
+                     f'[{_tag(scenario)}] Offers issued')
+    ok |= _plot_lines(axes[0], rows, scenario, 'nb_reservations', "Offers",
+                      f'[{_tag(scenario)}] Offers issued vs confirmed')
     ok |= _plot_lines(axes[1], rows, scenario, 'nb_confirm_refused',
-                      "Confirmations refusées",
-                      f'[{_tag(scenario)}] Confirmations refusées par la station')
+                      "Confirmations refused",
+                      f'[{_tag(scenario)}] Confirmations refused by the station')
     return _finish(fig) if ok else None
 
 
 def fig_stations(rows: Rows, scenario: str):
-    """Charge côté opérateur : occupation des bornes et énergie délivrée."""
+    """Operator-side load: charger occupancy and energy delivered."""
     fig, axes = plt.subplots(1, 2, figsize=FIGSIZE)
     ok = _plot_lines(axes[0], rows, scenario, 'mean_occupancy_rate',
-                     "Occupation (%)",
-                     f'[{_tag(scenario)}] Taux d\'occupation moyen des bornes',
+                     "Occupancy (%)",
+                     f'[{_tag(scenario)}] Mean charger occupancy rate',
                      percent=True)
     ok |= _plot_lines(axes[1], rows, scenario, 'total_station_demand_kwh',
-                      "Énergie (kWh)",
-                      f'[{_tag(scenario)}] Énergie délivrée (toutes stations)')
+                      "Energy (kWh)",
+                      f'[{_tag(scenario)}] Energy delivered (all stations)')
     return _finish(fig) if ok else None
 
 
 # ----------------------------------------------------------------------
-# Figures transverses
+# Cross-cutting figures
 # ----------------------------------------------------------------------
 
 def fig_scenarios_overview(rows: Rows):
-    """Satisfaction exacte, un panneau par scénario : vue d'ensemble."""
+    """Exact satisfaction, one panel per scenario: the overview."""
     scenarios = _scenarios(rows)
     if not scenarios:
         return None
@@ -253,13 +253,13 @@ def fig_scenarios_overview(rows: Rows):
                              squeeze=False, sharey=True)
     for ax, scenario in zip(axes[0], scenarios):
         _plot_lines(ax, rows, scenario, 'exact_satisfaction', 'Satisfaction (%)',
-                    f'[{_tag(scenario)}] Satisfaction exacte', percent=True)
+                    f'[{_tag(scenario)}] Exact satisfaction', percent=True)
         ax.set_ylim(0, 105)
     return _finish(fig)
 
 
 def fig_scalability(rows: Rows):
-    """Coût de calcul : temps de résolution PLI et latence bout en bout."""
+    """Compute cost: ILP solving time and end-to-end latency."""
     fig, axes = plt.subplots(1, 2, figsize=FIGSIZE)
     drawn = False
     for scenario in _scenarios(rows):
@@ -273,9 +273,9 @@ def fig_scalability(rows: Rows):
             if x:
                 axes[1].plot(x, y, marker='o',
                              label=f'{_tag(scenario)} / {METHOD_LABELS.get(method, method)}')
-    for ax, ylabel, title in ((axes[0], 'ms', 'Temps de résolution PLI par station'),
-                              (axes[1], 's', 'Temps de calcul total du run')):
-        ax.set_xlabel('Nombre de véhicules')
+    for ax, ylabel, title in ((axes[0], 'ms', 'ILP solving time per station'),
+                              (axes[1], 's', 'Total wall time of the run')):
+        ax.set_xlabel('Number of vehicles')
         ax.set_ylabel(ylabel)
         ax.set_title(title, fontweight='bold', fontsize=10)
         ax.grid(alpha=0.3, linestyle=':')
@@ -285,10 +285,10 @@ def fig_scalability(rows: Rows):
 
 def fig_intent_vs_observed(rows: Rows):
     """
-    Probabilité du scénario, intention tirée et issue observée.
+    Scenario probability, drawn intent and observed outcome.
 
-    Rend visible l'écart structurel : une intention d'annulation anticipée peut
-    ne pas être réalisable si la réservation n'est pas prise à l'avance.
+    Makes the structural gap visible: an early-cancellation intent may not be
+    realisable if the reservation is not taken in advance.
     """
     scenarios = _scenarios(rows)
     if not scenarios:
@@ -306,13 +306,13 @@ def fig_intent_vs_observed(rows: Rows):
         intents = [_mean_of(subset, f'intent_{o}') for o in outcomes]
         observed = [_mean_of(subset, f'rate_{o}') for o in outcomes]
         ax.bar(positions - width / 2, [100 * v for v in intents], width,
-               label='intention tirée', color='#8e9aaf')
+               label='drawn intent', color='#8e9aaf')
         ax.bar(positions + width / 2, [100 * v for v in observed], width,
-               label='issue observée', color='#3b7dd8')
+               label='observed outcome', color='#3b7dd8')
         ax.set_xticks(positions)
         ax.set_xticklabels(outcomes)
-        ax.set_ylabel('Part des réservations (%)')
-        ax.set_title(f'[{_tag(scenario)}] Intention vs issue', fontweight='bold',
+        ax.set_ylabel('Share of the reservations (%)')
+        ax.set_title(f'[{_tag(scenario)}] Intent vs outcome', fontweight='bold',
                      fontsize=10)
         ax.grid(alpha=0.3, linestyle=':', axis='y')
         ax.legend(fontsize=8)
@@ -320,21 +320,21 @@ def fig_intent_vs_observed(rows: Rows):
 
 
 def _society_colors(rows: Rows) -> dict:
-    """Une couleur stable par société, partagée par toutes les figures de grille."""
+    """One stable color per company, shared by every grid figure."""
     ids = sorted({int(r['society_id']) for r in rows})
     cmap = plt.get_cmap('tab10')
     return {sid: cmap(i % 10) for i, sid in enumerate(ids)}
 
 
 def _grid_extent(rows: Rows) -> float:
-    """Côté de la zone simulée, en mètres, lu dans la table elle-même."""
+    """Side of the simulated area, in meters, read from the table itself."""
     values = [r.get('grid_m') for r in rows if r.get('grid_m')]
     return float(values[0]) if values else 0.
 
 
 def _draw_grid_map(ax, station_rows: Rows, colors: dict,
                    annotate: bool = True) -> None:
-    """Carte des stations : couleur = société, aire du marqueur ∝ nb de bornes."""
+    """Station map: color = company, marker area ∝ number of chargers."""
     side = _grid_extent(station_rows)
     for row in station_rows:
         sid = int(row['society_id'])
@@ -358,11 +358,11 @@ def _draw_grid_map(ax, station_rows: Rows, colors: dict,
 
 def fig_grid(station_rows: Rows, society_rows: Rows | None = None):
     """
-    L'infrastructure partagée : où sont les stations, à qui, avec quel alpha.
+    The shared infrastructure: where the stations are, whose they are, with
+    which alpha.
 
-    Cette figure ne dépend d'aucun scénario — c'est précisément son intérêt :
-    elle atteste que `optimistic`, `balance` et `pessimistic` ont bien tourné
-    sur la même grille.
+    This figure depends on no scenario — which is exactly its point: it attests
+    that `optimistic`, `balance` and `pessimistic` did run on the same grid.
     """
     if not station_rows:
         return None
@@ -372,7 +372,7 @@ def fig_grid(station_rows: Rows, society_rows: Rows | None = None):
     fig, axes = plt.subplots(1, 3, figsize=(15, 4.9),
                              gridspec_kw={'width_ratios': [1, 1.25, 1]})
 
-    # --- 1. Où sont les stations, et à qui
+    # --- 1. Where the stations are, and whose they are
     _draw_grid_map(axes[0], station_rows, colors)
     for row in societies:
         axes[0].scatter(row['x_m'] / 1e3, row['y_m'] / 1e3,
@@ -380,23 +380,23 @@ def fig_grid(station_rows: Rows, society_rows: Rows | None = None):
                         color=colors[int(row['society_id'])],
                         edgecolor='black', linewidth=0.8, zorder=5)
     total_spots = sum(int(r['nb_charg_spot']) for r in station_rows)
-    axes[0].set_title(f'{len(station_rows)} stations, {len(colors)} sociétés, '
-                      f'{total_spots} bornes',
+    axes[0].set_title(f'{len(station_rows)} stations, {len(colors)} companies, '
+                      f'{total_spots} chargers',
                       fontweight='bold', fontsize=10)
 
     handles = [plt.Line2D([], [], marker='o', linestyle='', color=color,
                           markeredgecolor='black', markersize=8,
-                          label=f'Société {sid}')
+                          label=f'Company {sid}')
                for sid, color in colors.items()]
     if societies:
         handles.append(plt.Line2D([], [], marker='*', linestyle='', color='grey',
                                   markeredgecolor='black', markersize=12,
-                                  label='Siège'))
-    # `best` : matplotlib place la légende là où elle masque le moins de
-    # stations. Hors des axes, `tight_layout` la rognerait.
+                                  label='Head office'))
+    # `best`: matplotlib places the legend where it hides the fewest stations.
+    # Outside the axes, `tight_layout` would clip it.
     axes[0].legend(handles=handles, fontsize=7, loc='best', framealpha=0.85)
 
-    # --- 2. Alpha initial, station par station, regroupées par société
+    # --- 2. Initial alpha, station by station, grouped by company
     ordered = sorted(station_rows,
                      key=lambda r: (int(r['society_id']), int(r['station_id'])))
     axes[1].bar(range(len(ordered)),
@@ -407,13 +407,13 @@ def fig_grid(station_rows: Rows, society_rows: Rows | None = None):
     axes[1].set_xticklabels([int(r['station_id']) for r in ordered],
                             fontsize=6, rotation=90 if len(ordered) > 25 else 0)
     axes[1].set_ylim(0, 1)
-    axes[1].set_xlabel('Station (regroupées par société)')
-    axes[1].set_ylabel(r'$\alpha$ initial')
-    axes[1].set_title(r'Stratégie initiale des stations ($\alpha$)',
+    axes[1].set_xlabel('Station (grouped by company)')
+    axes[1].set_ylabel(r'initial $\alpha$')
+    axes[1].set_title(r'Initial station strategy ($\alpha$)',
                       fontweight='bold', fontsize=10)
     axes[1].grid(alpha=0.3, linestyle=':', axis='y')
 
-    # --- 3. Points de stratégie, portés par la société
+    # --- 3. Strategy points, carried by the company
     keys = sorted({k for row in societies for k in row if k.startswith('strategy_')})
     if keys:
         width = 0.8 / len(societies)
@@ -427,23 +427,23 @@ def fig_grid(station_rows: Rows, society_rows: Rows | None = None):
         axes[2].set_xticks(offsets + 0.4 - width / 2)
         axes[2].set_xticklabels([k.split('_', 1)[1] for k in keys], fontsize=8)
         axes[2].legend(fontsize=7, frameon=False)
-    axes[2].set_xlabel('Issue de la réservation')
+    axes[2].set_xlabel('Reservation outcome')
     axes[2].set_ylabel('Points')
-    axes[2].set_title('Stratégie de points des sociétés',
+    axes[2].set_title('Point strategy of the companies',
                       fontweight='bold', fontsize=10)
     axes[2].grid(alpha=0.3, linestyle=':', axis='y')
 
-    fig.suptitle('Grille partagée par tous les scénarios et toutes les flottes',
+    fig.suptitle('Grid shared by every scenario and every fleet',
                  fontweight='bold', fontsize=11)
     return _finish(fig)
 
 
 def fig_fleet(station_rows: Rows, car_rows: Rows, nb_cars: int):
     """
-    Une flotte : positions initiales des véhicules sur la grille, et dispersion
-    de leurs caractéristiques.
+    One fleet: initial vehicle positions on the grid, and dispersion of their
+    characteristics.
 
-    Comme la grille, cette flotte est commune aux trois scénarios.
+    Like the grid, this fleet is common to the three scenarios.
     """
     if not car_rows:
         return None
@@ -457,25 +457,25 @@ def fig_fleet(station_rows: Rows, car_rows: Rows, nb_cars: int):
     axes[0].scatter([r['x_m'] / 1e3 for r in car_rows],
                     [r['y_m'] / 1e3 for r in car_rows],
                     s=9, color='#3b7dd8', alpha=0.65, zorder=2,
-                    label='Position initiale')
+                    label='Initial position')
     axes[0].set_aspect('equal')
     axes[0].set_xlabel('x (km)')
     axes[0].set_ylabel('y (km)')
     axes[0].grid(alpha=0.3, linestyle=':')
-    axes[0].set_title(f'Flotte partagée — {nb_cars} véhicules',
+    axes[0].set_title(f'Shared fleet — {nb_cars} vehicles',
                       fontweight='bold', fontsize=10)
     axes[0].legend(fontsize=7, loc='upper right', framealpha=0.9)
 
     for ax, column, title, unit in (
-        (axes[1], 'autonomy_km', 'Autonomie', 'km'),
-        (axes[2], 'soc_init', 'SoC initial', 'fraction de la batterie'),
+        (axes[1], 'autonomy_km', 'Autonomy', 'km'),
+        (axes[2], 'soc_init', 'Initial SoC', 'fraction of the battery'),
     ):
         values = [float(r[column]) for r in car_rows if r.get(column) is not None]
         ax.hist(values, bins=min(20, max(5, len(set(values)))),
                 color='#3b7dd8', edgecolor='black', linewidth=0.4)
         ax.set_xlabel(unit)
-        ax.set_ylabel('Véhicules')
-        # Un effectif est entier : des graduations à 3.5 véhicules n'ont pas de sens.
+        ax.set_ylabel('Vehicles')
+        # A count is an integer: ticks at 3.5 vehicles make no sense.
         ax.yaxis.set_major_locator(MaxNLocator(integer=True))
         ax.set_title(title, fontweight='bold', fontsize=10)
         ax.grid(alpha=0.3, linestyle=':', axis='y')
@@ -489,10 +489,10 @@ def _mean_of(rows: Rows, column: str) -> float:
 
 
 # ----------------------------------------------------------------------
-# Étude d'ablation
+# Ablation study
 # ----------------------------------------------------------------------
 
-#: Métriques tracées par les figures d'ablation, dans l'ordre des panneaux.
+#: Metrics plotted by the ablation figures, in panel order.
 ABLATION_METRICS: tuple[str, ...] = (
     'exact_satisfaction', 'rate_abs', 'mean_service_rate', 'slot_waste_rate',
 )
@@ -500,13 +500,13 @@ ABLATION_METRICS: tuple[str, ...] = (
 
 def _ablation_bars(means: Rows, kind: str, title: str):
     """
-    Un panneau par métrique, une barre par composant.
+    One panel per metric, one bar per component.
 
-    La barre porte l'écart relatif moyen ; sa couleur dit si le composant
-    améliore ou dégrade la métrique (la direction dépend de la métrique : un
-    taux de no-show qui baisse est un gain). L'étiquette au-dessus donne la
-    part des mondes où le composant améliore effectivement la métrique — un
-    gain moyen porté par un seul monde se repère ainsi immédiatement.
+    The bar carries the mean relative gap; its color says whether the component
+    improves or degrades the metric (the direction depends on the metric: a
+    falling no-show rate is a gain). The label above gives the share of the
+    worlds where the component actually improves the metric — a mean gain
+    carried by a single world is thus spotted immediately.
     """
     selected = [c for c in ABLATION_METRICS
                 if any(r['metric'] == c and r['kind'] == kind for r in means)]
@@ -550,7 +550,7 @@ def _ablation_bars(means: Rows, kind: str, title: str):
                     color='#444')
         ax.set_xticks(x)
         ax.set_xticklabels([_wrap(c) for c in components], fontsize=8)
-        ax.set_ylabel('écart relatif moyen (%)')
+        ax.set_ylabel('mean relative gap (%)')
         ax.set_title(ablation.METRICS_BY_COLUMN[column].label,
                      fontweight='bold', fontsize=10)
         ax.grid(alpha=0.3, linestyle=':', axis='y')
@@ -562,7 +562,7 @@ def _ablation_bars(means: Rows, kind: str, title: str):
 
 
 def _wrap(text: str, width: int = 14) -> str:
-    """Coupe une étiquette d'axe sur deux lignes plutôt que de la tronquer."""
+    """Wrap an axis label over two lines rather than truncating it."""
     words, lines, current = text.split(), [], ''
     for word in words:
         candidate = f'{current} {word}'.strip()
@@ -577,27 +577,27 @@ def _wrap(text: str, width: int = 14) -> str:
 
 
 def fig_ablation_components(rows: Rows):
-    """Contribution de chaque composant ajouté le long de l'échelle d'ablation."""
+    """Contribution of each component added along the ablation ladder."""
     means = ablation.mean_rows(ablation.ladder_rows(rows))
     if not means:
         return None
     return _ablation_bars(
         means, 'ladder',
-        "Contribution de chaque composant (écart au barreau précédent)")
+        "Contribution of each component (gap to the previous rung)")
 
 
 def fig_ablation_variants(rows: Rows):
-    """Effet du remplacement d'un mécanisme interne de BRAM-EV."""
+    """Effect of replacing an internal mechanism of BRAM-EV."""
     means = ablation.mean_rows(ablation.variant_rows(rows))
     if not means:
         return None
     return _ablation_bars(
         means, 'variant',
-        "Variantes de BRAM-EV (écart à la méthode complète)")
+        "BRAM-EV variants (gap to the complete method)")
 
 
 def fig_ablation_ladder(rows: Rows, scenario: str):
-    """Satisfaction et no-shows barreau par barreau, en fonction de la flotte."""
+    """Satisfaction and no-shows rung by rung, against fleet size."""
     ladder = [r for r in rows if r['method'] in methods.LADDER
               and r['scenario'] == scenario]
     if not ladder:
@@ -605,16 +605,16 @@ def fig_ablation_ladder(rows: Rows, scenario: str):
     fig, axes = plt.subplots(1, 2, figsize=FIGSIZE)
     ok = _plot_lines(axes[0], ladder, scenario, 'exact_satisfaction',
                      'Satisfaction (%)',
-                     f'[{_tag(scenario)}] Satisfaction — échelle d\'ablation',
+                     f'[{_tag(scenario)}] Satisfaction — ablation ladder',
                      percent=True)
     ok |= _plot_lines(axes[1], ladder, scenario, 'rate_abs', 'No-show (%)',
-                      f'[{_tag(scenario)}] Taux de no-show — échelle d\'ablation',
+                      f'[{_tag(scenario)}] No-show rate — ablation ladder',
                       percent=True)
     return _finish(fig) if ok else None
 
 
 # ----------------------------------------------------------------------
-# Rendu complet
+# Complete rendering
 # ----------------------------------------------------------------------
 
 PER_SCENARIO: tuple[tuple[str, Callable], ...] = (
@@ -648,30 +648,30 @@ def render_all(summary_rows: Rows, figures_dir: str | Path,
                society_rows: Rows | None = None,
                fleet_rows: Mapping[int, Rows] | None = None) -> list[Path]:
     """
-    Produit toutes les figures exploitables à partir des tables persistées.
+    Produce every usable figure from the persisted tables.
 
     Parameters
     ----------
     summary_rows : Rows
-        `summary.csv` — figures de performance.
+        `summary.csv` — performance figures.
     grid_rows, society_rows : Rows | None
-        `grid_stations.csv` / `grid_societies.csv` — figure de la grille
-        partagée. Absents (par exemple pour un run antérieur au partage de
-        grille), la figure est simplement omise.
+        `grid_stations.csv` / `grid_societies.csv` — figure of the shared grid.
+        When absent (for instance for a run predating the shared grid), the
+        figure is simply omitted.
     fleet_rows : Mapping[int, Rows] | None
-        `{nb_cars: fleet_<n>cars.csv}` — une figure de flotte par taille.
+        `{nb_cars: fleet_<n>cars.csv}` — one fleet figure per size.
 
     Returns
     -------
     list[Path]
-        Fichiers PNG écrits.
+        PNG files written.
     """
     figures_dir = Path(figures_dir)
     figures_dir.mkdir(parents=True, exist_ok=True)
     written: list[Path] = []
 
-    # L'environnement partagé se trace même sans résultat : il est disponible
-    # dès la préparation du run, avant la première simulation.
+    # The shared environment is plotted even with no result: it is available
+    # as soon as the run is prepared, before the first simulation.
     if grid_rows:
         fig = fig_grid(grid_rows, society_rows)
         if fig is not None:

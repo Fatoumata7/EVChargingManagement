@@ -1,19 +1,19 @@
 """
-visualizer.py
+visualizer.py — Real-time pygame visualizer of the simulation.
 """
 
 import pygame
 import numpy as np
 
 COLORS = {
-    'DRIVING':            (55, 138, 221),   # bleu
+    'DRIVING':            (55, 138, 221),   # blue
     'DRIVING_TO_STATION': (239, 159, 39),   # orange
-    'CHARGING':           (99, 153, 34),    # vert olive
-    'WAITING':            (136, 135, 128),  # gris
-    'BREAKDOWN':          (220, 53, 69),    # rouge
-    'AT_STATION':         (212, 83, 126),   # rose / magenta
-    'PARKED_SEARCHING':   (146, 109, 222),  # violet — garé, cherche plus loin
-    'PARKED_NO_SHOW':     (120, 118, 112),  # gris foncé — garé, ne viendra pas
+    'CHARGING':           (99, 153, 34),    # olive green
+    'WAITING':            (136, 135, 128),  # grey
+    'BREAKDOWN':          (220, 53, 69),    # red
+    'AT_STATION':         (212, 83, 126),   # pink / magenta
+    'PARKED_SEARCHING':   (146, 109, 222),  # purple — parked, searching further
+    'PARKED_NO_SHOW':     (120, 118, 112),  # dark grey — parked, will not show up
 }
 
 STATION_COLOR = (216, 90, 48)
@@ -33,16 +33,16 @@ class Visualizer:
         self.clock = pygame.time.Clock()
 
         # =========================
-        # Padding autour de la grille
+        # Padding around the grid
         # =========================
         self.padding = 40
 
-        # Zone réellement utilisée pour la simulation
+        # Area actually used by the simulation
         self.grid_w = self.W - 2 * self.padding
         self.grid_h = self.H - 2 * self.padding
 
     # =========================
-    # Transform coordonnées monde -> écran
+    # Transform world coordinates -> screen
     # =========================
     def _tx(self, x):
         return int(
@@ -57,7 +57,7 @@ class Visualizer:
         )
 
     # =========================
-    # Dessin ligne pointillée
+    # Dashed line drawing
     # =========================
     def _draw_dashed_line(
         self,
@@ -106,7 +106,7 @@ class Visualizer:
         self.screen.fill((245, 244, 240))
 
         # =========================
-        # Grille avec padding
+        # Grid with padding
         # =========================
         grid_color = (200, 198, 192)
 
@@ -131,7 +131,7 @@ class Visualizer:
                 1
             )
 
-        # Bordure externe
+        # Outer border
         pygame.draw.rect(
             self.screen,
             (170, 168, 160),
@@ -167,7 +167,7 @@ class Visualizer:
             self.screen.blit(lbl, (x - 4, y - 6))
 
         # =========================
-        # Véhicules
+        # Vehicles
         # =========================
         for car in cars:
 
@@ -176,10 +176,10 @@ class Visualizer:
             col = COLORS.get(car.state, COLORS['DRIVING'])
 
             # ======================================
-            # Trajectoire pointillée
+            # Dashed trajectory
             # ======================================
-            # On suppose :
-            # car.prev_x et car.prev_y existent
+            # Assumes that:
+            # car.prev_x and car.prev_y exist
             # ======================================
 
             if hasattr(car, "prev_x") and hasattr(car, "prev_y"):
@@ -196,7 +196,7 @@ class Visualizer:
                     width=1
                 )
 
-            # Véhicule
+            # Vehicle
             pygame.draw.circle(
                 self.screen,
                 col,
@@ -205,7 +205,7 @@ class Visualizer:
             )
 
             # =========================
-            # Barre SoC
+            # SoC bar
             # =========================
             pygame.draw.rect(
                 self.screen,
@@ -236,7 +236,7 @@ class Visualizer:
         # =========================
         hud = self.font.render(
             f"Slot {slot} | "
-            f"{sum(1 for c in cars if c.state == 'CHARGING')} en recharge",
+            f"{sum(1 for c in cars if c.state == 'CHARGING')} charging",
             True,
             (80, 79, 76)
         )

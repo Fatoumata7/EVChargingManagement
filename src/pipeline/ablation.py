@@ -1,28 +1,28 @@
 """
-ablation.py — Décomposition des gains par composant.
+ablation.py — Decomposition of the gains per component.
 
-La comparaison Nearest / BRAM-EV dit *qu'il y a* un écart ; elle ne dit pas
-d'où il vient. Ce module répond à la question posée par l'étude d'ablation :
-**quelle part du gain est imputable à quel composant ?**
+The Nearest / BRAM-EV comparison says *that* there is a gap; it does not say
+where it comes from. This module answers the question asked by the ablation
+study: **which part of the gain is attributable to which component?**
 
-Deux lectures, produites à partir du seul `summary.csv` :
+Two readings, produced from `summary.csv` alone:
 
-Échelle d'ablation (`kind='ladder'`)
-    Les quatre barreaux (`methods.LADDER`) n'ajoutent qu'un composant à la
-    fois. Pour un même monde — même graine, même grille, même flotte, mêmes
-    tirages de comportement — l'écart entre deux barreaux consécutifs *est* la
-    contribution du composant ajouté, sans autre variable confondante.
+Ablation ladder (`kind='ladder'`)
+    The four rungs (`methods.LADDER`) add one component at a time. For a given
+    world — same seed, same grid, same fleet, same behaviour draws — the gap
+    between two consecutive rungs *is* the contribution of the component added,
+    with no other confounding variable.
 
-Variantes de BRAM-EV (`kind='variant'`)
-    Chaque variante remplace un mécanisme interne (sélection multicritère,
-    hétérogénéité des alpha, portée de la réputation, pondération du score) et
-    se compare à `bramev`. L'écart mesure ce que ce mécanisme apporte
-    *à l'intérieur* de la méthode complète.
+BRAM-EV variants (`kind='variant'`)
+    Each variant replaces an internal mechanism (multi-criteria selection, alpha
+    heterogeneity, reputation scope, score weighting) and is compared against
+    `bramev`. The gap measures what that mechanism brings *inside* the complete
+    method.
 
-Le signe brut d'un écart ne suffit pas : une baisse du nombre de no-shows est
-un progrès, une baisse du taux de satisfaction n'en est pas un. Chaque métrique
-déclare donc sa direction (`GOAL_UP` / `GOAL_DOWN`), et `improvement` traduit
-l'écart en jugement.
+The raw sign of a gap is not enough: a drop in the number of no-shows is
+progress, a drop in the satisfaction rate is not. Each metric therefore declares
+its direction (`GOAL_UP` / `GOAL_DOWN`), and `improvement` turns the gap into a
+judgement.
 """
 
 from __future__ import annotations
@@ -36,13 +36,13 @@ import src.experiments.methods as methods
 Row = Mapping[str, Any]
 Rows = Sequence[Row]
 
-GOAL_UP = 'up'      # plus c'est grand, mieux c'est
-GOAL_DOWN = 'down'  # plus c'est petit, mieux c'est
+GOAL_UP = 'up'      # the bigger the better
+GOAL_DOWN = 'down'  # the smaller the better
 
 
 @dataclass(frozen=True)
 class Metric:
-    """Une métrique suivie par l'ablation, avec sa direction et son unité."""
+    """A metric tracked by the ablation, with its direction and its unit."""
 
     column: str
     label: str
@@ -53,37 +53,37 @@ class Metric:
         return delta > 0 if self.goal == GOAL_UP else delta < 0
 
 
-#: Métriques décomposées par défaut : satisfaction des usagers, coût pour eux,
-#: fiabilité des réservations, exploitation de l'infrastructure, coût de calcul.
+#: Metrics decomposed by default: user satisfaction, cost to the users,
+#: reliability of the reservations, use of the infrastructure, compute cost.
 METRICS: tuple[Metric, ...] = (
-    Metric('exact_satisfaction',          'Satisfaction exacte',     GOAL_UP,   '%'),
-    Metric('needs_satisfaction',          'Besoins satisfaits',      GOAL_UP,   '%'),
-    Metric('confirm_rate',                'Taux de confirmation',    GOAL_UP,   '%'),
-    Metric('mean_waiting_time_min',       'Attente moyenne',         GOAL_DOWN, 'min'),
-    Metric('mean_travel_distance_km',     'Distance moyenne',        GOAL_DOWN, 'km'),
-    Metric('rate_pres',                   'Taux de présentation',    GOAL_UP,   '%'),
-    Metric('rate_abs',                    'Taux de no-show',         GOAL_DOWN, '%'),
+    Metric('exact_satisfaction',          'Exact satisfaction',      GOAL_UP,   '%'),
+    Metric('needs_satisfaction',          'Needs satisfied',         GOAL_UP,   '%'),
+    Metric('confirm_rate',                'Confirmation rate',       GOAL_UP,   '%'),
+    Metric('mean_waiting_time_min',       'Mean waiting time',       GOAL_DOWN, 'min'),
+    Metric('mean_travel_distance_km',     'Mean distance',           GOAL_DOWN, 'km'),
+    Metric('rate_pres',                   'Show-up rate',            GOAL_UP,   '%'),
+    Metric('rate_abs',                    'No-show rate',            GOAL_DOWN, '%'),
     Metric('nb_no_show',                  'No-shows',                GOAL_DOWN, ''),
-    Metric('nb_reservations',             'Réservations confirmées', GOAL_UP,   ''),
-    Metric('mean_occupancy_rate',         "Taux d'occupation",       GOAL_UP,   '%'),
-    Metric('mean_service_rate',           'Taux de service',         GOAL_UP,   '%'),
-    Metric('slot_waste_rate',             'Slots réservés perdus',   GOAL_DOWN, '%'),
-    Metric('nb_station_level_rejections', 'Demandes rejetées',       GOAL_DOWN, ''),
-    Metric('total_ms_mean',               'Latence bout-en-bout',    GOAL_DOWN, 'ms'),
-    Metric('wall_time_s',                 'Temps de calcul',         GOAL_DOWN, 's'),
+    Metric('nb_reservations',             'Confirmed reservations',  GOAL_UP,   ''),
+    Metric('mean_occupancy_rate',         'Occupancy rate',          GOAL_UP,   '%'),
+    Metric('mean_service_rate',           'Service rate',            GOAL_UP,   '%'),
+    Metric('slot_waste_rate',             'Wasted reserved slots',   GOAL_DOWN, '%'),
+    Metric('nb_station_level_rejections', 'Rejected demands',        GOAL_DOWN, ''),
+    Metric('total_ms_mean',               'End-to-end latency',      GOAL_DOWN, 'ms'),
+    Metric('wall_time_s',                 'Wall time',               GOAL_DOWN, 's'),
 )
 
 METRICS_BY_COLUMN = {m.column: m for m in METRICS}
 
-#: Mécanisme neutralisé par chaque variante, tel qu'affiché dans les tables.
+#: Mechanism neutralised by each variant, as displayed in the tables.
 VARIANT_MECHANISM: Mapping[str, str] = {
-    'bramev_nearest_offer': 'Utilité multicritère',
-    'bramev_fixed_alpha':   'Hétérogénéité des alpha',
-    'bramev_global_rep':    'Réputation par société',
-    'bramev_event_score':   'Score proportionnel à la durée',
+    'bramev_nearest_offer': 'Multi-criteria utility',
+    'bramev_fixed_alpha':   'Alpha heterogeneity',
+    'bramev_global_rep':    'Per-company reputation',
+    'bramev_event_score':   'Duration-weighted score',
 }
 
-#: Libellé de chaque baseline dans les tables, tel que publié.
+#: Label of each baseline in the tables, as published.
 BASELINE_LABEL: Mapping[str, str] = {
     name: methods.label(name) for name in methods.BASELINES
 }
@@ -103,21 +103,21 @@ MEAN_FIELDS: tuple[str, ...] = (
 
 
 # ----------------------------------------------------------------------
-# Sélection des lignes
+# Row selection
 # ----------------------------------------------------------------------
 
 def _world_key(row: Row) -> tuple:
-    """Identité du monde d'un cas : deux lignes de même clé sont comparables."""
+    """Identity of the world of a case: two rows with the same key are comparable."""
     return (row.get('scenario'), row.get('nb_cars'), row.get('world_seed'))
 
 
 def index_by_world(rows: Rows) -> dict[tuple, dict[str, Row]]:
     """
-    `{monde: {méthode: ligne}}`.
+    `{world: {method: row}}`.
 
-    Une méthode dupliquée dans un même monde (relance partielle) est signalée
-    plutôt que silencieusement écrasée : l'ablation deviendrait fausse sans
-    qu'on puisse le voir.
+    A method duplicated within the same world (partial re-run) is reported
+    rather than silently overwritten: the ablation would become wrong with no
+    way to see it.
     """
     index: dict[tuple, dict[str, Row]] = {}
     for row in rows:
@@ -127,8 +127,8 @@ def index_by_world(rows: Rows) -> dict[tuple, dict[str, Row]]:
         bucket = index.setdefault(_world_key(row), {})
         if method in bucket:
             raise ValueError(
-                f"Méthode {method!r} présente deux fois pour le monde "
-                f"{_world_key(row)} : summary.csv contient des doublons."
+                f"Method {method!r} present twice for the world "
+                f"{_world_key(row)}: summary.csv contains duplicates."
             )
         bucket[method] = row
     return index
@@ -136,7 +136,7 @@ def index_by_world(rows: Rows) -> dict[tuple, dict[str, Row]]:
 
 def _pairs(index: Mapping[tuple, Mapping[str, Row]],
            couples: Sequence[tuple[str, str, str]]):
-    """Énumère (monde, composant, ligne_avant, ligne_après) pour les couples présents."""
+    """Enumerate (world, component, row_before, row_after) for the pairs present."""
     for world, by_method in sorted(index.items(), key=lambda kv: str(kv[0])):
         for src, dst, component in couples:
             if src in by_method and dst in by_method:
@@ -144,7 +144,7 @@ def _pairs(index: Mapping[tuple, Mapping[str, Row]],
 
 
 # ----------------------------------------------------------------------
-# Construction des tables
+# Building the tables
 # ----------------------------------------------------------------------
 
 def _delta_row(kind: str, world: tuple, component: str, step: int,
@@ -158,7 +158,7 @@ def _delta_row(kind: str, world: tuple, component: str, step: int,
     except (TypeError, ValueError):
         return None
 
-    # Écart relatif : indéfini si la référence est nulle (et non « infini »).
+    # Relative gap: undefined when the reference is zero (not 'infinite').
     base = abs(float(value_from))
     delta_pct = round(100. * delta / base, 4) if base > 1e-12 else None
 
@@ -184,7 +184,7 @@ def _delta_row(kind: str, world: tuple, component: str, step: int,
 
 
 def ladder_rows(rows: Rows, metrics: Sequence[Metric] = METRICS) -> list[dict]:
-    """Contribution de chaque composant, monde par monde et métrique par métrique."""
+    """Contribution of each component, world by world and metric by metric."""
     index = index_by_world(rows)
     steps = {(src, dst): i + 1 for i, (src, dst, _) in enumerate(methods.LADDER_STEPS)}
     out: list[dict] = []
@@ -199,10 +199,10 @@ def ladder_rows(rows: Rows, metrics: Sequence[Metric] = METRICS) -> list[dict]:
 
 def variant_rows(rows: Rows, metrics: Sequence[Metric] = METRICS) -> list[dict]:
     """
-    Écart de chaque variante à `bramev`.
+    Gap of each variant to `bramev`.
 
-    Le sens de lecture est « BRAM-EV -> variante » : un `improvement` faux
-    signifie que le mécanisme neutralisé par la variante était utile.
+    The reading direction is "BRAM-EV -> variant": a false `improvement` means
+    that the mechanism neutralised by the variant was useful.
     """
     index = index_by_world(rows)
     couples = [('bramev', name, VARIANT_MECHANISM.get(name, name))
@@ -218,12 +218,12 @@ def variant_rows(rows: Rows, metrics: Sequence[Metric] = METRICS) -> list[dict]:
 
 def baseline_rows(rows: Rows, metrics: Sequence[Metric] = METRICS) -> list[dict]:
     """
-    Écart de `bramev` à chaque baseline de référence.
+    Gap of `bramev` to each reference baseline.
 
-    Le sens de lecture est inverse de celui des variantes : « baseline ->
-    BRAM-EV », de sorte qu'un `improvement` vrai signifie que BRAM-EV fait
-    mieux que la baseline. C'est la question posée à une baseline, alors qu'une
-    variante répond à « ce mécanisme sert-il à quelque chose ? ».
+    The reading direction is the opposite of the variants': "baseline ->
+    BRAM-EV", so that a true `improvement` means that BRAM-EV does better than
+    the baseline. That is the question asked of a baseline, whereas a variant
+    answers "is this mechanism good for anything?".
     """
     index = index_by_world(rows)
     couples = [(name, 'bramev', BASELINE_LABEL.get(name, name))
@@ -238,7 +238,7 @@ def baseline_rows(rows: Rows, metrics: Sequence[Metric] = METRICS) -> list[dict]
 
 
 def detail_rows(rows: Rows, metrics: Sequence[Metric] = METRICS) -> list[dict]:
-    """Table détaillée complète : échelle d'ablation, baselines, puis variantes."""
+    """Complete detailed table: ablation ladder, baselines, then variants."""
     return (ladder_rows(rows, metrics)
             + baseline_rows(rows, metrics)
             + variant_rows(rows, metrics))
@@ -246,11 +246,11 @@ def detail_rows(rows: Rows, metrics: Sequence[Metric] = METRICS) -> list[dict]:
 
 def mean_rows(detail: Rows) -> list[dict]:
     """
-    Moyenne des écarts sur tous les mondes, par (composant, métrique).
+    Mean of the gaps over every world, per (component, metric).
 
-    C'est la table à citer dans le rapport : un composant qui n'améliore que
-    la moitié des mondes (`share_improved` proche de 0.5) n'a pas de
-    contribution robuste, même si son écart moyen est positif.
+    This is the table to quote in the report: a component that only improves
+    half of the worlds (`share_improved` close to 0.5) has no robust
+    contribution, even if its mean gap is positive.
     """
     grouped: dict[tuple, list[Row]] = {}
     for row in detail:
@@ -289,17 +289,17 @@ def mean_rows(detail: Rows) -> list[dict]:
 
 
 # ----------------------------------------------------------------------
-# Persistance
+# Persistence
 # ----------------------------------------------------------------------
 
 def write_tables(store, rows: Rows | None = None,
                  metrics: Sequence[Metric] = METRICS) -> list:
     """
-    Écrit `ablation.csv` et `ablation_mean.csv` à la racine du run.
+    Write `ablation.csv` and `ablation_mean.csv` at the root of the run.
 
-    Sans couple comparable (une seule méthode dans la campagne), rien n'est
-    écrit et la liste renvoyée est vide : une campagne mono-méthode reste
-    valide, elle n'a simplement rien à décomposer.
+    With no comparable pair (a single method in the campaign), nothing is
+    written and the returned list is empty: a single-method campaign stays
+    valid, it simply has nothing to decompose.
     """
     rows = list(rows if rows is not None else store.read_summary())
     detail = detail_rows(rows, metrics)
@@ -313,7 +313,7 @@ def write_tables(store, rows: Rows | None = None,
 
 
 # ----------------------------------------------------------------------
-# Restitution texte
+# Text rendering
 # ----------------------------------------------------------------------
 
 DEFAULT_REPORT_METRICS: tuple[str, ...] = (
@@ -325,16 +325,16 @@ DEFAULT_REPORT_METRICS: tuple[str, ...] = (
 def render_mean_table(means: Rows,
                       metric_columns: Sequence[str] = DEFAULT_REPORT_METRICS) -> str:
     """
-    Tableau lisible : une ligne par composant, une colonne par métrique.
+    Readable table: one row per component, one column per metric.
 
-    Chaque cellule porte l'écart moyen et, entre parenthèses, la part des
-    mondes où le composant améliore la métrique — la contribution moyenne et
-    sa robustesse se lisent d'un coup.
+    Each cell carries the mean gap and, in parentheses, the share of the worlds
+    where the component improves the metric — the mean contribution and its
+    robustness are read at a glance.
 
-    L'écart est relatif quand la référence est non nulle. Elle ne l'est pas
-    toujours (une attente moyenne nulle, par exemple) : la cellule bascule
-    alors sur l'écart absolu, préfixé `Δ`, plutôt que d'afficher un tiret qui
-    ferait passer une mesure faite pour une mesure manquante.
+    The gap is relative when the reference is non-zero. It is not always
+    (a zero mean waiting time, for instance): the cell then falls back on the
+    absolute gap, prefixed with `Δ`, rather than showing a dash that would make
+    a measurement taken look like a measurement missing.
     """
     selected = [c for c in metric_columns if c in METRICS_BY_COLUMN]
     by_component: dict[tuple, dict[str, Row]] = {}
@@ -344,10 +344,10 @@ def render_mean_table(means: Rows,
         key = (row['kind'], row['step'], row['component'])
         by_component.setdefault(key, {})[row['metric']] = row
     if not by_component:
-        return '(aucune contribution calculable)'
+        return '(no computable contribution)'
 
     headers = [METRICS_BY_COLUMN[c].label for c in selected]
-    name_width = max(len('Composant'),
+    name_width = max(len('Component'),
                      *(len(k[2]) for k in by_component))
     widths = [max(len(h), 16) for h in headers]
 
@@ -356,7 +356,7 @@ def render_mean_table(means: Rows,
         parts += [c.rjust(w) for c, w in zip(cells, widths)]
         return '  '.join(parts)
 
-    out = [line(headers, 'Composant'),
+    out = [line(headers, 'Component'),
            line(['-' * w for w in widths], '-' * name_width)]
 
     for kind in ('ladder', 'baseline', 'variant'):
@@ -364,9 +364,9 @@ def render_mean_table(means: Rows,
         if not keys:
             continue
         title = {
-            'ladder':   "Échelle d'ablation (contribution du composant ajouté)",
-            'baseline': "Baselines de référence (écart de la baseline à BRAM-EV)",
-            'variant':  "Variantes de BRAM-EV (effet du mécanisme neutralisé)",
+            'ladder':   'Ablation ladder (contribution of the added component)',
+            'baseline': 'Reference baselines (gap from the baseline to BRAM-EV)',
+            'variant':  'BRAM-EV variants (effect of the neutralised mechanism)',
         }[kind]
         out.append('')
         out.append(title)
@@ -384,6 +384,6 @@ def render_mean_table(means: Rows,
                 cells.append(f"{value} ({row['share_improved']:.0%})")
             out.append(line(cells, key[2]))
     out.append('')
-    out.append("Lecture : écart relatif moyen sur tous les mondes du run "
-               "(part des mondes où le composant améliore la métrique).")
+    out.append("Reading: mean relative gap over every world of the run "
+               "(share of the worlds where the component improves the metric).")
     return '\n'.join(out)

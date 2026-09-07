@@ -1,10 +1,10 @@
 """
-params.py — Paramètres d'expérience.
+params.py — Experiment parameters.
 
-Toute la configuration d'une campagne est portée par une seule dataclasse
-validée, construite indifféremment depuis la ligne de commande ou depuis un
-fichier YAML/JSON. Elle est sérialisée avec les résultats (`params.json`), ce qui
-rend un run rejouable sans avoir à retrouver la commande d'origine.
+The whole configuration of a campaign is carried by a single validated
+dataclass, built indifferently from the command line or from a YAML/JSON file.
+It is serialised with the results (`params.json`), which makes a run replayable
+without having to recover the original command.
 """
 
 from __future__ import annotations
@@ -22,12 +22,12 @@ from src.experiments.seeding import DEFAULT_SEED
 
 SCENARIOS = tuple(cfg_module.SimulationConfig.SCENARIOS)
 
-#: Méthodes disponibles, dans l'ordre du registre (échelle d'ablation puis
-#: variantes de BRAM-EV) — cf. `src/experiments/methods.py`.
+#: Available methods, in registry order (ablation ladder then BRAM-EV
+#: variants) — see `src/experiments/methods.py`.
 METHODS = methods_module.METHOD_NAMES
 
-#: Ce qu'un fichier YAML ou la CLI peut écrire dans `methods` : un nom, un alias
-#: (`nearest`), ou un groupe (`ablation`, `variants`, `baseline`, `all`).
+#: What a YAML file or the CLI may write in `methods`: a name, an alias
+#: (`nearest`), or a group (`ablation`, `variants`, `baseline`, `all`).
 METHOD_TOKENS = methods_module.METHOD_TOKENS
 
 SLOTS_PER_HOUR = cfg_module.SimulationConfig.NB_SLOTS_IN_ONE_HOUR
@@ -35,12 +35,12 @@ SLOTS_PER_DAY = 24 * SLOTS_PER_HOUR
 
 
 class ParamsError(ValueError):
-    """Paramètres d'expérience invalides."""
+    """Invalid experiment parameters."""
 
 
 @dataclass(frozen=True)
 class CaseParams:
-    """Un cas élémentaire de la grille : un scénario, une flotte, une méthode."""
+    """One elementary case of the grid: a scenario, a fleet, a method."""
 
     scenario: str
     nb_cars: int
@@ -48,7 +48,7 @@ class CaseParams:
 
     @property
     def world_tag(self) -> str:
-        """Identifiant du monde initial, partagé par toutes les méthodes."""
+        """Identifier of the initial world, shared by every method."""
         return f"{self.scenario}_{self.nb_cars}cars"
 
     @property
@@ -62,22 +62,22 @@ class CaseParams:
 @dataclass
 class ExperimentParams:
     """
-    Paramètres d'une campagne d'expériences.
+    Parameters of a campaign of experiments.
 
-    Les valeurs par défaut reproduisent la grille du rapport :
-    3 scénarios x 5 tailles de flotte x les 4 barreaux de l'échelle d'ablation,
-    sur 5 jours simulés. Cette échelle contient les deux méthodes historiques
-    (`greedy` et `bramev`) : la comparaison d'origine reste lisible, et les deux
-    barreaux intermédiaires disent d'où vient l'écart.
+    The default values reproduce the grid of the report: 3 scenarios x 5 fleet
+    sizes x the 4 rungs of the ablation ladder, over 5 simulated days. That
+    ladder contains the two historical methods (`greedy` and `bramev`): the
+    original comparison stays readable, and the two intermediate rungs say where
+    the gap comes from.
     """
 
-    # ---- plan d'expérience
+    # ---- experiment plan
     seed: int = DEFAULT_SEED
     scenarios: tuple[str, ...] = SCENARIOS
     fleet_sizes: tuple[int, ...] = (50, 100, 150, 200, 250)
     methods: tuple[str, ...] = methods_module.LADDER
 
-    # ---- environnement simulé
+    # ---- simulated environment
     total_time: int = 5 * SLOTS_PER_DAY
     nb_stations: int = 40
     nb_societies: int = 4
@@ -85,22 +85,22 @@ class ExperimentParams:
     nb_charg_spot_high: int = 6
     strategy_noise: float = 0.5
 
-    # ---- protocole
+    # ---- protocol
     offer_ttl_slots: int = 1
     late_cancel_fraction: float = 0.5
-    #: Horizon de planification (slots) entre l'émission d'une requête et le
-    #: créneau souhaité, tiré uniformément dans [low, high]. (0, 0) désactive
-    #: l'anticipation — réservation pour le créneau immédiat, d'où un délai nul
-    #: et des annulations toutes qualifiées « tardives » : c'est le bras de
-    #: contrôle de l'ablation, pas un réglage neutre.
+    #: Planning horizon (slots) between the emission of a request and the
+    #: targeted slot, drawn uniformly in [low, high]. (0, 0) disables
+    #: anticipation — reservation for the immediate slot, hence a zero delay and
+    #: cancellations all qualified as "late": that is the control arm of the
+    #: ablation, not a neutral setting.
     reservation_lead_low: int = 0
     reservation_lead_high: int = 12
     society_update_interval: int | None = None
-    #: Alpha commun imposé aux méthodes à alpha fixe (`bramev_fixed_alpha`).
-    #: Sans effet sur les autres : leur alpha vient du monde partagé.
+    #: Common alpha imposed on the fixed-alpha methods (`bramev_fixed_alpha`).
+    #: No effect on the others: their alpha comes from the shared world.
     alpha_fixed: float = 0.5
 
-    # ---- sorties
+    # ---- outputs
     output_root: str = 'results_grid'
     label: str | None = None
     keep_logs: bool = False
@@ -109,7 +109,7 @@ class ExperimentParams:
     figures: bool = True
     log_every: int = 12 * SLOTS_PER_HOUR
 
-    # ---- champs internes (non attendus dans un fichier de config)
+    # ---- internal fields (not expected in a config file)
     _source: str | None = field(default=None, repr=False, compare=False)
 
     # ------------------------------------------------------------------
@@ -117,15 +117,15 @@ class ExperimentParams:
     # ------------------------------------------------------------------
 
     def __post_init__(self):
-        # Normalise les séquences en tuples : une dataclasse de configuration
-        # ne doit pas exposer de conteneur mutable partagé.
+        # Normalise the sequences into tuples: a configuration dataclass must
+        # not expose a shared mutable container.
         object.__setattr__(self, 'scenarios', tuple(self.scenarios))
         object.__setattr__(self, 'fleet_sizes', tuple(int(n) for n in self.fleet_sizes))
-        # Groupes (`ablation`, `variants`, `all`) et alias (`nearest`) sont
-        # développés en noms canoniques ici : le reste du pipeline — tags de
-        # cas, noms de fichiers, colonne `method` de summary.csv — ne voit
-        # jamais qu'un nom canonique. Un jeton inconnu est conservé tel quel
-        # pour que `validate()` le signale avec un message situé.
+        # Groups (`ablation`, `variants`, `all`) and aliases (`nearest`) are
+        # expanded into canonical names here: the rest of the pipeline — case
+        # tags, file names, the `method` column of summary.csv — only ever sees
+        # a canonical name. An unknown token is kept as is so that `validate()`
+        # reports it with a situated message.
         object.__setattr__(self, 'methods', methods_module.expand(self.methods))
         self.validate()
 
@@ -139,22 +139,22 @@ class ExperimentParams:
         unknown = sorted(set(data) - known)
         if unknown:
             raise ParamsError(
-                f"Clés inconnues dans les paramètres : {unknown}. "
-                f"Attendu parmi {sorted(known)}"
+                f"Unknown keys in the parameters: {unknown}. "
+                f"Expected one of {sorted(known)}"
             )
         return cls(**dict(data), _source=source)
 
     @classmethod
     def from_file(cls, path: str | os.PathLike) -> "ExperimentParams":
         """
-        Charge des paramètres depuis un fichier YAML ou JSON.
+        Load parameters from a YAML or JSON file.
 
-        Le format est déduit de l'extension ; un fichier `.yaml` sans PyYAML
-        installé lève une erreur explicite plutôt qu'un échec silencieux.
+        The format is deduced from the extension; a `.yaml` file without PyYAML
+        installed raises an explicit error rather than failing silently.
         """
         path = Path(path)
         if not path.is_file():
-            raise ParamsError(f"Fichier de paramètres introuvable : {path}")
+            raise ParamsError(f"Parameter file not found: {path}")
         text = path.read_text(encoding='utf-8')
 
         if path.suffix.lower() in ('.yaml', '.yml'):
@@ -162,27 +162,27 @@ class ExperimentParams:
                 import yaml
             except ImportError as exc:      # pragma: no cover
                 raise ParamsError(
-                    "PyYAML est requis pour lire un fichier .yaml "
-                    "(`uv sync` l'installe)."
+                    "PyYAML is required to read a .yaml file "
+                    "(`uv sync` installs it)."
                 ) from exc
             data = yaml.safe_load(text) or {}
         elif path.suffix.lower() == '.json':
             data = json.loads(text)
         else:
             raise ParamsError(
-                f"Extension non gérée : {path.suffix!r}. Attendu .yaml, .yml ou .json"
+                f"Unsupported extension: {path.suffix!r}. Expected .yaml, .yml or .json"
             )
 
         if not isinstance(data, Mapping):
-            raise ParamsError(f"{path} doit contenir un dictionnaire de paramètres")
+            raise ParamsError(f"{path} must contain a dictionary of parameters")
         return cls.from_mapping(data, source=str(path))
 
     def merged_with(self, overrides: Mapping[str, Any]) -> "ExperimentParams":
-        """Applique des surcharges (typiquement les options de la CLI)."""
+        """Apply overrides (typically the CLI options)."""
         clean = {k: v for k, v in overrides.items() if v is not None}
         unknown = sorted(set(clean) - set(self.field_names()))
         if unknown:
-            raise ParamsError(f"Surcharges inconnues : {unknown}")
+            raise ParamsError(f"Unknown overrides: {unknown}")
         return replace(self, **clean)
 
     # ------------------------------------------------------------------
@@ -193,31 +193,31 @@ class ExperimentParams:
         errors: list[str] = []
 
         if not isinstance(self.seed, int) or self.seed < 0:
-            errors.append(f"seed doit être un entier >= 0, reçu {self.seed!r}")
+            errors.append(f"seed must be an integer >= 0, got {self.seed!r}")
 
         if not self.scenarios:
-            errors.append("scenarios ne peut pas être vide")
+            errors.append("scenarios cannot be empty")
         for name in self.scenarios:
             if name not in SCENARIOS:
-                errors.append(f"scénario inconnu : {name!r} (attendu {list(SCENARIOS)})")
+                errors.append(f"unknown scenario: {name!r} (expected {list(SCENARIOS)})")
 
         if not self.methods:
-            errors.append("methods ne peut pas être vide")
+            errors.append("methods cannot be empty")
         for name in self.methods:
             if not methods_module.is_known(name):
                 errors.append(
-                    f"méthode inconnue : {name!r} (attendu {list(METHODS)}, "
-                    f"alias {sorted(methods_module.ALIASES)}, "
-                    f"groupes {sorted(methods_module.METHOD_GROUPS)})"
+                    f"unknown method: {name!r} (expected {list(METHODS)}, "
+                    f"aliases {sorted(methods_module.ALIASES)}, "
+                    f"groups {sorted(methods_module.METHOD_GROUPS)})"
                 )
 
         if not self.fleet_sizes:
-            errors.append("fleet_sizes ne peut pas être vide")
+            errors.append("fleet_sizes cannot be empty")
         for n in self.fleet_sizes:
             if n <= 0:
-                errors.append(f"taille de flotte invalide : {n}")
+                errors.append(f"invalid fleet size: {n}")
         if len(set(self.fleet_sizes)) != len(self.fleet_sizes):
-            errors.append(f"tailles de flotte dupliquées : {self.fleet_sizes}")
+            errors.append(f"duplicated fleet sizes: {self.fleet_sizes}")
 
         for name, value in (('total_time', self.total_time),
                             ('nb_stations', self.nb_stations),
@@ -225,69 +225,69 @@ class ExperimentParams:
                             ('offer_ttl_slots', self.offer_ttl_slots),
                             ('log_every', self.log_every)):
             if not isinstance(value, int) or value <= 0:
-                errors.append(f"{name} doit être un entier > 0, reçu {value!r}")
+                errors.append(f"{name} must be an integer > 0, got {value!r}")
 
         if self.nb_charg_spot_low <= 0 or self.nb_charg_spot_high <= 0:
-            errors.append("nb_charg_spot_low/high doivent être > 0")
+            errors.append("nb_charg_spot_low/high must be > 0")
         elif self.nb_charg_spot_low > self.nb_charg_spot_high:
-            errors.append("nb_charg_spot_low doit être <= nb_charg_spot_high")
+            errors.append("nb_charg_spot_low must be <= nb_charg_spot_high")
 
         if self.nb_societies > self.nb_stations:
             errors.append(
-                f"nb_societies ({self.nb_societies}) ne peut pas dépasser "
-                f"nb_stations ({self.nb_stations}) : une société sans station "
-                "ne participe pas à l'apprentissage collectif"
+                f"nb_societies ({self.nb_societies}) cannot exceed "
+                f"nb_stations ({self.nb_stations}): a company with no station "
+                "takes no part in collective learning"
             )
 
         if self.strategy_noise < 0:
-            errors.append("strategy_noise doit être >= 0")
+            errors.append("strategy_noise must be >= 0")
         if not 0 < self.late_cancel_fraction <= 1:
-            errors.append("late_cancel_fraction doit être dans ]0, 1]")
+            errors.append("late_cancel_fraction must be in ]0, 1]")
 
         for name, value in (('reservation_lead_low', self.reservation_lead_low),
                             ('reservation_lead_high', self.reservation_lead_high)):
             if not isinstance(value, int) or isinstance(value, bool) or value < 0:
-                errors.append(f"{name} doit être un entier >= 0, reçu {value!r}")
+                errors.append(f"{name} must be an integer >= 0, got {value!r}")
         if (isinstance(self.reservation_lead_low, int)
                 and isinstance(self.reservation_lead_high, int)
                 and self.reservation_lead_low > self.reservation_lead_high):
             errors.append(
-                f"reservation_lead_low ({self.reservation_lead_low}) doit être "
+                f"reservation_lead_low ({self.reservation_lead_low}) must be "
                 f"<= reservation_lead_high ({self.reservation_lead_high})"
             )
-        # Avertissement structurel, pas une erreur : un horizon trop court est
-        # licite mais laisse la branche `early` inatteignable. Le délai effectif
-        # vaut `l_n + ceil(trajet)`, soit au moins `l_n + 1`, à comparer au
-        # minimum déduit du seuil (cf. `min_lead_for_early_cancel`).
+        # Structural warning, not an error: too short a horizon is legitimate
+        # but leaves the `early` branch unreachable. The effective delay is
+        # `l_n + ceil(travel)`, i.e. at least `l_n + 1`, to be compared with the
+        # minimum derived from the threshold (see `min_lead_for_early_cancel`).
         probe = cfg_module.SimulationConfig()
         probe.LATE_CANCEL_FRACTION = self.late_cancel_fraction
         min_lead = probe.min_lead_for_early_cancel()
         if 0 < self.reservation_lead_high and self.reservation_lead_high + 1 < min_lead:
             warnings.warn(
-                f"reservation_lead_high={self.reservation_lead_high} : aucun "
-                f"horizon tiré ne permettra une annulation anticipée "
-                f"(délai minimal {min_lead} slots pour "
+                f"reservation_lead_high={self.reservation_lead_high}: no drawn "
+                f"horizon will allow an early cancellation "
+                f"(minimal delay {min_lead} slots for "
                 f"late_cancel_fraction={self.late_cancel_fraction}). "
-                "Toutes les annulations seront qualifiées « tardives ».",
+                "Every cancellation will be qualified as late.",
                 stacklevel=2,
             )
 
         if self.society_update_interval is not None and self.society_update_interval <= 0:
-            errors.append("society_update_interval doit être > 0 ou nul (défaut)")
+            errors.append("society_update_interval must be > 0 or None (default)")
 
         if not 0. <= float(self.alpha_fixed) <= 1.:
             errors.append(
-                f"alpha_fixed doit être dans [0, 1], reçu {self.alpha_fixed!r}")
+                f"alpha_fixed must be in [0, 1], got {self.alpha_fixed!r}")
 
         if errors:
-            raise ParamsError("Paramètres invalides :\n  - " + "\n  - ".join(errors))
+            raise ParamsError("Invalid parameters:\n  - " + "\n  - ".join(errors))
 
     # ------------------------------------------------------------------
-    # Plan d'expérience
+    # Experiment plan
     # ------------------------------------------------------------------
 
     def cases(self) -> Iterator[CaseParams]:
-        """Énumère les cas dans l'ordre d'exécution (mondes regroupés)."""
+        """Enumerate the cases in execution order (worlds grouped)."""
         for scenario in self.scenarios:
             for nb_cars in self.fleet_sizes:
                 for method in self.methods:
@@ -295,12 +295,12 @@ class ExperimentParams:
 
     def worlds(self) -> Iterator[tuple[str, int]]:
         """
-        Énumère les couples (scénario, flotte).
+        Enumerate the (scenario, fleet) pairs.
 
-        Chaque couple donne un monde, mais tous ces mondes partagent la même
-        grille et, à taille de flotte égale, la même population de véhicules :
-        seules les probabilités de comportement changent d'un scénario à
-        l'autre (cf. `src/experiments/world.py`).
+        Each pair gives a world, but all those worlds share the same grid and,
+        at equal fleet size, the same vehicle population: only the behaviour
+        probabilities change from one scenario to the next (see
+        `src/experiments/world.py`).
         """
         for scenario in self.scenarios:
             for nb_cars in self.fleet_sizes:
@@ -315,23 +315,23 @@ class ExperimentParams:
         return max(self.fleet_sizes)
 
     # ------------------------------------------------------------------
-    # Traduction en configuration de simulation
+    # Translation into a simulation configuration
     # ------------------------------------------------------------------
 
     def build_config(self, scenario: str, nb_cars: int) -> cfg_module.SimulationConfig:
-        """Construit la `SimulationConfig` d'un cas. Sans effet de bord."""
+        """Build the `SimulationConfig` of a case. No side effect."""
         config = self._build_common_config(nb_cars)
         config.set_scenario(scenario)
         return config
 
     def build_shared_config(self, nb_cars: int | None = None) -> cfg_module.SimulationConfig:
         """
-        Configuration des tirages partagés : la grille et les flottes.
+        Configuration of the shared draws: the grid and the fleets.
 
-        Le scénario n'y est **délibérément pas fixé**. Un tirage partagé qui
-        lirait `BASE_CANCEL_PROB` produirait ici les valeurs par défaut plutôt
-        que celles d'un scénario : l'omission est le garde-fou, et
-        `tests/test_shared_world.py` vérifie l'invariance obtenue.
+        The scenario is **deliberately not set** here. A shared draw reading
+        `BASE_CANCEL_PROB` would produce the default values rather than those of
+        a scenario: the omission is the guard, and `tests/test_shared_world.py`
+        verifies the resulting invariance.
         """
         return self._build_common_config(nb_cars or self.max_fleet_size)
 
@@ -366,11 +366,11 @@ class ExperimentParams:
 
     def describe(self) -> str:
         return (
-            f"seed={self.seed} | scénarios={list(self.scenarios)} | "
-            f"flottes={list(self.fleet_sizes)} | méthodes={list(self.methods)} | "
-            f"{self.total_time} slots ({self.total_time / SLOTS_PER_DAY:.1f} j) | "
-            f"{self.nb_stations} stations / {self.nb_societies} sociétés | "
-            f"horizon de réservation [{self.reservation_lead_low}, "
+            f"seed={self.seed} | scenarios={list(self.scenarios)} | "
+            f"fleets={list(self.fleet_sizes)} | methods={list(self.methods)} | "
+            f"{self.total_time} slots ({self.total_time / SLOTS_PER_DAY:.1f} d) | "
+            f"{self.nb_stations} stations / {self.nb_societies} companies | "
+            f"reservation horizon [{self.reservation_lead_low}, "
             f"{self.reservation_lead_high}] slots | "
             f"{self.nb_cases} runs"
         )

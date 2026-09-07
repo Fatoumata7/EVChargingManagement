@@ -1,5 +1,5 @@
 """
-station.py — Agent station de recharge
+station.py — Charging station agent
 """
 
 import numpy as np
@@ -20,10 +20,10 @@ class Station:
         Parameters
         ----------
         spec : dict | None
-            Paramètres explicites (loc, nb_charg_spot, alpha) issus d'un
-            `WorldSpec`. Si fourni, aucun tirage aléatoire n'a lieu ici : la
-            station est reconstructible à l'identique pour chaque méthode
-            comparée. Si None, comportement historique (tirage aléatoire).
+            Explicit parameters (loc, nb_charg_spot, alpha) coming from a
+            `WorldSpec`. When provided, no random draw happens here: the station
+            is rebuilt identically for every method being compared. When None,
+            historical behaviour (random draw).
         """
         self.m = m
         self.society_id = society_id
@@ -37,24 +37,24 @@ class Station:
             self.loc = utils.init_pos(config, rng=rng)
             self.nb_charg_spot = random.randint(
                 config.NB_CHARG_SPOT['low'], config.NB_CHARG_SPOT['high'])
-            self.alpha = random.uniform(0.1, 0.9)  # poids profit vs risque
+            self.alpha = random.uniform(0.1, 0.9)  # profit vs. risk weight
 
-        self.strategy = None   # injecté par Society.add_station()
+        self.strategy = None   # injected by Society.add_station()
         self.alpha_save = [self.alpha]
 
-        # --- drapeaux de méthode (cf. src/experiments/methods.py)
-        # Valeurs par défaut = BRAM-EV. `Simulation` les surcharge à
-        # l'initialisation, une fois la méthode connue : le monde tiré reste
-        # identique d'une méthode à l'autre, seule sa lecture change.
-        self.score_index = society_id    # indice lu dans `car.score`
+        # --- method flags (see src/experiments/methods.py)
+        # Defaults = BRAM-EV. `Simulation` overrides them at initialisation,
+        # once the method is known: the drawn world stays identical from one
+        # method to the next, only the way it is read changes.
+        self.score_index = society_id    # index read in `car.score`
         self.score_weighting = 'duration'  # 'duration' | 'event'
 
         self.T = config.TOTAL_TIME
         self.schedule = np.full((self.nb_charg_spot, self.T), -1, dtype=int)
 
-        # Version du calendrier par borne : incrémentée à chaque écriture.
-        # Une offre porte la version vue à l'émission ; un écart signale que le
-        # calendrier a bougé entre l'offre et la confirmation.
+        # Calendar version per charger: incremented on every write.
+        # An offer carries the version seen at issuing time; a mismatch signals
+        # that the calendar moved between the offer and the confirmation.
         self.charger_version = np.zeros(self.nb_charg_spot, dtype=int)
         self._offer_counter = 0
 
@@ -68,46 +68,46 @@ class Station:
         self.nb_station_level_rejections = 0
         self.nb_request = 0
 
-        # --- occupation cumulée
-        # `schedule` est un état *courant* : chaque fin de session ou annulation
-        # y remet les slots à -1. Le lire en fin de run donnait donc un taux
-        # d'occupation nul pour toutes les méthodes. Ces deux compteurs sont
-        # cumulatifs et survivent aux libérations.
-        self.nb_slots_reserved = 0   # slots-bornes écrits au calendrier
-        self.nb_slots_served = 0     # slots-bornes réellement utilisés en charge
+        # --- cumulative occupancy
+        # `schedule` holds a *current* state: every session end or cancellation
+        # resets its slots to -1. Reading it at the end of a run therefore
+        # yielded a zero occupancy rate for every method. These two counters are
+        # cumulative and survive releases.
+        self.nb_slots_reserved = 0   # charger-slots written to the calendar
+        self.nb_slots_served = 0     # charger-slots actually spent charging
 
-        # --- réservations closes par un événement exogène
-        self.nb_breakdown_canc = 0   # véhicule tombé en panne avant la session
-        self.nb_unresolved = 0       # réservation encore ouverte à la fin de l'horizon
+        # --- reservations closed by an exogenous event
+        self.nb_breakdown_canc = 0   # vehicle broke down before its session
+        self.nb_unresolved = 0       # reservation still open at the end of the horizon
 
-        # --- sécurisation des offres
-        self.nb_offer_issued = 0     # offres émises
-        self.nb_offer_expired = 0    # offres non retenues par le véhicule / TTL dépassé
-        self.nb_confirm_refused = 0  # confirmations refusées à la revalidation
-        self.nb_stale_confirm = 0    # confirmations acceptées malgré une version périmée
+        # --- offer safety
+        self.nb_offer_issued = 0     # offers issued
+        self.nb_offer_expired = 0    # offers not retained by the vehicle / TTL exceeded
+        self.nb_confirm_refused = 0  # confirmations refused at revalidation
+        self.nb_stale_confirm = 0    # confirmations accepted despite a stale version
 
     # ------------------------------------------------------------------
-    # Méthode
+    # Method
     # ------------------------------------------------------------------
 
     def apply_method(self, spec, config=None):
         """
-        Applique les drapeaux d'une `MethodSpec` à cette station.
+        Apply the flags of a `MethodSpec` to this station.
 
-        Trois mécanismes internes sont concernés :
+        Three internal mechanisms are concerned:
 
-        * `reputation_scope` — `'society'` : chaque société tient son propre
-          score (le score est un actif local à un opérateur) ; `'global'` :
-          toutes les stations lisent et écrivent la case 0, la réputation
-          devient un bien public partagé.
-        * `score_weighting` — `'duration'` : la pénalité est proportionnelle à
-          la durée réservée ; `'event'` : pénalité forfaitaire par événement.
-        * `alpha_mode` — `'fixed'` : l'arbitrage profit/risque est le même pour
-          toutes les stations (`config.ALPHA_FIXED`), ce qui neutralise
-          l'hétérogénéité initiale des alpha.
+        * `reputation_scope` — `'society'`: each company keeps its own score
+          (the score is an asset local to an operator); `'global'`: every
+          station reads and writes slot 0, and reputation becomes a shared
+          public good.
+        * `score_weighting` — `'duration'`: the penalty is proportional to the
+          reserved duration; `'event'`: flat penalty per event.
+        * `alpha_mode` — `'fixed'`: the profit/risk trade-off is the same for
+          every station (`config.ALPHA_FIXED`), which neutralises the initial
+          heterogeneity of the alphas.
 
-        Appelée par `Simulation.__init__` : le `WorldSpec` reste la source de
-        vérité du monde, la méthode n'en change que la lecture.
+        Called by `Simulation.__init__`: the `WorldSpec` stays the source of
+        truth for the world, the method only changes how it is read.
         """
         self.score_index = 0 if spec.reputation_scope == 'global' else self.society_id
         self.score_weighting = spec.score_weighting
@@ -115,8 +115,8 @@ class Station:
         if spec.alpha_mode == 'fixed':
             alpha = float(getattr(config or self.config, 'ALPHA_FIXED', 0.5))
             self.alpha = alpha
-            # `alpha_save[0]` documente l'alpha effectivement utilisé : la table
-            # alpha resterait sinon celle du monde, pas celle de la méthode.
+            # `alpha_save[0]` documents the alpha actually used: otherwise the
+            # alpha table would stay the one of the world, not of the method.
             self.alpha_save = [alpha]
 
     # ------------------------------------------------------------------
@@ -125,22 +125,22 @@ class Station:
 
     def update_car_score(self, car_agent, status, d_n):
         """
-        Enregistre l'issue d'une réservation dans la réputation du véhicule.
+        Record the outcome of a reservation in the vehicle's reputation.
 
-        L'enjeu de l'issue est lu dans le barème de la société (`self.strategy`)
-        puis **normalisé par le plus gros enjeu de ce barème**, ce qui le ramène
-        dans [-1, 1] : positif pour une présence, négatif sinon. Le véhicule en
-        fait la moyenne pondérée sur ses `SCORE_MEMORY` dernières réservations
-        (cf. `Car.record_score_event`).
+        The stake of the outcome is read from the company's scale
+        (`self.strategy`) then **normalised by the largest stake of that
+        scale**, which brings it into [-1, 1]: positive for a presence, negative
+        otherwise. The vehicle averages those over its `SCORE_MEMORY` last
+        reservations (see `Car.record_score_event`).
 
-        Normaliser par `max(mu)` plutôt que par une constante préserve l'ordre
-        et les rapports du barème — une société qui punit le no-show deux fois
-        plus qu'une annulation tardive continue de le faire — tout en rendant
-        les scores de deux sociétés comparables sur la même échelle.
+        Normalising by `max(mu)` rather than by a constant preserves the order
+        and the ratios of the scale — a company that punishes a no-show twice as
+        hard as a late cancellation keeps doing so — while putting the scores of
+        two companies on the same axis.
 
-        Le poids de l'événement reste la durée réservée (`score_weighting =
-        'duration'`, défaut) ou 1 (`'event'` : pénalité forfaitaire) ; il
-        pondère la moyenne au lieu de multiplier un cumul non borné.
+        The weight of the event stays the reserved duration (`score_weighting =
+        'duration'`, default) or 1 (`'event'`: flat penalty); it weighs the mean
+        instead of multiplying an unbounded cumulative sum.
         """
         mu = self.strategy
         normalizer = max(mu.values())
@@ -153,26 +153,26 @@ class Station:
         return car_agent.record_score_event(self.score_index, signed, weight)
 
     # ------------------------------------------------------------------
-    # Optimisation ILP
+    # ILP optimisation
     # ------------------------------------------------------------------
 
     def process_demands(self, station_demands, t_c):
         """
-        Résout le problème d'allocation et retourne une liste de (Car, Offer).
+        Solve the allocation problem and return a list of (Car, Offer).
 
-        Contiguïté
+        Contiguity
         ----------
-        Le modèle impose que les slots alloués à une demande forment **un seul
-        bloc contigu sur une seule borne**. C'est obtenu par une variable de
-        front montant `s[n,j,t]` (« la recharge de n démarre en t sur j ») avec
-        au plus un front montant par demande :
+        The model requires the slots allocated to a demand to form **a single
+        contiguous block on a single charger**. This is obtained with a rising
+        edge variable `s[n,j,t]` ("the charge of n starts at t on j") allowing at
+        most one rising edge per demand:
 
-            s[n,j,t] >= a[n,j,t] - a[n,j,t-1]      (a absent => 0)
+            s[n,j,t] >= a[n,j,t] - a[n,j,t-1]      (missing a => 0)
             sum_{j,t} s[n,j,t] <= 1
 
-        La durée reste variable (offre partielle autorisée, <= d_n), mais
-        `[t_arr, t_dep)` couvre désormais exactement `d_prop` slots : l'offre
-        ne peut plus être un intervalle reconstruit à partir de slots disjoints.
+        The duration stays variable (partial offer allowed, <= d_n), but
+        `[t_arr, t_dep)` now covers exactly `d_prop` slots: an offer can no
+        longer be an interval rebuilt from disjoint slots.
         """
         if not station_demands:
             return []
@@ -196,10 +196,10 @@ class Station:
             dist = np.sqrt((x_m - x_n) ** 2 + (y_m - y_n) ** 2)
             distance[n] = dist
 
-            # Créneau nominal = émission + horizon de planification + trajet.
-            # `t_max_n`, la fenêtre de `a[n,j,t]` et la pénalité `D` de
-            # l'objectif sont tous définis relativement à `t_hat_arr` : ils
-            # suivent le décalage sans modification.
+            # Nominal slot = emission + planning horizon + travel.
+            # `t_max_n`, the window of `a[n,j,t]` and the penalty `D` of the
+            # objective are all defined relative to `t_hat_arr`: they follow the
+            # shift with no further change.
             arr = utils.nominal_arrival(req['t_n'], req.get('l_n', 0),
                                         dist, self.config)
             t_hat_arr[n] = arr
@@ -208,7 +208,7 @@ class Station:
             g_n[n] = req['g_n']
             scores[n] = float(car.score[self.score_index])
 
-        # Variables de décision : a[n,j,t] = 1 si n occupe la borne j au slot t
+        # Decision variables: a[n,j,t] = 1 if n occupies charger j at slot t
         a = {}
         for n in n_list:
             t_max_n = min(T, int(t_hat_arr[n] + g_n[n] + d_n[n]) + 1)
@@ -222,21 +222,21 @@ class Station:
             for j in range(self.nb_charg_spot):
                 y[n, j] = solver.BoolVar(f"y_{n}_{j}")
 
-        # Contrainte : un seul chargeur par demande
+        # Constraint: a single charger per demand
         for n in n_list:
             solver.Add(solver.Sum(y[n, j] for j in range(self.nb_charg_spot)) <= 1)
 
         for (n, j, t), var in a.items():
             solver.Add(var <= y[n, j])
 
-        # Contrainte capacité
+        # Capacity constraint
         for j in range(self.nb_charg_spot):
             for t in range(t_c, T):
                 solver.Add(
                     solver.Sum(a[n, j, t] for n in n_list if (n, j, t) in a) <= 1
                 )
 
-        # Contrainte durée (<= d_n, pas = pour permettre offres partielles)
+        # Duration constraint (<= d_n, not =, so partial offers stay allowed)
         for n in n_list:
             solver.Add(
                 solver.Sum(
@@ -247,9 +247,9 @@ class Station:
                 ) <= d_n[n]
             )
 
-        # Contrainte de contiguïté : au plus un front montant par demande.
-        # Un slot absent de `a` (borne déjà occupée, ou hors fenêtre) vaut 0,
-        # donc reprendre après un trou compterait un second front montant.
+        # Contiguity constraint: at most one rising edge per demand.
+        # A slot missing from `a` (charger already busy, or out of the window)
+        # counts as 0, so resuming after a gap would count a second rising edge.
         s_start = {}
         for (n, j, t) in a:
             s_start[n, j, t] = solver.BoolVar(f"s_{n}_{j}_{t}")
@@ -264,7 +264,7 @@ class Station:
             if starts:
                 solver.Add(solver.Sum(starts) <= 1)
 
-        # Objectif agrégé
+        # Aggregated objective
         objective = solver.Objective()
         for (n, j, t), var in a.items():
             if t < t_hat_arr[n]:
@@ -298,18 +298,18 @@ class Station:
             times = sorted(t for (nn, j, t), var in a.items()
                            if nn == n and j == j_selected and var.solution_value() > 0.5)
             if not times:
-                # demande qui n'a pas pu être satisfaite
+                # demand that could not be satisfied
                 self.nb_station_level_rejections += 1
                 continue
 
             t_arr, t_dep = times[0], times[-1] + 1
-            # Garantie apportée par la contrainte de contiguïté
+            # Guaranteed by the contiguity constraint
             assert t_dep - t_arr == len(times), (
-                f"Station {self.m}: créneaux non contigus pour la demande {n} "
+                f"Station {self.m}: non-contiguous slots for demand {n} "
                 f"({times})"
             )
             assert np.all(self.schedule[j_selected, t_arr:t_dep] == -1), (
-                f"Station {self.m}: créneaux déjà réservés proposés à {n}"
+                f"Station {self.m}: slots already booked offered to {n}"
             )
 
             offers.append((cars[idx], self._make_offer(
@@ -324,7 +324,7 @@ class Station:
         return offers
 
     def _make_offer(self, charger_id, t_arr, t_dep, d_prop, distance, t_c):
-        """Émet une offre horodatée, versionnée et à durée de validité limitée."""
+        """Issue a timestamped, versioned offer with a limited validity."""
         self._offer_counter += 1
         self.nb_offer_issued += 1
         return off.Offer(
@@ -342,22 +342,22 @@ class Station:
         )
 
     # ------------------------------------------------------------------
-    # Réservation & planning
+    # Reservation & schedule
     # ------------------------------------------------------------------
 
     def validate_offer(self, offer, t_c=None):
         """
-        Revalide une offre au moment de la confirmation.
+        Revalidate an offer at confirmation time.
 
         Returns
         -------
         (ok, reason) : (bool, str | None)
 
-        La vérification faisant autorité est l'état réel du calendrier : une
-        offre dont la version de borne a changé reste confirmable si ses slots
-        sont toujours libres (cas normal : une autre borne, ou un autre
-        intervalle de la même borne, a été réservé entre-temps). Le décalage de
-        version est alors compté (`nb_stale_confirm`) et non refusé.
+        The authoritative check is the actual state of the calendar: an offer
+        whose charger version changed stays confirmable as long as its slots are
+        still free (the normal case: another charger, or another interval of the
+        same charger, was booked in the meantime). The version mismatch is then
+        counted (`nb_stale_confirm`) rather than refused.
         """
         if offer.station_id != self.m:
             return False, 'wrong_station'
@@ -386,14 +386,14 @@ class Station:
 
     def confirm_reservation(self, car_id, offer, t_c=None):
         """
-        Confirme une offre après revalidation.
+        Confirm an offer after revalidation.
 
         Returns
         -------
         bool
-            True si la réservation est inscrite au calendrier. False si l'offre
-            a été refusée (elle passe alors en statut REJECTED et ne peut plus
-            être confirmée).
+            True if the reservation was written to the calendar. False if the
+            offer was refused (it then moves to status REJECTED and can no
+            longer be confirmed).
         """
         ok, reason = self.validate_offer(offer, t_c)
         if not ok:
@@ -416,23 +416,22 @@ class Station:
         return True
 
     def record_served_slot(self) -> None:
-        """Comptabilise un slot-borne effectivement passé en charge.
+        """Count one charger-slot actually spent charging.
 
-        Appelé par la boucle de simulation à chaque slot de recharge active.
-        L'écart avec `nb_slots_reserved` est exactement ce que les no-shows et
-        les annulations tardives coûtent à la station : des slots bloqués puis
-        jamais utilisés.
+        Called by the simulation loop at every slot of active charging. The gap
+        with `nb_slots_reserved` is exactly what no-shows and late cancellations
+        cost the station: slots blocked and then never used.
         """
         self.nb_slots_served += 1
 
     def expire_offer(self, offer):
-        """Fait expirer une offre non retenue (elle ne sera jamais confirmable)."""
+        """Expire an offer that was not retained (never confirmable again)."""
         if offer.is_pending():
             offer.expire()
             self.nb_offer_expired += 1
 
     def release_reservation(self, car_id, offer):
-        """Libère les créneaux réservés (pour annulation ou fin de session)."""
+        """Release the reserved slots (on cancellation or session end)."""
         j = offer.charger_id
         mask = self.schedule[j, :] == car_id
         if np.any(mask):
@@ -440,14 +439,14 @@ class Station:
             self.charger_version[j] += 1
 
     def get_current_charger_and_slot(self, car_id, t_c):
-        """Retourne (j, True) si le véhicule doit être en charge à t_c."""
+        """Return (j, True) if the vehicle should be charging at t_c."""
         for j in range(self.nb_charg_spot):
             if 0 <= t_c < self.T and self.schedule[j, t_c] == car_id:
                 return j, True
         return None, False
 
     def is_session_finished(self, car_id, t_c):
-        """Retourne True si le véhicule n'a plus de créneaux à partir de t_c."""
+        """Return True if the vehicle has no slot left from t_c onwards."""
         for j in range(self.nb_charg_spot):
             if np.any(self.schedule[j, t_c:] == car_id):
                 return False
@@ -455,16 +454,16 @@ class Station:
 
     def future_occupancy_rate(self, t_c: int) -> float:
         """
-        Part des créneaux-bornes déjà réservés entre `t_c` et la fin de
-        l'horizon.
+        Share of charger-slots already booked between `t_c` and the end of the
+        horizon.
 
-        Mesure la charge *à venir* de la station, la seule qui compte pour un
-        véhicule qui cherche où se brancher : `occupancy_rate` (rapport de
-        sortie) porte sur tout l'horizon, passé compris.
+        Measures the *upcoming* load of the station, the only one that matters
+        to a vehicle looking for a plug: `occupancy_rate` (output report) spans
+        the whole horizon, past included.
 
-        Le calendrier n'étant écrit qu'à la confirmation
-        (`confirm_reservation`), les offres en attente ne sont pas comptées :
-        deux véhicules servis dans le même lot voient donc la même charge.
+        Since the calendar is only written at confirmation
+        (`confirm_reservation`), pending offers are not counted: two vehicles
+        served in the same batch therefore see the same load.
         """
         t = max(0, min(int(t_c), self.T))
         remaining = self.schedule[:, t:]
@@ -476,11 +475,11 @@ class Station:
         return int(np.sum(self.schedule != -1))
 
     def slot_capacity(self) -> int:
-        """Nombre total de slots-bornes offerts sur l'horizon."""
+        """Total number of charger-slots offered over the horizon."""
         return int(self.nb_charg_spot * self.T)
 
     def outcomes_report(self) -> dict:
-        """Issues des réservations confirmées + santé du protocole d'offre."""
+        """Outcomes of the confirmed reservations + offer-protocol health."""
         capacity = max(1, self.slot_capacity())
         return {
             'station_id':                  self.m,
@@ -504,8 +503,8 @@ class Station:
             'nb_unresolved':               self.nb_unresolved,
             'nb_slots_reserved':           self.nb_slots_reserved,
             'nb_slots_served':             self.nb_slots_served,
-            # Part de la capacité de l'horizon réservée / réellement utilisée.
-            # Leur écart chiffre les slots bloqués puis perdus.
+            # Share of the horizon capacity booked / actually used.
+            # Their gap quantifies the slots blocked and then wasted.
             'occupancy_rate':      round(self.nb_slots_reserved / capacity, 4),
             'service_rate':        round(self.nb_slots_served / capacity, 4),
         }

@@ -1,51 +1,51 @@
 """
-seeding.py — Gestion centralisée de l'aléatoire.
+seeding.py — Centralised management of randomness.
 
-Objectif : reproductibilité stricte des expériences et *common random numbers*
-(CRN) entre les méthodes comparées.
+Goal: strict reproducibility of the experiments and *common random numbers*
+(CRN) across the methods being compared.
 
-Principe
---------
-Une seule graine (`seed`) pilote toute l'expérience. Elle est déclinée en flux
-indépendants via `numpy.random.SeedSequence`, un flux par (type, index) :
+Principle
+---------
+A single seed drives the whole experiment. It is split into independent streams
+through `numpy.random.SeedSequence`, one stream per (kind, index):
 
     hub = RngHub(seed=42)
     rng = hub.stream('car_move', car_idx)
 
-Deux exécutions avec la même graine produisent :
-  * le même monde initial (positions, capacités, préférences, comportements) ;
-  * les mêmes tirages pour un véhicule donné, dans l'ordre de son propre flux.
+Two executions with the same seed produce:
+  * the same initial world (positions, capacities, preferences, behaviours);
+  * the same draws for a given vehicle, in the order of its own stream.
 
-Les flux sont séparés par usage (déplacement / comportement / requête) afin que
-la divergence d'une méthode sur un usage ne décale pas les tirages des autres :
-c'est ce qui permet de comparer BRAM-EV et Greedy sur le *même* aléa.
+Streams are separated by usage (movement / behaviour / request) so that the
+divergence of a method on one usage does not shift the draws of the others:
+that is what makes it possible to compare BRAM-EV and Greedy on the *same*
+randomness.
 
-Indexation par clé, jamais par ordre
-------------------------------------
-Un flux est déterminé par `(kind, idx)`, pas par le rang de l'appel. C'est ce
-qui permet à `world.py` de tirer la station `m` ou le véhicule `idx` sans que
-le nombre d'entités déjà tirées n'influe sur le résultat : à graine égale, une
-flotte de 100 véhicules commence exactement par les 50 véhicules d'une flotte
-de 50.
+Indexed by key, never by order
+------------------------------
+A stream is determined by `(kind, idx)`, not by the rank of the call. That is
+what lets `world.py` draw station `m` or vehicle `idx` without the number of
+entities already drawn influencing the result: at equal seed, a fleet of 100
+vehicles starts with exactly the 50 vehicles of a fleet of 50.
 """
 
 import random
 import numpy as np
 
 
-# Codes de flux — FIGÉS. Ne jamais réordonner ni réutiliser un code : cela
-# changerait l'aléa de toutes les expériences déjà publiées.
+# Stream codes — FROZEN. Never reorder them nor reuse a code: that would change
+# the randomness of every experiment already published.
 STREAM_CODES = {
-    'world':        1,   # génération monolithique du monde (hérité, cf. world.py)
-    'car_move':     2,   # déplacement libre du véhicule
-    'car_behavior': 3,   # tirage du comportement (pres/abs/early/late), vitesse
-    'car_request':  4,   # paramètres de la requête (durée, rayon, patience)
-    'station':      5,   # réservé (l'optimisation PLI est déterministe)
-    'society_init': 6,   # tirage d'une société de la grille partagée
-    'station_init': 7,   # tirage d'une station de la grille partagée
-    'car_init':     8,   # tirage des attributs statiques d'un véhicule
-    'car_lead':     9,   # horizon de planification d'une requête (l_n)
-    'car_choice':  10,   # départage aléatoire d'une offre (baseline random)
+    'world':        1,   # monolithic world generation (legacy, see world.py)
+    'car_move':     2,   # free movement of the vehicle
+    'car_behavior': 3,   # behaviour draw (pres/abs/early/late), speed
+    'car_request':  4,   # request parameters (duration, radius, patience)
+    'station':      5,   # reserved (the ILP optimisation is deterministic)
+    'society_init': 6,   # draw of a company of the shared grid
+    'station_init': 7,   # draw of a station of the shared grid
+    'car_init':     8,   # draw of the static attributes of a vehicle
+    'car_lead':     9,   # planning horizon of a request (l_n)
+    'car_choice':  10,   # random tie-break between offers (random baseline)
 }
 
 DEFAULT_SEED = 20260101
@@ -55,11 +55,11 @@ _UINT32 = 2 ** 32
 
 def seed_everything(seed: int) -> int:
     """
-    Fixe les générateurs globaux `random` et `numpy.random`.
+    Seed the global `random` and `numpy.random` generators.
 
-    Nécessaire pour les rares appels qui ne passent pas par un flux dédié
-    (dont `scipy.stats` sans `random_state`) et pour l'ordre d'itération des
-    conteneurs aléatoires. Les flux de `RngHub` restent la source à privilégier.
+    Needed for the few calls that do not go through a dedicated stream
+    (including `scipy.stats` without `random_state`) and for the iteration order
+    of randomised containers. The `RngHub` streams remain the preferred source.
     """
     seed = int(seed)
     random.seed(seed)
@@ -69,12 +69,12 @@ def seed_everything(seed: int) -> int:
 
 class RngHub:
     """
-    Fabrique de générateurs reproductibles et mutuellement indépendants.
+    Factory of reproducible, mutually independent generators.
 
     Parameters
     ----------
     seed : int | None
-        Graine racine. `None` → `DEFAULT_SEED` (reste reproductible).
+        Root seed. `None` → `DEFAULT_SEED` (still reproducible).
     """
 
     def __init__(self, seed: int | None = DEFAULT_SEED):
@@ -82,22 +82,22 @@ class RngHub:
             seed = DEFAULT_SEED
         if not isinstance(seed, (int, np.integer)):
             raise TypeError(
-                f"seed doit être un entier, reçu : {type(seed).__name__}"
+                f"seed must be an integer, got: {type(seed).__name__}"
             )
         self.seed = int(seed)
         seed_everything(self.seed)
 
     def stream(self, kind: str, idx: int = 0) -> np.random.Generator:
         """
-        Retourne le générateur du flux (`kind`, `idx`).
+        Return the generator of the (`kind`, `idx`) stream.
 
-        Deux appels identiques renvoient deux générateurs distincts mais
-        produisant la même séquence : un flux est déterminé par sa clé, pas par
-        l'ordre des appels.
+        Two identical calls return two distinct generators producing the same
+        sequence: a stream is determined by its key, not by the order of the
+        calls.
         """
         if kind not in STREAM_CODES:
             raise KeyError(
-                f"Flux inconnu : {kind!r}. Attendu parmi {sorted(STREAM_CODES)}"
+                f"Unknown stream: {kind!r}. Expected one of {sorted(STREAM_CODES)}"
             )
         seq = np.random.SeedSequence(
             entropy=self.seed,
@@ -112,8 +112,8 @@ class RngHub:
 if __name__ == "__main__":
     hub_a = RngHub(42)
     hub_b = RngHub(42)
-    # Même clé -> même séquence, quel que soit l'ordre des appels
+    # Same key -> same sequence, whatever the order of the calls
     assert hub_a.stream('car_move', 7).random() == hub_b.stream('car_move', 7).random()
-    # Clés différentes -> séquences décorrélées
+    # Different keys -> uncorrelated sequences
     assert hub_a.stream('car_move', 7).random() != hub_a.stream('car_move', 8).random()
     print("seeding.py OK")

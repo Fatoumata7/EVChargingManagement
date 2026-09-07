@@ -4,13 +4,13 @@ import pandas as pd
 
 def check_station_metrics(station):
     """
-    Vérifie que chaque réservation confirmée a reçu exactement une issue.
+    Check that every confirmed reservation received exactly one outcome.
 
-    Deux issues s'ajoutent aux quatre issues comportementales : `breakdown`
-    (véhicule tombé en panne avant sa session, réservation libérée) et
-    `unresolved` (réservation encore ouverte à la fin de l'horizon). Sans elles
-    l'invariant était structurellement faux dès qu'une panne survenait ou qu'une
-    réservation dépassait la fin de la simulation.
+    Two outcomes come on top of the four behavioural ones: `breakdown` (vehicle
+    that broke down before its session, reservation released) and `unresolved`
+    (reservation still open at the end of the horizon). Without them the
+    invariant was structurally false as soon as a breakdown occurred or a
+    reservation ran past the end of the simulation.
     """
 
     lhs = station.nb_reservations
@@ -35,17 +35,17 @@ def check_station_metrics(station):
 
 def create_station_occupancy_dataframe(societies):
     """
-    Crée un DataFrame contenant le taux d'occupation
-    de chaque borne de chaque station.
+    Build a DataFrame holding the occupancy rate of every charger of every
+    station.
 
-    Colonnes :
-    ----------
+    Columns:
+    --------
     id_society
     id_station
-    borne_1
-    borne_2
+    charger_1
+    charger_2
     ...
-    borne_6
+    charger_6
     mean_occupancy_rate
     """
 
@@ -55,7 +55,7 @@ def create_station_occupancy_dataframe(societies):
 
         for station in society.stations:
 
-            # taux d'occupation de chaque borne
+            # occupancy rate of each charger
             occupancy_rates = np.mean(
                 station.schedule != -1,
                 axis=1
@@ -66,15 +66,15 @@ def create_station_occupancy_dataframe(societies):
                 "id_station": station.m,
             }
 
-            # colonnes borne_1 ... borne_6
+            # columns charger_1 ... charger_6
             for j in range(6):
 
                 if j < len(occupancy_rates):
-                    row[f"borne_{j+1}"] = occupancy_rates[j]
+                    row[f"charger_{j+1}"] = occupancy_rates[j]
                 else:
-                    row[f"borne_{j+1}"] = np.nan
+                    row[f"charger_{j+1}"] = np.nan
 
-            # moyenne des bornes de la station
+            # mean over the chargers of the station
             row["mean_occupancy_rate"] = np.mean(occupancy_rates)
 
             rows.append(row)
@@ -86,10 +86,9 @@ def create_station_occupancy_dataframe(societies):
 
 def create_station_reservation_dataframe(societies):
     """
-    Crée un DataFrame contenant les statistiques de réservation
-    de chaque station.
+    Build a DataFrame holding the reservation statistics of every station.
 
-    Colonnes :
+    Columns:
         - id_society
         - id_station
         - nb_reservation
@@ -102,7 +101,7 @@ def create_station_reservation_dataframe(societies):
         - p_early
         - p_late
 
-    Les pourcentages sont compris entre 0 et 1.
+    The percentages are between 0 and 1.
     """
 
     rows = []

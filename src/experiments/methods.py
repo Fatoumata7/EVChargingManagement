@@ -1,48 +1,47 @@
 """
-methods.py — Registre des méthodes comparées (étude d'ablation).
+methods.py — Registry of the compared methods (ablation study).
 
-Une *méthode* n'est pas une classe : c'est un jeu de drapeaux appliqué à la
-boucle de simulation unique (`src/experiments/simulation.py`). Isoler ces
-drapeaux dans un registre déclaratif permet de répondre à la question que la
-comparaison BRAM-EV / Greedy ne peut pas trancher : **quelle part du gain vient
-de quoi ?**
+A *method* is not a class: it is a set of flags applied to the single simulation
+loop (`src/experiments/simulation.py`). Isolating those flags in a declarative
+registry answers the question the BRAM-EV / Greedy comparison cannot settle:
+**which part of the gain comes from what?**
 
-Échelle d'ablation (chaque barreau ajoute exactement un composant)
------------------------------------------------------------------
-    nearest / greedy      recherche mono-station, sans réputation, sans adaptation
-    multistation          + recherche multi-stations (diffusion de la requête)
-    multistation_rep      + réputation comportementale
-    bramev                + adaptation entre stations (apprentissage collectif)
+Ablation ladder (each rung adds exactly one component)
+-----------------------------------------------------
+    nearest / greedy      single-station search, no reputation, no adaptation
+    multistation          + multi-station search (request broadcast)
+    multistation_rep      + behavioural reputation
+    bramev                + cross-station adaptation (collective learning)
 
-Le gain attribuable à un composant est la différence entre deux barreaux
-consécutifs, mesurée sur le *même* monde (même graine, même grille, même
-flotte, même tirage de comportements) : cf. `src/pipeline/ablation.py`.
+The gain attributable to a component is the difference between two consecutive
+rungs, measured on the *same* world (same seed, same grid, same fleet, same
+behaviour draws): see `src/pipeline/ablation.py`.
 
-Variantes de BRAM-EV (un mécanisme interne remplacé, le reste inchangé)
-----------------------------------------------------------------------
-    bramev_nearest_offer  sélection de l'offre la plus proche au lieu de
-                          l'utilité multicritère
-    bramev_fixed_alpha    même alpha pour toutes les stations (config.ALPHA_FIXED)
-    bramev_global_rep     réputation globale au lieu d'une réputation par société
-    bramev_event_score    pénalité par événement au lieu d'une pénalité
-                          proportionnelle à la durée réservée
+BRAM-EV variants (one internal mechanism replaced, everything else unchanged)
+----------------------------------------------------------------------------
+    bramev_nearest_offer  nearest offer selected instead of the multi-criteria
+                          utility
+    bramev_fixed_alpha    same alpha for every station (config.ALPHA_FIXED)
+    bramev_global_rep     global reputation instead of a per-company reputation
+    bramev_event_score    flat penalty per event instead of a penalty
+                          proportional to the reserved duration
 
-Baselines de référence (politiques de choix pures)
--------------------------------------------------
-    min_waiting           offre dont l'attente est la plus faible
-    load_aware            offre de la station la moins chargée à venir
-    random_feasible       offre tirée au hasard parmi les offres reçues
+Reference baselines (pure choice policies)
+------------------------------------------
+    min_waiting           offer with the lowest waiting time
+    load_aware            offer of the least loaded upcoming station
+    random_feasible       offer drawn at random among the offers received
 
-Elles partagent le protocole de `multistation` — diffusion aux stations du
-rayon de recherche, sans réputation ni adaptation — et n'en diffèrent que par
-la règle de sélection de l'offre. À périmètre d'information identique, un écart
-mesuré est donc imputable à la règle seule.
+They share the protocol of `multistation` — broadcast to the stations within the
+search radius, with no reputation and no adaptation — and differ from it only by
+the offer selection rule. At identical information scope, a measured gap is
+therefore attributable to the rule alone.
 
-Compatibilité
+Compatibility
 -------------
-`greedy` reste le nom canonique du premier barreau : les runs, tables et
-figures déjà produits restent lisibles. `nearest` en est un alias accepté
-partout où une méthode est nommée.
+`greedy` remains the canonical name of the first rung: the runs, tables and
+figures already produced stay readable. `nearest` is an accepted alias
+everywhere a method is named.
 """
 
 from __future__ import annotations
@@ -50,7 +49,7 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass
 from typing import Iterable, Mapping
 
-# Valeurs admissibles des drapeaux non booléens.
+# Admissible values of the non-boolean flags.
 OFFER_CHOICES = ('utility', 'nearest', 'waiting', 'load', 'random')
 ALPHA_MODES = ('sampled', 'fixed')
 REPUTATION_SCOPES = ('society', 'global')
@@ -60,28 +59,28 @@ SCORE_WEIGHTINGS = ('duration', 'event')
 @dataclass(frozen=True)
 class MethodSpec:
     """
-    Description complète d'une méthode.
+    Full description of a method.
 
-    Les trois premiers drapeaux sont les composants de l'échelle d'ablation ;
-    les quatre suivants remplacent un mécanisme interne de BRAM-EV sans rien
-    retirer au protocole.
+    The first three flags are the components of the ablation ladder; the next
+    four replace an internal mechanism of BRAM-EV without removing anything from
+    the protocol.
     """
 
     name: str
     label: str
 
-    # ---- composants de l'échelle d'ablation
-    broadcast: bool               # requête diffusée à toutes les stations éligibles
-    use_reputation: bool          # les stations notent le comportement des véhicules
-    collective_learning: bool     # les sociétés propagent l'alpha de leur meilleure station
+    # ---- components of the ablation ladder
+    broadcast: bool               # request broadcast to every eligible station
+    use_reputation: bool          # stations score the behaviour of the vehicles
+    collective_learning: bool     # companies propagate the alpha of their best station
 
-    # ---- mécanismes internes (variantes)
-    offer_choice: str = 'utility'       # cf. OFFER_CHOICES
+    # ---- internal mechanisms (variants)
+    offer_choice: str = 'utility'       # see OFFER_CHOICES
     alpha_mode: str = 'sampled'         # 'sampled' | 'fixed'
     reputation_scope: str = 'society'   # 'society' | 'global'
     score_weighting: str = 'duration'   # 'duration' | 'event'
 
-    # ---- métadonnées
+    # ---- metadata
     family: str = 'ablation'            # 'ablation' | 'variant'
     note: str = ''
 
@@ -93,15 +92,15 @@ class MethodSpec:
             value = getattr(self, field_name)
             if value not in allowed:
                 raise ValueError(
-                    f"{self.name}: {field_name}={value!r} invalide, "
-                    f"attendu parmi {list(allowed)}"
+                    f"{self.name}: {field_name}={value!r} invalid, "
+                    f"expected one of {list(allowed)}"
                 )
         if self.collective_learning and not self.broadcast:
-            # Rien ne l'interdit techniquement, mais l'échelle d'ablation
-            # perdrait son sens : un composant ne s'ajoute qu'après le précédent.
+            # Nothing forbids it technically, but the ablation ladder would lose
+            # its meaning: a component is only added after the previous one.
             raise ValueError(
-                f"{self.name}: collective_learning sans broadcast casse "
-                "l'ordre de l'échelle d'ablation"
+                f"{self.name}: collective_learning without broadcast breaks "
+                "the order of the ablation ladder"
             )
 
     # ------------------------------------------------------------------
@@ -110,7 +109,7 @@ class MethodSpec:
         return asdict(self)
 
     def flags(self) -> dict:
-        """Colonnes ajoutées à `summary.csv` : le plan d'ablation lisible."""
+        """Columns added to `summary.csv`: the ablation plan, readable."""
         return {
             'method_label':     self.label,
             'method_family':    self.family,
@@ -128,105 +127,105 @@ class MethodSpec:
 
 
 # ----------------------------------------------------------------------
-# Registre
+# Registry
 # ----------------------------------------------------------------------
 
 _SPECS: tuple[MethodSpec, ...] = (
-    # ---- échelle d'ablation ------------------------------------------
+    # ---- ablation ladder ---------------------------------------------
     MethodSpec(
         name='greedy', label='Nearest',
         broadcast=False, use_reputation=False, collective_learning=False,
-        note="Baseline : le véhicule ne contacte que la station la plus proche.",
+        note="Baseline: the vehicle contacts only the nearest station.",
     ),
     MethodSpec(
         name='multistation', label='Multi-Station Only',
         broadcast=True, use_reputation=False, collective_learning=False,
-        note="Diffusion de la requête seule : mesure le gain de la mise en "
-             "concurrence des stations, sans aucune réputation.",
+        note="Request broadcast alone: measures the gain of putting the "
+             "stations in competition, with no reputation at all.",
     ),
     MethodSpec(
         name='multistation_rep', label='Multi-Station + Reputation',
         broadcast=True, use_reputation=True, collective_learning=False,
-        note="Ajoute le score comportemental à l'objectif des stations ; "
-             "alpha reste figé à sa valeur initiale.",
+        note="Adds the behavioural score to the station objective; alpha stays "
+             "frozen at its initial value.",
     ),
     MethodSpec(
         name='bramev', label='BRAM-EV Full',
         broadcast=True, use_reputation=True, collective_learning=True,
-        note="Méthode complète : diffusion + réputation + adaptation de alpha "
-             "entre stations d'une même société.",
+        note="Complete method: broadcast + reputation + adaptation of alpha "
+             "between the stations of one company.",
     ),
 
-    # ---- baselines de référence --------------------------------------
-    # Elles diffusent la requête aux stations du rayon de recherche `r_n`,
-    # exactement comme `multistation`, et ne diffèrent de lui *que* par la règle
-    # de sélection de l'offre. Aucune n'utilise la réputation ni l'adaptation :
-    # ce sont des politiques de choix pures. Ce périmètre identique est ce qui
-    # rend la comparaison lisible — un écart mesuré vient de la règle, pas d'un
-    # avantage d'information.
+    # ---- reference baselines -----------------------------------------
+    # They broadcast the request to the stations within the search radius `r_n`,
+    # exactly like `multistation`, and differ from it *only* by the offer
+    # selection rule. None of them uses reputation or adaptation: these are pure
+    # choice policies. That identical scope is what makes the comparison
+    # readable — a measured gap comes from the rule, not from an information
+    # advantage.
     MethodSpec(
         name='min_waiting', label='Minimum Waiting Time',
         broadcast=True, use_reputation=False, collective_learning=False,
         offer_choice='waiting', family='baseline',
-        note="Le véhicule interroge les stations de son rayon de recherche et "
-             "retient l'offre dont l'attente est la plus faible — écart entre "
-             "le créneau proposé et le créneau visé.",
+        note="The vehicle queries the stations within its search radius and "
+             "keeps the offer with the lowest waiting time — the gap between "
+             "the proposed slot and the targeted one.",
     ),
     MethodSpec(
         name='load_aware', label='Load-Aware',
         broadcast=True, use_reputation=False, collective_learning=False,
         offer_choice='load', family='baseline',
-        note="Le véhicule interroge les stations de son rayon de recherche et "
-             "retient l'offre de la station dont le taux d'occupation futur "
-             "est le plus faible.",
+        note="The vehicle queries the stations within its search radius and "
+             "keeps the offer of the station whose future occupancy rate is "
+             "the lowest.",
     ),
     MethodSpec(
         name='random_feasible', label='Random Feasible',
         broadcast=True, use_reputation=False, collective_learning=False,
         offer_choice='random', family='baseline',
-        note="Le véhicule tire au hasard parmi les offres reçues, toutes "
-             "faisables par construction. Plancher de référence : ce que "
-             "rapporte le protocole d'offre sans aucune politique de choix.",
+        note="The vehicle draws at random among the offers received, all "
+             "feasible by construction. Reference floor: what the offer "
+             "protocol yields with no choice policy at all.",
     ),
 
-    # ---- variantes de BRAM-EV ----------------------------------------
+    # ---- BRAM-EV variants --------------------------------------------
     MethodSpec(
-        name='bramev_nearest_offer', label='BRAM-EV / offre la plus proche',
+        name='bramev_nearest_offer', label='BRAM-EV / nearest offer',
         broadcast=True, use_reputation=True, collective_learning=True,
         offer_choice='nearest', family='variant',
-        note="Le véhicule retient l'offre la plus proche au lieu de maximiser "
-             "son utilité multicritère (énergie, distance, attente).",
+        note="The vehicle keeps the nearest offer instead of maximising its "
+             "multi-criteria utility (energy, distance, waiting).",
     ),
     MethodSpec(
-        name='bramev_fixed_alpha', label='BRAM-EV / alpha fixe',
+        name='bramev_fixed_alpha', label='BRAM-EV / fixed alpha',
         broadcast=True, use_reputation=True, collective_learning=True,
         alpha_mode='fixed', family='variant',
-        note="Toutes les stations partagent config.ALPHA_FIXED. L'apprentissage "
-             "collectif reste actif mais devient inerte (tous les alpha sont "
-             "égaux) : la variante isole donc l'apport de l'hétérogénéité "
-             "des arbitrages profit/risque.",
+        note="Every station shares config.ALPHA_FIXED. Collective learning "
+             "stays enabled but becomes inert (all alphas are equal): the "
+             "variant therefore isolates the contribution of the heterogeneity "
+             "of the profit/risk trade-offs.",
     ),
     MethodSpec(
-        name='bramev_global_rep', label='BRAM-EV / réputation globale',
+        name='bramev_global_rep', label='BRAM-EV / global reputation',
         broadcast=True, use_reputation=True, collective_learning=True,
         reputation_scope='global', family='variant',
-        note="Un score unique partagé par toutes les sociétés, au lieu d'un "
-             "score par société : la réputation devient un bien public.",
+        note="A single score shared by every company, instead of one score per "
+             "company: reputation becomes a public good.",
     ),
     MethodSpec(
-        name='bramev_event_score', label='BRAM-EV / score par événement',
+        name='bramev_event_score', label='BRAM-EV / event score',
         broadcast=True, use_reputation=True, collective_learning=True,
         score_weighting='event', family='variant',
-        note="Pénalité forfaitaire par événement au lieu d'une pénalité "
-             "proportionnelle à la durée réservée : un no-show de 2 h coûte "
-             "alors autant qu'un no-show de 20 min.",
+        note="Flat penalty per event instead of a penalty proportional to the "
+             "reserved duration: a 2 h no-show then costs as much as a 20 min "
+             "one.",
     ),
 )
 
 METHODS: Mapping[str, MethodSpec] = {spec.name: spec for spec in _SPECS}
 METHOD_NAMES: tuple[str, ...] = tuple(METHODS)
 
-#: Noms alternatifs acceptés partout où une méthode est nommée.
+#: Alternative names accepted everywhere a method is named.
 ALIASES: Mapping[str, str] = {
     'nearest':          'greedy',
     'ms':               'multistation',
@@ -237,58 +236,58 @@ ALIASES: Mapping[str, str] = {
     'full':             'bramev',
 }
 
-#: Barreaux de l'échelle d'ablation, dans l'ordre d'ajout des composants.
+#: Rungs of the ablation ladder, in the order the components are added.
 LADDER: tuple[str, ...] = ('greedy', 'multistation', 'multistation_rep', 'bramev')
 
-#: Libellé du composant ajouté à chaque barreau.
+#: Label of the component added at each rung.
 LADDER_STEPS: tuple[tuple[str, str, str], ...] = (
-    ('greedy',           'multistation',     'Recherche multi-stations'),
-    ('multistation',     'multistation_rep', 'Réputation'),
-    ('multistation_rep', 'bramev',           'Adaptation entre stations'),
+    ('greedy',           'multistation',     'Multi-station search'),
+    ('multistation',     'multistation_rep', 'Reputation'),
+    ('multistation_rep', 'bramev',           'Cross-station adaptation'),
 )
 
-#: Variantes de BRAM-EV, comparées à `bramev`.
+#: BRAM-EV variants, compared against `bramev`.
 VARIANTS: tuple[str, ...] = tuple(s.name for s in _SPECS if s.family == 'variant')
 
-#: Baselines de référence, comparées à `bramev`. `greedy` n'en fait pas partie :
-#: c'est le premier barreau de l'échelle d'ablation, et il y garde son rôle.
+#: Reference baselines, compared against `bramev`. `greedy` is not one of them:
+#: it is the first rung of the ablation ladder, and keeps that role there.
 BASELINES: tuple[str, ...] = tuple(s.name for s in _SPECS if s.family == 'baseline')
 
-#: Raccourcis utilisables partout où une liste de méthodes est attendue.
+#: Shortcuts usable everywhere a list of methods is expected.
 METHOD_GROUPS: Mapping[str, tuple[str, ...]] = {
     'ablation':  LADDER,
     'variants':  VARIANTS,
     'baselines': BASELINES,
-    #: Comparaison de référence : BRAM-EV face à toutes les baselines.
+    #: Reference comparison: BRAM-EV against every baseline.
     'reference': ('bramev',) + BASELINES + ('greedy',),
     'baseline':  ('greedy', 'bramev'),
     'all':       METHOD_NAMES,
 }
 
-#: Tout ce qu'une CLI ou un fichier YAML peut écrire dans `methods`.
+#: Everything a CLI or a YAML file may write in `methods`.
 METHOD_TOKENS: tuple[str, ...] = (
     METHOD_NAMES + tuple(ALIASES) + tuple(METHOD_GROUPS)
 )
 
 
 # ----------------------------------------------------------------------
-# Résolution
+# Resolution
 # ----------------------------------------------------------------------
 
 def canonical(name: str) -> str:
-    """Nom canonique d'une méthode (résout les alias). Lève KeyError sinon."""
+    """Canonical name of a method (resolves aliases). Raises KeyError otherwise."""
     key = str(name).strip().lower()
     key = ALIASES.get(key, key)
     if key not in METHODS:
         raise KeyError(
-            f"Méthode inconnue : {name!r}. Attendu parmi {list(METHOD_NAMES)} "
-            f"(alias : {sorted(ALIASES)})"
+            f"Unknown method: {name!r}. Expected one of {list(METHOD_NAMES)} "
+            f"(aliases: {sorted(ALIASES)})"
         )
     return key
 
 
 def resolve(name: str | MethodSpec) -> MethodSpec:
-    """`MethodSpec` d'une méthode nommée (alias acceptés)."""
+    """`MethodSpec` of a named method (aliases accepted)."""
     if isinstance(name, MethodSpec):
         return name
     return METHODS[canonical(name)]
@@ -304,10 +303,10 @@ def is_known(name: str) -> bool:
 
 def expand(names: Iterable[str]) -> tuple[str, ...]:
     """
-    Développe groupes et alias en noms canoniques, sans doublon et dans l'ordre.
+    Expand groups and aliases into canonical names, without duplicates and in order.
 
-    Un jeton inconnu est **conservé tel quel** : c'est la validation des
-    paramètres qui le signalera, avec un message situé.
+    An unknown token is **kept as is**: parameter validation is what reports it,
+    with a situated message.
     """
     out: list[str] = []
     for token in names:
@@ -321,7 +320,7 @@ def expand(names: Iterable[str]) -> tuple[str, ...]:
 
 
 def label(name: str) -> str:
-    """Libellé lisible d'une méthode ; le nom brut si elle est inconnue."""
+    """Readable label of a method; the raw name if it is unknown."""
     try:
         return resolve(name).label
     except KeyError:
@@ -329,23 +328,23 @@ def label(name: str) -> str:
 
 
 def describe_table() -> str:
-    """Table du plan d'ablation, telle qu'affichée par `cli.py methods`."""
-    header = (f"  {'méthode':<22}{'multi-stations':>15}{'réputation':>12}"
-              f"{'adaptation':>12}{'choix offre':>13}   {'libellé'}")
+    """Table of the ablation plan, as printed by `cli.py methods`."""
+    header = (f"  {'method':<22}{'multi-station':>15}{'reputation':>12}"
+              f"{'adaptation':>12}{'offer choice':>13}   {'label'}")
     lines = [header, '  ' + '-' * (len(header) - 2)]
-    titres = {'ablation': 'échelle d ablation', 'baseline': 'baselines',
-              'variant': 'variantes'}
+    titles = {'ablation': 'ablation ladder', 'baseline': 'baselines',
+              'variant': 'variants'}
     for family in ('ablation', 'baseline', 'variant'):
         group = [s for s in _SPECS if s.family == family]
         if not group:
             continue
-        lines.append(f"  [{titres[family]}]")
+        lines.append(f"  [{titles[family]}]")
         for spec in group:
             lines.append(
                 f"  {spec.name:<22}"
-                f"{'oui' if spec.broadcast else 'non':>15}"
-                f"{'oui' if spec.use_reputation else 'non':>12}"
-                f"{'oui' if spec.collective_learning else 'non':>12}"
+                f"{'yes' if spec.broadcast else 'no':>15}"
+                f"{'yes' if spec.use_reputation else 'no':>12}"
+                f"{'yes' if spec.collective_learning else 'no':>12}"
                 f"{spec.offer_choice:>13}"
                 f"   {spec.label}"
             )

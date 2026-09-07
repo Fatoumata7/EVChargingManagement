@@ -1,20 +1,20 @@
 """
-test_shared_world.py — Vérifie que les scénarios tournent sur le même monde.
+test_shared_world.py — Checks that the scenarios run on the same world.
 
     python -m tests.test_shared_world
 
-La comparabilité entre `optimistic`, `balance` et `pessimistic` repose sur une
-propriété structurelle : la grille (sociétés, stations) et les flottes
-(positions initiales, autonomies, préférences) sont tirées **avant** toute
-simulation et réutilisées telles quelles ; seul `theta`, les probabilités de
-comportement, dépend du scénario.
+The comparability between `optimistic`, `balance` and `pessimistic` rests on a
+structural property: the grid (companies, stations) and the fleets (initial
+positions, autonomies, preferences) are drawn **before** any simulation and
+reused as is; only `theta`, the behaviour probabilities, depends on the
+scenario.
 
-Cette propriété n'est pas visible à la lecture — elle se perd au premier
-tirage égaré dans une fonction dépendant du scénario. Elle est donc vérifiée
-ici, à trois niveaux : sur les specs, sur les agents matérialisés, et de bout
-en bout sur une campagne réelle.
+That property is not visible when reading the code — it is lost at the first
+stray draw inside a scenario-dependent function. It is therefore verified here,
+at three levels: on the specs, on the materialised agents, and end to end on a
+real campaign.
 
-Aucune dépendance de test externe : uniquement des assertions et un compte-rendu.
+No external test dependency: assertions and a report, nothing else.
 """
 
 import sys
@@ -36,7 +36,7 @@ from src.pipeline.store import RunStore
 SCENARIOS = ('optimistic', 'balance', 'pessimistic')
 SEED = 4242
 
-# Attributs d'un véhicule qui ne doivent PAS dépendre du scénario.
+# Attributes of a vehicle that must NOT depend on the scenario.
 STATIC_CAR_KEYS = ('idx', 'loc', 'soc_init', 'autonomy', 'soc_threshold_m',
                    'pref', 'charging_power', 'behavior_noise')
 
@@ -56,7 +56,7 @@ def config_for(scenario: str | None = None, nb_cars: int = 12,
 
 
 def tiny_params(**overrides) -> ExperimentParams:
-    """Campagne minuscule : trois scénarios, deux flottes, deux méthodes."""
+    """Tiny campaign: three scenarios, two fleets, two methods."""
     base = dict(
         seed=SEED,
         scenarios=SCENARIOS,
@@ -65,10 +65,10 @@ def tiny_params(**overrides) -> ExperimentParams:
         total_time=12 * 3,
         nb_stations=6,
         nb_societies=2,
-        # Bras de contrôle explicite : cette fixture teste le partage du monde,
-        # pas l'anticipation. Sur 36 slots, un horizon de planification n'est
-        # jamais servi (les créneaux visés tombent hors de la fenêtre ILP) et
-        # produirait un diagnostic légitime mais hors sujet ici.
+        # Explicit control arm: this fixture tests world sharing, not
+        # anticipation. Over 36 slots a planning horizon is never served (the
+        # targeted slots fall outside the ILP window) and would produce a
+        # legitimate but off-topic diagnostic here.
         reservation_lead_low=0,
         reservation_lead_high=0,
         keep_logs=False,
@@ -80,14 +80,14 @@ def tiny_params(**overrides) -> ExperimentParams:
 
 
 # ----------------------------------------------------------------------
-# 1. La grille est unique
+# 1. The grid is unique
 # ----------------------------------------------------------------------
 
 def test_grid_is_identical_across_scenarios():
     grids = [generate_grid_spec(config_for(name), SEED).to_dict()
              for name in SCENARIOS]
     for name, grid in zip(SCENARIOS[1:], grids[1:]):
-        assert grid == grids[0], f'la grille diffère pour {name}'
+        assert grid == grids[0], f'the grid differs for {name}'
 
 
 def test_grid_is_identical_across_fleet_sizes():
@@ -95,13 +95,13 @@ def test_grid_is_identical_across_fleet_sizes():
     for nb_cars in (6, 12, 60):
         other = generate_grid_spec(config_for('balance', nb_cars=nb_cars), SEED)
         assert other.to_dict() == reference.to_dict(), \
-            f'la grille dépend de la taille de flotte ({nb_cars})'
+            f'the grid depends on the fleet size ({nb_cars})'
 
 
 def test_grid_depends_on_the_seed():
     a = generate_grid_spec(config_for('balance'), SEED)
     b = generate_grid_spec(config_for('balance'), SEED + 1)
-    assert a.stations != b.stations, 'deux graines donnent la même grille'
+    assert a.stations != b.stations, 'two seeds give the same grid'
 
 
 def test_grid_spec_roundtrips_and_rejects_a_foreign_config():
@@ -111,28 +111,28 @@ def test_grid_spec_roundtrips_and_rejects_a_foreign_config():
         reloaded = GridSpec.load(path)
     assert reloaded.to_dict() == grid.to_dict()
 
-    reloaded.check_matches(config_for('balance'))          # cohérent
+    reloaded.check_matches(config_for('balance'))          # consistent
     try:
         reloaded.check_matches(config_for('balance', nb_stations=99))
     except SpecMismatch as exc:
         assert 'NB_STATIONS' in str(exc)
     else:
-        raise AssertionError('une grille incompatible doit être refusée')
+        raise AssertionError('an incompatible grid must be refused')
 
 
 # ----------------------------------------------------------------------
-# 2. Les flottes sont uniques par taille, et emboîtées
+# 2. Fleets are unique per size, and nested
 # ----------------------------------------------------------------------
 
 def test_fleet_is_identical_across_scenarios():
     fleets = [generate_fleet_spec(config_for(name), SEED, 12).to_dict()
               for name in SCENARIOS]
     for name, fleet in zip(SCENARIOS[1:], fleets[1:]):
-        assert fleet == fleets[0], f'la flotte diffère pour {name}'
+        assert fleet == fleets[0], f'the fleet differs for {name}'
 
 
 def test_fleet_carries_no_scenario_dependent_field():
-    """`theta` ne doit pas être figé dans la flotte : il dépend du scénario."""
+    """`theta` must not be frozen in the fleet: it depends on the scenario."""
     fleet = generate_fleet_spec(config_for('balance'), SEED, 12)
     for car in fleet.cars:
         assert 'theta' not in car
@@ -142,10 +142,10 @@ def test_fleet_carries_no_scenario_dependent_field():
 
 
 def test_fleets_are_nested():
-    """Une flotte de 12 commence exactement par les 6 véhicules d'une flotte de 6."""
+    """A fleet of 12 starts with exactly the 6 vehicles of a fleet of 6."""
     small = generate_fleet_spec(config_for('balance', nb_cars=6), SEED, 6)
     large = generate_fleet_spec(config_for('balance', nb_cars=12), SEED, 12)
-    assert large.cars[:6] == small.cars, 'flottes non emboîtées'
+    assert large.cars[:6] == small.cars, 'fleets are not nested'
     assert large.nb_cars == 12 and small.nb_cars == 6
 
 
@@ -162,11 +162,11 @@ def test_fleet_spec_roundtrips_and_rejects_a_foreign_config():
     except SpecMismatch as exc:
         assert 'NB_CARS' in str(exc)
     else:
-        raise AssertionError('une flotte incompatible doit être refusée')
+        raise AssertionError('an incompatible fleet must be refused')
 
 
 # ----------------------------------------------------------------------
-# 3. Seul theta change d'un scénario à l'autre
+# 3. Only theta changes from one scenario to the next
 # ----------------------------------------------------------------------
 
 def test_only_theta_varies_between_scenarios():
@@ -178,10 +178,10 @@ def test_only_theta_varies_between_scenarios():
     reference = worlds['balance']
     for name, world in worlds.items():
         assert world.stations == reference.stations, f'stations : {name}'
-        assert world.societies == reference.societies, f'sociétés : {name}'
+        assert world.societies == reference.societies, f'companies: {name}'
         for car, ref in zip(world.cars, reference.cars):
             for key in STATIC_CAR_KEYS:
-                assert car[key] == ref[key], f'{name} : {key} du véhicule {car["idx"]}'
+                assert car[key] == ref[key], f'{name}: {key} of vehicle {car["idx"]}'
 
     # ...et theta, lui, change bien.
     thetas = {name: [c['theta'] for c in w.cars] for name, w in worlds.items()}
@@ -189,7 +189,7 @@ def test_only_theta_varies_between_scenarios():
 
 
 def test_theta_is_a_pure_function_of_noise_and_base_probabilities():
-    """Le scénario n'agit que par `BASE_CANCEL_PROB` : rien n'est retiré au hasard."""
+    """The scenario acts only through `BASE_CANCEL_PROB`: nothing is re-drawn."""
     grid = generate_grid_spec(config_for('balance'), SEED)
     fleet = generate_fleet_spec(config_for('balance'), SEED, 12)
 
@@ -206,8 +206,8 @@ def test_theta_is_a_pure_function_of_noise_and_base_probabilities():
 
 def test_pessimistic_shifts_behaviour_in_the_expected_direction():
     """
-    Contrôle de bon sens : à véhicules identiques, le scénario pessimiste doit
-    réduire la probabilité moyenne de présence.
+    Sanity check: with identical vehicles, the pessimistic scenario must lower
+    the mean probability of showing up.
     """
     grid = generate_grid_spec(config_for('balance'), SEED)
     fleet = generate_fleet_spec(config_for('balance'), SEED, 60)
@@ -219,7 +219,7 @@ def test_pessimistic_shifts_behaviour_in_the_expected_direction():
 
 
 # ----------------------------------------------------------------------
-# 4. Les agents matérialisés héritent bien du partage
+# 4. The materialised agents do inherit the sharing
 # ----------------------------------------------------------------------
 
 def test_materialized_agents_share_grid_and_positions():
@@ -239,16 +239,16 @@ def test_materialized_agents_share_grid_and_positions():
             assert station.alpha == ref.alpha
             assert station.society_id == ref.society_id
         for society, ref in zip(societies, ref_societies):
-            assert society.strategy == ref.strategy, f'{name} : stratégie société'
+            assert society.strategy == ref.strategy, f'{name}: company strategy'
         for car, ref in zip(cars, ref_cars):
-            assert np.allclose(car.loc, ref.loc), f'{name} : position véhicule'
+            assert np.allclose(car.loc, ref.loc), f'{name}: vehicle position'
             assert car.autonomy == ref.autonomy
             assert car.pref == ref.pref
             assert car.charging_power == ref.charging_power
 
 
 # ----------------------------------------------------------------------
-# 5. De bout en bout : une campagne réelle
+# 5. End to end: a real campaign
 # ----------------------------------------------------------------------
 
 def test_run_grid_shares_one_grid_across_every_case():
@@ -265,9 +265,9 @@ def test_run_grid_shares_one_grid_across_every_case():
             assert world.grid_seed == grid.seed
             got = [(s['m'], s['loc'], s['nb_charg_spot'], s['society_id'])
                    for s in world.stations]
-            assert got == expected, f'grille différente pour {scenario}/{nb_cars}'
+            assert got == expected, f'different grid for {scenario}/{nb_cars}'
 
-        # Toutes les lignes du résumé pointent la même grille et la même graine.
+        # Every summary row points to the same grid and the same seed.
         summary = store.read_summary()
         assert len({row['grid_seed'] for row in summary}) == 1
         assert len({row['world_seed'] for row in summary}) == 1
@@ -285,14 +285,14 @@ def test_run_grid_shares_car_positions_across_scenarios():
             for scenario in params.scenarios:
                 world = store.load_world(scenario, nb_cars)
                 assert [c['loc'] for c in world.cars] == expected, \
-                    f'positions initiales différentes pour {scenario}/{nb_cars}'
+                    f'different initial positions for {scenario}/{nb_cars}'
                 thetas[scenario] = [c['theta'] for c in world.cars]
             assert thetas['optimistic'] != thetas['pessimistic'], \
-                'les scénarios doivent malgré tout différer par theta'
+                'the scenarios must nonetheless differ by theta'
 
 
 def test_prepare_shared_world_persists_before_any_simulation():
-    """La grille doit être exploitable même si la campagne échoue au premier cas."""
+    """The grid must be usable even if the campaign fails at the first case."""
     with tempfile.TemporaryDirectory() as tmp:
         params = tiny_params(output_root=tmp)
         store = RunStore.create(params)
@@ -341,12 +341,12 @@ def test_shared_tables_match_the_specs():
         assert (row['x_m'], row['y_m']) == tuple(car['loc'])
         assert row['autonomy_km'] == car['autonomy'] / 1e3
         assert row['noise_pres'] == car['behavior_noise']['pres']
-    # `theta` dépend du scénario : il n'a rien à faire dans une table de flotte.
+    # `theta` depends on the scenario: it has no place in a fleet table.
     assert not any(key.startswith('theta') for key in car_rows[0])
 
 
 def test_methods_still_share_the_world_within_a_scenario():
-    """Le partage entre scénarios ne doit pas casser celui entre méthodes."""
+    """Sharing across scenarios must not break sharing across methods."""
     with tempfile.TemporaryDirectory() as tmp:
         params = tiny_params(output_root=tmp)
         store = run_grid(params)
@@ -378,7 +378,7 @@ def main() -> int:
             failures.append((name, traceback.format_exc()))
             print(f'  FAIL  {name}: {exc}')
 
-    print(f'\n{len(tests) - len(failures)}/{len(tests)} tests réussis')
+    print(f'\n{len(tests) - len(failures)}/{len(tests)} tests passed')
     for name, tb in failures:
         print(f'\n===== {name} =====\n{tb}')
     return 1 if failures else 0

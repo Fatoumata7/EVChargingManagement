@@ -1,18 +1,18 @@
 """
-simulation_greedy.py — Baseline « Nearest » (recherche mono-station).
+simulation_greedy.py — "Nearest" baseline (single-station search).
 
-Version NEAREST (nom historique : `greedy`) :
-- le véhicule contacte UNIQUEMENT la station la plus proche
-- il accepte l'offre reçue (une seule offre, donc aucune comparaison utile)
-- pas de score de réputation, pas d'apprentissage collectif entre stations
+NEAREST version (historical name: `greedy`):
+- the vehicle contacts ONLY the nearest station
+- it accepts the offer received (a single offer, so no useful comparison)
+- no reputation score, no collective learning between stations
 
-C'est le premier barreau de l'échelle d'ablation
-(`src/experiments/methods.py`) : chaque barreau suivant lui ajoute exactement
-un composant.
+This is the first rung of the ablation ladder
+(`src/experiments/methods.py`): every later rung adds exactly one component to
+it.
 
-Cette classe n'est plus qu'un raccourci de confort : le pipeline instancie
-directement `Simulation(mode=...)` pour toutes les méthodes, y compris
-celle-ci. La conserver garde le code d'appel historique valide.
+This class is now only a convenience shortcut: the pipeline instantiates
+`Simulation(mode=...)` directly for every method, this one included. Keeping it
+leaves the historical calling code valid.
 """
 
 import src.experiments.config as cfg

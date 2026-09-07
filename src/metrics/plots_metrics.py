@@ -1,7 +1,7 @@
 """
-plots_metrics.py — Fonctions de visualisation des métriques de simulation
+plots_metrics.py — Visualization functions for the simulation metrics
 
-Utilisation :
+Usage:
     from plots_metrics import *
     
     plot_station_demand(metrics)
@@ -41,10 +41,10 @@ def plot_stations_2d(
     padding=5
 ):
     """
-    Affiche les stations sur une grille 2D.
+    Display the stations on a 2D grid.
 
-    Les stations appartenant à la même société
-    apparaissent avec la même couleur.
+    The stations belonging to the same company
+    appear in the same color.
 
     Parameters
     ----------
@@ -53,11 +53,11 @@ def plot_stations_2d(
     sim_config : SimulationConfig
 
     padding : float
-        Marge autour de la grille
+        Margin around the grid
     """
 
     # --------------------------------------------------------
-    # Sociétés présentes
+    # Companies present
     # --------------------------------------------------------
 
     society_ids = sorted({
@@ -166,7 +166,7 @@ def plot_stations_2d(
     )
 
     # --------------------------------------------------------
-    # Légende sociétés
+    # Company legend
     # --------------------------------------------------------
 
     legend_elements = [
@@ -194,16 +194,16 @@ def plot_stations_2d(
 
 
 # ============================================================
-# 1. Demande énergétique par station
+# 1. Energy demand per station
 # ============================================================
 
 def plot_station_demand(metrics, societies, scenario_name, \
                         approach_name, nb_car, figsize=(10, 5)):
     """
-    Affiche la demande énergétique (kWh) par station.
+    Display the energy demand (kWh) per station.
 
-    Les stations appartenant à une même société
-    apparaissent avec la même couleur.
+    The stations belonging to the same company
+    appear in the same color.
 
     Parameters
     ----------
@@ -224,7 +224,7 @@ def plot_station_demand(metrics, societies, scenario_name, \
             station_to_society[s.m] = soc.f_id
 
     # --------------------------------------------------------
-    # Couleurs des sociétés
+    # Company colors
     # --------------------------------------------------------
 
     unique_societies = sorted({
@@ -239,7 +239,7 @@ def plot_station_demand(metrics, societies, scenario_name, \
     }
 
     # --------------------------------------------------------
-    # Données plotting
+    # Plotting data
     # --------------------------------------------------------
 
     station_ids = list(demand.keys())
@@ -284,7 +284,7 @@ def plot_station_demand(metrics, societies, scenario_name, \
             )
 
     # --------------------------------------------------------
-    # Légende sociétés
+    # Company legend
     # --------------------------------------------------------
 
     legend_elements = [
@@ -311,7 +311,7 @@ def plot_station_demand(metrics, societies, scenario_name, \
 def plot_user_satisfaction(metrics, scenario_name, approach_name, nb_car,\
                            figsize=(6, 5)):
     """
-    Affiche les métriques de satisfaction utilisateur.
+    Display the user satisfaction metrics.
     """
 
     sat = metrics.user_request_satisfaction()
@@ -396,13 +396,13 @@ def plot_travel_waiting(metrics, scenario_name, approach_name, nb_car, \
 
 
 # ============================================================
-# 4. Temps de réponse des demandes
+# 4. Demand response times
 # ============================================================
 
 def plot_response_times(metrics, scenario_name, approach_name, \
                         nb_car, figsize=(10, 5)):
     """
-    Temps de réponse pour chaque demande.
+    Response time for each demand.
     """
 
     records = [
@@ -411,7 +411,7 @@ def plot_response_times(metrics, scenario_name, approach_name, \
     ]
 
     if not records:
-        print("Aucun timing de réponse disponible.")
+        print("No response timing available.")
         return
 
     demand_ids = [r.demand_id for r in records]
@@ -475,18 +475,18 @@ def plot_processing_times(metrics, scenario_name, approach_name, nb_car, figsize
 
 
 # ============================================================
-# 6. Visualisation des pannes sèches
+# 6. Breakdown visualization
 # ============================================================
 
 def plot_breakdowns(breakdown_tracker, figsize=(7, 7)):
     """
-    Affiche les positions des pannes sèches.
+    Display the positions of the breakdowns.
     """
 
     data = breakdown_tracker.breakdowns
 
     if not data:
-        print("Aucune panne sèche enregistrée.")
+        print("No breakdown recorded.")
         return
 
     xs = [b["x"] for b in data]
@@ -513,7 +513,7 @@ def plot_breakdowns(breakdown_tracker, figsize=(7, 7)):
     plt.show()
 
 # ============================================================
-# 7. Stratégie des stations (alpha_m)
+# 7. Station strategy (alpha_m)
 # ============================================================
 
 def plot_station_strategies(societies, sim_config, scenario_name, approach_name, nb_car):
@@ -567,7 +567,7 @@ def plot_station_strategies(societies, sim_config, scenario_name, approach_name,
 
         ax.legend()
 
-    # cacher les axes inutilisés
+    # hide the unused axes
     for idx in range(n_societies, len(axs)):
         axs[idx].set_visible(False)
 
@@ -613,17 +613,17 @@ def plot_all_metrics(metrics, breakdown_tracker=None):
 def plot_society_station_occupancy(societies, scenario_name,
                  approach_name, nb_car):
     """
-    Affiche, pour chaque société, le taux moyen d'occupation
-    de chacune de ses stations.
+    Display, for each company, the mean occupancy rate of each of its
+    stations.
 
     - 4 subplots (2x2)
-    - une barre = une station
-    - ligne rouge = moyenne des stations de la société
-    - même largeur visuelle des barres sur tous les subplots
-    - axe y entre 0 et 1.1
+    - one bar = one station
+    - red line = mean over the stations of the company
+    - same visual bar width on every subplot
+    - y axis between 0 and 1.1
     """
 
-    # Nombre maximal de stations parmi les sociétés
+    # Largest number of stations across the companies
     max_nb_stations = max(
         len(society.stations)
         for society in societies
@@ -675,13 +675,13 @@ def plot_society_station_occupancy(societies, scenario_name,
             alpha=0.8
         )
 
-        # Même échelle horizontale pour tous
+        # Same horizontal scale for all
         ax.set_xlim(
             -0.5,
             max_nb_stations - 0.5
         )
 
-        # IDs des stations comme étiquettes
+        # Station IDs as tick labels
         ax.set_xticks(x_pos)
 
         ax.set_xticklabels(
@@ -749,7 +749,7 @@ def plot_society_station_occupancy(societies, scenario_name,
 
         ax.legend()
 
-    # Masquer les subplots inutilisés
+    # Hide the unused subplots
     for idx in range(len(societies), len(axs)):
         axs[idx].set_visible(False)
 
@@ -772,11 +772,11 @@ def plot_station_no_show(
     nb_car
 ):
     """
-    Diagramme en barres du nombre de no-show par station.
+    Bar chart of the number of no-shows per station.
 
-    - Les stations d'une même société ont la même couleur.
-    - La légende affiche également la moyenne des no-show
-      des stations de chaque société.
+    - The stations of the same company share the same color.
+    - The legend also shows the mean number of no-shows
+      over the stations of each company.
     """
 
     fig, ax = plt.subplots(figsize=(14, 6))
@@ -793,7 +793,7 @@ def plot_station_no_show(
     current_x = 0
 
     # --------------------------------------------------
-    # Construction des données
+    # Building the data
     # --------------------------------------------------
 
     for soc_idx, society in enumerate(societies):
@@ -818,7 +818,7 @@ def plot_station_no_show(
             if len(station_values) > 0 else 0
         )
 
-        # espace visuel entre sociétés
+        # visual gap between companies
         current_x += 1
 
     # --------------------------------------------------
@@ -881,7 +881,7 @@ def plot_station_no_show(
     )
 
     # --------------------------------------------------
-    # Légende sociétés + moyenne
+    # Company legend + mean
     # --------------------------------------------------
 
     legend_elements = []
@@ -913,17 +913,17 @@ def plot_station_no_show(
 def plot_society_station_occupancy(societies, scenario_name,
                  approach_name, nb_car):
     """
-    Affiche, pour chaque société, le taux moyen d'occupation
-    de chacune de ses stations.
+    Display, for each company, the mean occupancy rate of each of its
+    stations.
 
     - 4 subplots (2x2)
-    - une barre = une station
-    - ligne rouge = moyenne des stations de la société
-    - même largeur visuelle des barres sur tous les subplots
-    - axe y entre 0 et 1.1
+    - one bar = one station
+    - red line = mean over the stations of the company
+    - same visual bar width on every subplot
+    - y axis between 0 and 1.1
     """
 
-    # Nombre maximal de stations parmi les sociétés
+    # Largest number of stations across the companies
     max_nb_stations = max(
         len(society.stations)
         for society in societies
@@ -975,13 +975,13 @@ def plot_society_station_occupancy(societies, scenario_name,
             alpha=0.8
         )
 
-        # Même échelle horizontale pour tous
+        # Same horizontal scale for all
         ax.set_xlim(
             -0.5,
             max_nb_stations - 0.5
         )
 
-        # IDs des stations comme étiquettes
+        # Station IDs as tick labels
         ax.set_xticks(x_pos)
 
         ax.set_xticklabels(
@@ -1049,7 +1049,7 @@ def plot_society_station_occupancy(societies, scenario_name,
 
         ax.legend()
 
-    # Masquer les subplots inutilisés
+    # Hide the unused subplots
     for idx in range(len(societies), len(axs)):
         axs[idx].set_visible(False)
 
@@ -1068,17 +1068,17 @@ def plot_society_station_occupancy(societies, scenario_name,
 def plot_society_station_rejected_request(societies, scenario_name,
                  approach_name, nb_car):
     """
-    Affiche, pour chaque société, le taux moyen d'occupation
-    de chacune de ses stations.
+    Display, for each company, the mean occupancy rate of each of its
+    stations.
 
     - 4 subplots (2x2)
-    - une barre = une station
-    - ligne rouge = moyenne des stations de la société
-    - même largeur visuelle des barres sur tous les subplots
-    - axe y entre 0 et 1.1
+    - one bar = one station
+    - red line = mean over the stations of the company
+    - same visual bar width on every subplot
+    - y axis between 0 and 1.1
     """
 
-    # Nombre maximal de stations parmi les sociétés
+    # Largest number of stations across the companies
     max_nb_stations = max(
         len(society.stations)
         for society in societies
@@ -1126,13 +1126,13 @@ def plot_society_station_rejected_request(societies, scenario_name,
             alpha=0.8
         )
 
-        # Même échelle horizontale pour tous
+        # Same horizontal scale for all
         ax.set_xlim(
             -0.5,
             max_nb_stations - 0.5
         )
 
-        # IDs des stations comme étiquettes
+        # Station IDs as tick labels
         ax.set_xticks(x_pos)
 
         ax.set_xticklabels(
@@ -1200,7 +1200,7 @@ def plot_society_station_rejected_request(societies, scenario_name,
 
         ax.legend()
 
-    # Masquer les subplots inutilisés
+    # Hide the unused subplots
     for idx in range(len(societies), len(axs)):
         axs[idx].set_visible(False)
 
@@ -1224,19 +1224,19 @@ def plot_car_rejected(
     nb_car
 ):
     """
-    Diagramme en barres du nombre de demandes rejetées par véhicule.
+    Bar chart of the number of rejected demands per vehicle.
 
-    - Affiche une barre par véhicule (car.nb_rejected).
-    - Affiche une ligne horizontale représentant la moyenne globale.
+    - One bar per vehicle (car.nb_rejected).
+    - A horizontal line showing the global mean.
     """
     if not cars:
-        print("La liste des véhicules est vide.")
+        print("The vehicle list is empty.")
         return
 
     fig, ax = plt.subplots(figsize=(14, 6))
 
     # --------------------------------------------------
-    # Construction des données
+    # Building the data
     # --------------------------------------------------
     x_pos = []
     labels = []
@@ -1244,7 +1244,7 @@ def plot_car_rejected(
 
     for idx, car in enumerate(cars):
         x_pos.append(idx)
-        # On suppose que l'objet car possède un identifiant, sinon on utilise l'index idx
+        # Assumes the car object has an id; otherwise the index idx is used
         car_id = getattr(car, 'id', idx)
         labels.append(f"Car {car_id}")
         rejected_values.append(getattr(car, 'nb_rejected', 0))
@@ -1319,7 +1319,7 @@ def plot_car_rejected(
         alpha=0.3
     )
 
-    # Affichage de la légende pour la ligne de moyenne
+    # Legend entry for the mean line
     ax.legend(loc="upper right")
 
     plt.tight_layout()
@@ -1335,19 +1335,19 @@ def plot_station_requests(
     nb_car
 ):
     """
-    Diagramme en barres du nombre de requêtes par station.
+    Bar chart of the number of requests per station.
 
-    - Affiche une barre par station (station.nb_request).
-    - Affiche une ligne horizontale représentant la moyenne globale des requêtes.
+    - One bar per station (station.nb_request).
+    - A horizontal line showing the global mean of the requests.
     """
     if not stations:
-        print("La liste des stations est vide.")
+        print("The station list is empty.")
         return
 
     fig, ax = plt.subplots(figsize=(14, 6))
 
     # --------------------------------------------------
-    # Construction des données
+    # Building the data
     # --------------------------------------------------
     x_pos = []
     labels = []
@@ -1430,7 +1430,7 @@ def plot_station_requests(
         alpha=0.3
     )
 
-    # Affichage de la légende pour la ligne de moyenne
+    # Legend entry for the mean line
     ax.legend(loc="upper right")
 
     plt.tight_layout()
@@ -1446,29 +1446,29 @@ def plot_car_rejected_hist(
     nb_car
 ):
     """
-    Histogramme du nombre de demandes rejetées par véhicule.
-    Adapté pour un grand nombre de véhicules (ex: 250).
+    Histogram of the number of rejected demands per vehicle.
+    Suited to a large number of vehicles (e.g. 250).
     """
     if not cars:
-        print("La liste des véhicules est vide.")
+        print("The vehicle list is empty.")
         return
 
     fig, ax = plt.subplots(figsize=(12, 6))
 
     # --------------------------------------------------
-    # Extraction des données
+    # Extracting the data
     # --------------------------------------------------
     rejected_values = [getattr(car, 'nb_rejected', 0) for car in cars]
     
-    # Calcul des statistiques
+    # Computing the statistics
     mean_rejected = np.mean(rejected_values) if rejected_values else 0
     max_rejected = max(rejected_values) if rejected_values else 0
 
     # --------------------------------------------------
-    # Construction de l'histogramme
+    # Building the histogram
     # --------------------------------------------------
-    # Définition dynamique des bins (barres de l'histogramme)
-    # Si les valeurs sont des entiers, on crée des bins par pas de 1 ou 2 pour éviter les trous
+    # Dynamic definition of the bins (histogram bars)
+    # For integer values, bins of width 1 or 2 avoid empty gaps
     bins_edges = np.arange(0, max_rejected + 2, max(1, max_rejected // 15))
 
     counts, bins, patches = ax.hist(
@@ -1515,7 +1515,7 @@ def plot_car_rejected_hist(
         alpha=0.3
     )
 
-    # Placement de la légende
+    # Legend placement
     ax.legend(loc="upper right")
 
     plt.tight_layout()

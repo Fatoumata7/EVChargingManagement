@@ -1,50 +1,49 @@
 """
-world.py — Monde initial reproductible, partagé entre méthodes *et* scénarios.
+world.py — Reproducible initial world, shared across methods *and* scenarios.
 
-Problème résolu
----------------
-Chaque couple (scénario, flotte) tirait auparavant son propre monde : positions
-de stations, capacités, autonomies et préférences différaient donc entre
-`optimistic`, `balance` et `pessimistic`. Un écart mesuré entre deux scénarios
-mélangeait l'effet du comportement des usagers et celui du tirage du monde.
+Problem solved
+--------------
+Each (scenario, fleet) pair used to draw its own world: station positions,
+capacities, autonomies and preferences therefore differed between `optimistic`,
+`balance` and `pessimistic`. A gap measured between two scenarios mixed the
+effect of user behaviour with the effect of the world draw.
 
-Trois couches, tirées indépendamment
-------------------------------------
-1. `GridSpec` — **l'infrastructure**. Sociétés (position, stratégie de points) et
-   stations (position, société propriétaire, nombre de bornes, alpha initial).
-   Tirée **une seule fois par campagne**, à partir de la graine seule : la
-   grille est rigoureusement identique pour tous les scénarios et toutes les
-   tailles de flotte.
+Three layers, drawn independently
+---------------------------------
+1. `GridSpec` — **the infrastructure**. Companies (position, point strategy) and
+   stations (position, owning company, number of chargers, initial alpha).
+   Drawn **only once per campaign**, from the seed alone: the grid is strictly
+   identical for every scenario and every fleet size.
 
-2. `FleetSpec` — **la flotte**. Attributs statiques de chaque véhicule (position
-   initiale, SoC initial, autonomie, seuil de recharge, préférences, puissance)
-   et son *bruit comportemental* normalisé. Tirée une seule fois par taille de
-   flotte, à partir de la graine seule : les véhicules sont identiques d'un
-   scénario à l'autre. Les flux étant indexés par `idx` et non par ordre
-   d'appel (cf. `seeding.RngHub`), les flottes sont **emboîtées** : les 50
-   premiers véhicules d'une flotte de 100 sont exactement ceux de la flotte
-   de 50, ce qui fait de la courbe de passage à l'échelle un ajout de véhicules
-   à une population donnée, et non un ré-échantillonnage complet.
+2. `FleetSpec` — **the fleet**. Static attributes of each vehicle (initial
+   position, initial SoC, autonomy, charging threshold, preferences, power) and
+   its normalised *behavioural noise*. Drawn once per fleet size, from the seed
+   alone: the vehicles are identical from one scenario to the next. Since the
+   streams are indexed by `idx` and not by call order (see `seeding.RngHub`),
+   the fleets are **nested**: the first 50 vehicles of a fleet of 100 are
+   exactly those of the fleet of 50, which makes the scalability curve an
+   addition of vehicles to a given population rather than a complete
+   resampling.
 
-3. `WorldSpec` — **la composition** des deux pour un scénario donné. La seule
-   chose que le scénario change est `theta`, les probabilités de comportement
-   du véhicule, obtenues en appliquant son bruit fixe à `BASE_CANCEL_PROB` :
+3. `WorldSpec` — **the composition** of the two for a given scenario. The only
+   thing the scenario changes is `theta`, the behaviour probabilities of the
+   vehicle, obtained by applying its fixed noise to `BASE_CANCEL_PROB`:
 
        theta_k ∝ max(0.1, base_k + base_k · noise_scale · u_k)
 
-   avec `u_k ∈ [-1, 1]` tiré une fois pour toutes dans la `FleetSpec`. Deux
-   scénarios voient donc le même véhicule avec la même « personnalité » : ce
-   qui les sépare, ce sont uniquement les probabilités de base.
+   with `u_k ∈ [-1, 1]` drawn once and for all in the `FleetSpec`. Two scenarios
+   therefore see the same vehicle with the same "personality": what separates
+   them is only the base probabilities.
 
-Ce que la reproductibilité garantit — et ce qu'elle ne garantit pas
-------------------------------------------------------------------
-`build_world` ne tire aucun nombre : deux appels sur la même spec rendent deux
-mondes identiques mais disjoints, ce qui permet d'évaluer plusieurs méthodes sur
-exactement le même environnement. Les trajectoires réalisées peuvent malgré tout
-diverger entre méthodes ou entre scénarios, puisqu'un véhicule servi ici et non
-servi là ne consomme pas le même nombre de tirages de déplacement. Ce qui est
-garanti, c'est que la *source* d'aléa est commune — pas que les histoires soient
-identiques après divergence.
+What reproducibility guarantees — and what it does not
+------------------------------------------------------
+`build_world` draws no number: two calls on the same spec yield two identical
+but disjoint worlds, which is what allows several methods to be evaluated on
+exactly the same environment. The realised trajectories may nonetheless diverge
+between methods or between scenarios, since a vehicle served here and not there
+does not consume the same number of movement draws. What is guaranteed is that
+the *source* of randomness is common — not that the histories are identical
+after divergence.
 """
 
 import json
@@ -63,21 +62,21 @@ from src.experiments.seeding import RngHub
 
 SPEC_VERSION = 3
 
-# Clés de comportement, dans l'ordre de tirage du bruit : figé, le modifier
-# changerait l'aléa de toutes les flottes déjà produites.
+# Behaviour keys, in the order the noise is drawn: frozen, changing it would
+# change the randomness of every fleet already produced.
 BEHAVIOR_KEYS = ('pres', 'abs', 'early', 'late')
 
 
 class SpecMismatch(ValueError):
-    """Une spécification ne correspond pas à la configuration fournie."""
+    """A specification does not match the configuration provided."""
 
 
 # ----------------------------------------------------------------------
-# Sérialisation commune
+# Common serialisation
 # ----------------------------------------------------------------------
 
 class _JsonSpec:
-    """Sauvegarde / relecture JSON, avec contrôle de version au chargement."""
+    """JSON save / reload, with a version check on loading."""
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -95,7 +94,7 @@ class _JsonSpec:
         if data.get('version') != SPEC_VERSION:
             raise ValueError(
                 f"{cls.__name__} version {data.get('version')} incompatible "
-                f"(attendu {SPEC_VERSION}) : {path}"
+                f"(expected {SPEC_VERSION}): {path}"
             )
         return cls(**data)
 
@@ -108,24 +107,24 @@ def _require(name: str, spec_value, config_value, mismatches: list) -> None:
 def _raise_mismatches(what: str, mismatches: list) -> None:
     if mismatches:
         raise SpecMismatch(
-            f"{what} incompatible avec la configuration : " + " ; ".join(mismatches)
+            f"{what} incompatible with the configuration: " + " ; ".join(mismatches)
         )
 
 
 # ----------------------------------------------------------------------
-# 1. Infrastructure : la grille partagée
+# 1. Infrastructure: the shared grid
 # ----------------------------------------------------------------------
 
 @dataclass
 class GridSpec(_JsonSpec):
     """
-    Infrastructure de recharge : sociétés et stations.
+    Charging infrastructure: companies and stations.
 
-    Indépendante du scénario et de la taille de flotte — c'est précisément ce
-    qui rend les scénarios comparables. Les champs autres que `societies` et
-    `stations` décrivent la configuration sous laquelle la grille a été tirée,
-    de sorte qu'une relecture sous une configuration incompatible échoue au lieu
-    de produire des résultats silencieusement faux.
+    Independent from the scenario and from the fleet size — which is precisely
+    what makes the scenarios comparable. The fields other than `societies` and
+    `stations` describe the configuration under which the grid was drawn, so
+    that reloading it under an incompatible configuration fails instead of
+    producing silently wrong results.
     """
 
     seed: int
@@ -155,12 +154,12 @@ class GridSpec(_JsonSpec):
 def generate_grid_spec(config: cfg_module.SimulationConfig,
                        seed: int | None = None) -> GridSpec:
     """
-    Tire l'infrastructure : une grille unique pour toute la campagne.
+    Draw the infrastructure: a single grid for the whole campaign.
 
-    Aucun champ de `config` dépendant du scénario n'est lu ici. C'est ce qui
-    permet d'appeler la fonction avec une configuration de référence et
-    d'obtenir la même grille quel que soit le scénario simulé ensuite ;
-    `tests/test_shared_world.py` le vérifie.
+    No scenario-dependent field of `config` is read here. That is what allows
+    calling the function with a reference configuration and obtaining the same
+    grid whatever the scenario simulated afterwards;
+    `tests/test_shared_world.py` verifies it.
     """
     if seed is None:
         seed = config.SEED
@@ -204,30 +203,30 @@ def generate_grid_spec(config: cfg_module.SimulationConfig,
         stations=stations,
     )
 
-    # L'affectation des stations est indépendante d'une station à l'autre : rien
-    # n'interdit qu'une société reste sans station. Le cas est légitime mais la
-    # société ne participe alors pas à l'apprentissage collectif — autant le dire.
+    # Station assignment is independent from one station to the next: nothing
+    # forbids a company from ending up with no station. The case is legitimate,
+    # but that company then takes no part in collective learning — worth saying.
     empty = [s['f_id'] for s in societies if not spec.stations_of(s['f_id'])]
     if empty:
         logger.warning(
-            f"Grille (seed={spec.seed}) : sociétés sans station {empty} — "
-            "elles ne participeront pas à l'apprentissage collectif."
+            f"Grid (seed={spec.seed}): companies with no station {empty} — "
+            "they will not take part in collective learning."
         )
     return spec
 
 
 # ----------------------------------------------------------------------
-# 2. Flotte : véhicules indépendants du scénario
+# 2. Fleet: vehicles independent from the scenario
 # ----------------------------------------------------------------------
 
 @dataclass
 class FleetSpec(_JsonSpec):
     """
-    Population de véhicules : tout ce qui ne dépend pas du scénario.
+    Vehicle population: everything that does not depend on the scenario.
 
-    `theta` en est délibérément absent : les probabilités de comportement sont
-    la seule chose que le scénario fait varier, elles sont donc calculées à la
-    composition (`compose_world_spec`) à partir de `behavior_noise`.
+    `theta` is deliberately absent from it: the behaviour probabilities are the
+    only thing the scenario varies, so they are computed at composition time
+    (`compose_world_spec`) from `behavior_noise`.
     """
 
     seed: int
@@ -246,7 +245,7 @@ class FleetSpec(_JsonSpec):
 
 
 def _car_params(config: cfg_module.SimulationConfig) -> dict:
-    """Paramètres des lois de tirage des véhicules (pour contrôle de cohérence)."""
+    """Parameters of the vehicle draw laws (for a consistency check)."""
     return {
         'autonomy_km':   dict(config.CAR_AUTONOMY_PARAMS_KM),
         'init_soc':      dict(config.CAR_INIT_SOC),
@@ -258,11 +257,11 @@ def generate_fleet_spec(config: cfg_module.SimulationConfig,
                         seed: int | None = None,
                         nb_cars: int | None = None) -> FleetSpec:
     """
-    Tire une flotte : positions initiales et attributs statiques figés.
+    Draw a fleet: initial positions and frozen static attributes.
 
-    Chaque véhicule est tiré dans son propre flux `('car_init', idx)`, si bien
-    que le véhicule `idx` ne dépend ni du nombre de véhicules de la flotte ni de
-    l'ordre de génération : les flottes de tailles croissantes sont emboîtées.
+    Each vehicle is drawn in its own `('car_init', idx)` stream, so vehicle
+    `idx` depends neither on the number of vehicles in the fleet nor on the
+    generation order: fleets of increasing sizes are nested.
     """
     if seed is None:
         seed = config.SEED
@@ -289,7 +288,7 @@ def generate_fleet_spec(config: cfg_module.SimulationConfig,
             'soc_threshold_m': threshold,
             'pref':            _pref(rng),
             'charging_power':  int(rng.integers(4, 9)),
-            # Bruit comportemental normalisé : mis à l'échelle par le scénario.
+            # Normalised behavioural noise: scaled by the scenario.
             'behavior_noise':  {k: float(rng.uniform(-1., 1.))
                                 for k in BEHAVIOR_KEYS},
         })
@@ -305,12 +304,12 @@ def generate_fleet_spec(config: cfg_module.SimulationConfig,
 
 def theta_from_noise(behavior_noise: dict, base_cancel_prob: dict) -> dict:
     """
-    Probabilités de comportement d'un véhicule dans un scénario donné.
+    Behaviour probabilities of a vehicle in a given scenario.
 
-    Le bruit `u_k ∈ [-1, 1]` est propre au véhicule et fixe ; l'amplitude
-    (`base_cancel_prob['noise']`) et les probabilités de base viennent du
-    scénario. Le même véhicule garde donc son écart relatif à la moyenne d'un
-    scénario à l'autre.
+    The noise `u_k ∈ [-1, 1]` belongs to the vehicle and is fixed; the amplitude
+    (`base_cancel_prob['noise']`) and the base probabilities come from the
+    scenario. The same vehicle therefore keeps its relative deviation from the
+    average from one scenario to the next.
     """
     scale = base_cancel_prob['noise']
     weights = {}
@@ -322,16 +321,16 @@ def theta_from_noise(behavior_noise: dict, base_cancel_prob: dict) -> dict:
 
 
 # ----------------------------------------------------------------------
-# 3. Composition : le monde d'un cas
+# 3. Composition: the world of one case
 # ----------------------------------------------------------------------
 
 @dataclass
 class WorldSpec(_JsonSpec):
     """
-    Monde initial d'un cas : grille partagée + flotte partagée + scénario.
+    Initial world of a case: shared grid + shared fleet + scenario.
 
-    Entièrement dérivé de `GridSpec`, `FleetSpec` et `BASE_CANCEL_PROB` : il est
-    persisté pour la traçabilité, mais reste recomposable à l'identique.
+    Entirely derived from `GridSpec`, `FleetSpec` and `BASE_CANCEL_PROB`: it is
+    persisted for traceability, but stays identically recomposable.
     """
 
     seed: int
@@ -352,10 +351,10 @@ class WorldSpec(_JsonSpec):
 def compose_world_spec(grid: GridSpec, fleet: FleetSpec,
                        config: cfg_module.SimulationConfig) -> WorldSpec:
     """
-    Assemble un monde pour le scénario porté par `config`.
+    Assemble a world for the scenario carried by `config`.
 
-    Seul `theta` dépend du scénario ; tout le reste est recopié tel quel depuis
-    la grille et la flotte.
+    Only `theta` depends on the scenario; everything else is copied as is from
+    the grid and the fleet.
     """
     grid.check_matches(config)
     fleet.check_matches(config)
@@ -385,10 +384,10 @@ def compose_world_spec(grid: GridSpec, fleet: FleetSpec,
 def generate_world_spec(config: cfg_module.SimulationConfig,
                         seed: int | None = None) -> WorldSpec:
     """
-    Raccourci : grille + flotte + scénario en un appel, pour une simulation isolée.
+    Shortcut: grid + fleet + scenario in one call, for an isolated simulation.
 
-    Le pipeline n'utilise pas cette fonction : il tire la grille et les flottes
-    une fois pour toute la campagne, puis compose (cf. `src/pipeline/runner.py`).
+    The pipeline does not use this function: it draws the grid and the fleets
+    once for the whole campaign, then composes (see `src/pipeline/runner.py`).
     """
     if seed is None:
         seed = config.SEED
@@ -398,7 +397,7 @@ def generate_world_spec(config: cfg_module.SimulationConfig,
 
 
 # ----------------------------------------------------------------------
-# Tirages élémentaires
+# Elementary draws
 # ----------------------------------------------------------------------
 
 def _pos(config, rng):
@@ -406,7 +405,7 @@ def _pos(config, rng):
 
 
 def _autonomy(config, rng):
-    """Autonomie en mètres, multiple de 5 km (identique à Car.define_autonomy)."""
+    """Autonomy in meters, multiple of 5 km (identical to Car.define_autonomy)."""
     scale = 5
     value = utils.get_truncated_normal(
         mean=config.CAR_AUTONOMY_PARAMS_KM['mean'] / scale,
@@ -424,16 +423,16 @@ def _pref(rng):
 
 
 # ----------------------------------------------------------------------
-# Matérialisation
+# Materialisation
 # ----------------------------------------------------------------------
 
 def build_world(spec: WorldSpec, config: cfg_module.SimulationConfig):
     """
-    Construit (cars, stations, societies) à partir d'une spécification.
+    Build (cars, stations, societies) from a specification.
 
-    Déterministe : aucun tirage aléatoire. Deux appels sur la même spec donnent
-    deux mondes identiques et indépendants — c'est ce qui permet d'évaluer
-    plusieurs méthodes sur exactement le même environnement.
+    Deterministic: no random draw. Two calls on the same spec give two identical
+    and independent worlds — that is what allows several methods to be evaluated
+    on exactly the same environment.
     """
     _check_spec_matches_config(spec, config)
 
@@ -467,7 +466,7 @@ def _check_spec_matches_config(spec: WorldSpec, config):
 def make_worlds(config: cfg_module.SimulationConfig, seed: int | None = None,
                 nb_copies: int = 2):
     """
-    Raccourci : génère une spec et en matérialise `nb_copies` mondes identiques.
+    Shortcut: generate a spec and materialise `nb_copies` identical worlds from it.
 
     Returns
     -------
@@ -489,20 +488,20 @@ if __name__ == "__main__":
 
     SEED = 42
 
-    # --- La grille ne dépend ni du scénario ni de la flotte
+    # --- The grid depends neither on the scenario nor on the fleet
     grids = [generate_grid_spec(_config(name, n), SEED).to_dict()
              for name, n in (('optimistic', 10), ('balance', 10),
                              ('pessimistic', 30))]
-    assert all(g == grids[0] for g in grids), "grille dépendante du scénario"
+    assert all(g == grids[0] for g in grids), "grid depends on the scenario"
 
-    # --- La flotte ne dépend pas du scénario, et les flottes sont emboîtées
+    # --- The fleet does not depend on the scenario, and fleets are nested
     fleet_a = generate_fleet_spec(_config('optimistic', 10), SEED, 10)
     fleet_b = generate_fleet_spec(_config('pessimistic', 10), SEED, 10)
-    assert fleet_a.to_dict() == fleet_b.to_dict(), "flotte dépendante du scénario"
+    assert fleet_a.to_dict() == fleet_b.to_dict(), "fleet depends on the scenario"
     fleet_big = generate_fleet_spec(_config('balance', 30), SEED, 30)
-    assert fleet_big.cars[:10] == fleet_a.cars, "flottes non emboîtées"
+    assert fleet_big.cars[:10] == fleet_a.cars, "fleets are not nested"
 
-    # --- Seul theta change d'un scénario à l'autre
+    # --- Only theta changes from one scenario to the next
     grid = generate_grid_spec(_config('balance', 10), SEED)
     worlds = {name: compose_world_spec(grid, fleet_a, _config(name, 10))
               for name in ('optimistic', 'balance', 'pessimistic')}
@@ -512,7 +511,7 @@ if __name__ == "__main__":
             assert abs(sum(car['theta'].values()) - 1.) < 1e-12
     assert worlds['optimistic'].cars[0]['theta'] != worlds['pessimistic'].cars[0]['theta']
 
-    # --- build_world reste déterministe et rend des graphes disjoints
+    # --- build_world stays deterministic and returns disjoint object graphs
     config = _config('balance', 10)
     spec, (world_a, world_b) = make_worlds(config, seed=SEED)
     cars_a, stations_a, _ = world_a
@@ -520,17 +519,17 @@ if __name__ == "__main__":
     for ca, cb in zip(cars_a, cars_b):
         assert ca is not cb
         assert np.allclose(ca.loc, cb.loc) and ca.theta == cb.theta
-        # Common random numbers : mêmes tirages de comportement
+        # Common random numbers: same behaviour draws
         assert [ca.draw_behavior() for _ in range(20)] == \
                [cb.draw_behavior() for _ in range(20)]
     for sa, sb in zip(stations_a, stations_b):
         assert np.allclose(sa.loc, sb.loc)
         assert sa.nb_charg_spot == sb.nb_charg_spot and sa.alpha == sb.alpha
 
-    # --- Deux graines différentes -> mondes différents
+    # --- Two different seeds -> different worlds
     assert generate_grid_spec(config, SEED + 1).stations[0]['loc'] != \
         grid.stations[0]['loc']
 
-    print(f"world.py OK — grille partagée ({grid.nb_stations} stations, "
-          f"{grid.nb_societies} sociétés), flottes emboîtées, "
-          f"scénarios ne différant que par theta")
+    print(f"world.py OK — shared grid ({grid.nb_stations} stations, "
+          f"{grid.nb_societies} companies), nested fleets, "
+          f"scenarios differing only by theta")

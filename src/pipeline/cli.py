@@ -1,9 +1,9 @@
 """
-cli.py — Interface en ligne de commande du pipeline BRAM-EV.
+cli.py — Command line interface of the BRAM-EV pipeline.
 
     python -m src.pipeline.cli run --scenarios pessimistic --cars 50 100 --seed 42
-    python -m src.pipeline.cli run --methods ablation      # les 4 configurations
-    python -m src.pipeline.cli run --methods all           # + variantes de BRAM-EV
+    python -m src.pipeline.cli run --methods ablation      # the 4 configurations
+    python -m src.pipeline.cli run --methods all           # + BRAM-EV variants
     python -m src.pipeline.cli ablation --latest
     python -m src.pipeline.cli report --run-dir results_grid/<run>
     python -m src.pipeline.cli show --latest
@@ -11,15 +11,15 @@ cli.py — Interface en ligne de commande du pipeline BRAM-EV.
     python -m src.pipeline.cli scenarios
     python -m src.pipeline.cli methods
 
-Les sous-commandes séparent volontairement le calcul (`run`) de la restitution
-(`report`, `show`) : les figures se régénèrent à partir des tables persistées,
-sans relancer les simulations.
+The sub-commands deliberately separate computing (`run`) from reporting
+(`report`, `show`): the figures are regenerated from the persisted tables,
+without re-running the simulations.
 
-Codes de retour : 
-    0 succès
-    1 erreur de paramètres ou d'entrée/sortie
+Exit codes: 
+    0 success
+    1 parameter or input/output error
     2 usage (argparse)
-    3 au moins un invariant de réservation violé.
+    3 at least one reservation invariant violated.
 """
 
 from __future__ import annotations
@@ -48,11 +48,11 @@ DEFAULT_OUTPUT_ROOT = 'results_grid'
 
 
 # ----------------------------------------------------------------------
-# Journalisation
+# Logging
 # ----------------------------------------------------------------------
 
 def configure_logging(verbosity: int) -> None:
-    """-q -> avertissements seulement ; défaut -> info ; -v -> debug."""
+    """-q -> warnings only; default -> info; -v -> debug."""
     level = {(-1): 'WARNING', 0: 'INFO'}.get(verbosity, 'DEBUG')
     logger.remove()
     logger.add(sys.stderr, level=level,
@@ -60,21 +60,21 @@ def configure_logging(verbosity: int) -> None:
 
 
 # ----------------------------------------------------------------------
-# Analyseur d'arguments
+# Argument parser
 # ----------------------------------------------------------------------
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog='python -m src.pipeline.cli',
-        description="Pipeline d'expériences BRAM-EV (simulation, restitution).",
+        description="BRAM-EV experiment pipeline (simulation, reporting).",
     )
     parser.add_argument('-q', '--quiet', dest='verbosity', action='store_const',
-                        const=-1, default=0, help='Limite la sortie aux avertissements.')
+                        const=-1, default=0, help='Limit the output to warnings.')
     parser.add_argument('-v', '--verbose', dest='verbosity', action='store_const',
-                        const=1, help='Sortie de débogage.')
+                        const=1, help='Debug output.')
 
     subparsers = parser.add_subparsers(dest='command', required=True,
-                                       metavar='<commande>')
+                                       metavar='<command>')
     _add_run(subparsers)
     _add_report(subparsers)
     _add_show(subparsers)
@@ -87,151 +87,151 @@ def build_parser() -> argparse.ArgumentParser:
 
 def _add_run(subparsers) -> None:
     p = subparsers.add_parser(
-        'run', help="Lance une campagne d'expériences.",
-        description="Lance une campagne. Tous les paramètres sont surchargeables "
-                    "depuis la ligne de commande ou fournis par --config.",
+        'run', help="Run a campaign of experiments.",
+        description="Run a campaign. Every parameter can be overridden from the "
+                    "command line or supplied through --config.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     p.set_defaults(func=cmd_run)
 
     p.add_argument('--config', type=Path, default=None,
-                   help='Fichier YAML/JSON de paramètres. Les options ci-dessous '
-                        'le surchargent.')
+                   help='YAML/JSON parameter file. The options below override '
+                        'it.')
 
-    plan = p.add_argument_group("plan d'expérience")
+    plan = p.add_argument_group("experiment plan")
     plan.add_argument('--seed', type=int, default=None,
-                      help=f'Graine racine (défaut : {DEFAULT_SEED}).')
+                      help=f'Root seed (default: {DEFAULT_SEED}).')
     plan.add_argument('--scenarios', nargs='+', choices=SCENARIOS, default=None,
-                      metavar='NOM', help=f'Scénarios à exécuter {list(SCENARIOS)}.')
+                      metavar='NAME', help=f'Scenarios to run {list(SCENARIOS)}.')
     plan.add_argument('--cars', dest='fleet_sizes', nargs='+', type=int, default=None,
-                      metavar='N', help='Tailles de flotte à tester.')
-    # Pas de `choices` ici : la valeur peut être un nom, un alias (`nearest`) ou
-    # un groupe (`ablation`, `variants`, `all`). La validation — et son message
-    # d'erreur — appartient à `ExperimentParams`, seule à connaître le registre.
-    plan.add_argument('--methods', nargs='+', default=None, metavar='NOM',
-                      help="Méthodes à comparer : noms, alias, ou groupes "
+                      metavar='N', help='Fleet sizes to test.')
+    # No `choices` here: the value may be a name, an alias (`nearest`) or a
+    # group (`ablation`, `variants`, `all`). Validation — and its error message
+    # — belongs to `ExperimentParams`, the only place that knows the registry.
+    plan.add_argument('--methods', nargs='+', default=None, metavar='NAME',
+                      help="Methods to compare: names, aliases, or groups "
                            "(ablation, variants, baseline, all). "
-                           "`cli.py methods` affiche la table complète.")
+                           "`cli.py methods` prints the complete table.")
 
-    env = p.add_argument_group('environnement simulé')
+    env = p.add_argument_group('simulated environment')
     env.add_argument('--total-time', type=int, default=None,
-                     help='Durée en slots de 5 min (1440 = 5 jours).')
+                     help='Duration in 5 min slots (1440 = 5 days).')
     env.add_argument('--nb-stations', type=int, default=None)
     env.add_argument('--nb-societies', type=int, default=None)
     env.add_argument('--charg-spot-low', dest='nb_charg_spot_low', type=int, default=None,
-                     help='Nombre minimal de bornes par station.')
+                     help='Minimal number of chargers per station.')
     env.add_argument('--charg-spot-high', dest='nb_charg_spot_high', type=int, default=None,
-                     help='Nombre maximal de bornes par station.')
+                     help='Maximal number of chargers per station.')
     env.add_argument('--strategy-noise', type=float, default=None)
 
-    proto = p.add_argument_group("protocole")
+    proto = p.add_argument_group("protocol")
     proto.add_argument('--offer-ttl-slots', type=int, default=None,
-                       help="Durée de validité d'une offre, en slots.")
+                       help="Validity of an offer, in slots.")
     proto.add_argument('--late-cancel-fraction', type=float, default=None,
-                       help='Fraction du délai requête→arrivée séparant '
-                            'annulation anticipée et tardive.')
+                       help='Fraction of the request→arrival delay separating '
+                            'an early from a late cancellation.')
     proto.add_argument('--reservation-lead-low', type=int, default=None,
-                       help="Borne basse de l'horizon de planification, en "
-                            'slots (délai entre la requête et le créneau '
-                            'souhaité).')
+                       help="Lower bound of the planning horizon, in slots "
+                            '(delay between the request and the targeted '
+                            'slot).')
     proto.add_argument('--reservation-lead-high', type=int, default=None,
-                       help="Borne haute de l'horizon de planification. 0 "
-                            '(défaut) = réservation immédiate, comportement '
-                            "historique ; >= 3 pour que l'annulation anticipée "
-                            'soit atteignable.')
+                       help="Upper bound of the planning horizon. 0 "
+                            '(default) = immediate reservation, historical '
+                            "behaviour; >= 3 for an early cancellation to be "
+                            'reachable.')
     proto.add_argument('--society-update-interval', type=int, default=None,
-                       help="Période d'apprentissage collectif, en slots.")
+                       help="Period of the collective learning, in slots.")
     proto.add_argument('--alpha-fixed', type=float, default=None,
-                       help="Alpha commun imposé aux méthodes à alpha fixe "
-                            "(bramev_fixed_alpha). Sans effet sur les autres.")
+                       help="Common alpha imposed on the fixed-alpha methods "
+                            "(bramev_fixed_alpha). No effect on the others.")
 
-    out = p.add_argument_group('sorties')
+    out = p.add_argument_group('outputs')
     out.add_argument('--output-root', default=None,
-                     help=f'Racine des runs (défaut : {DEFAULT_OUTPUT_ROOT}).')
+                     help=f'Root directory of the runs (default: {DEFAULT_OUTPUT_ROOT}).')
     out.add_argument('--label', default=None,
-                     help='Suffixe lisible ajouté au nom du run.')
+                     help='Readable suffix appended to the run name.')
     out.add_argument('--keep-logs', action=argparse.BooleanOptionalAction, default=None,
-                     help='Conserve le journal texte détaillé (volumineux).')
+                     help='Keep the detailed text log (bulky).')
     out.add_argument('--save-latency', action=argparse.BooleanOptionalAction, default=None,
-                     help='Table de latence, une ligne par demande.')
+                     help='Latency table, one row per demand.')
     out.add_argument('--save-tables', action=argparse.BooleanOptionalAction, default=None,
-                     help='Tables tidy (stations, comportements, alpha…).')
+                     help='Tidy tables (stations, behaviours, alpha…).')
     out.add_argument('--figures', action=argparse.BooleanOptionalAction, default=None,
-                     help='Génère les figures à la fin de la campagne.')
+                     help='Generate the figures at the end of the campaign.')
     out.add_argument('--log-every', type=int, default=None,
-                     help='Fréquence des lignes de progression, en slots.')
+                     help='Frequency of the progress lines, in slots.')
 
     p.add_argument('--dry-run', action='store_true',
-                   help='Valide et affiche le plan sans rien exécuter.')
+                   help='Validate and print the plan without running anything.')
 
 
 def _add_report(subparsers) -> None:
     p = subparsers.add_parser(
-        'report', help='Régénère les figures d\'un run existant.',
-        description="Reconstruit toutes les figures depuis summary.csv, "
-                    "sans relancer de simulation.")
+        'report', help='Regenerate the figures of an existing run.',
+        description="Rebuild every figure from summary.csv, without re-running "
+                    "any simulation.")
     p.set_defaults(func=cmd_report)
     _add_run_selector(p)
 
 
 def _add_show(subparsers) -> None:
     p = subparsers.add_parser(
-        'show', help='Affiche le tableau de synthèse d\'un run.')
+        'show', help='Print the summary table of a run.')
     p.set_defaults(func=cmd_show)
     _add_run_selector(p)
     p.add_argument('--columns', nargs='+', default=None, metavar='COL',
-                   help='Colonnes à afficher (défaut : sélection lisible).')
+                   help='Columns to print (default: a readable selection).')
 
 
 def _add_runs(subparsers) -> None:
-    p = subparsers.add_parser('runs', help='Liste les runs disponibles.')
+    p = subparsers.add_parser('runs', help='List the available runs.')
     p.set_defaults(func=cmd_runs)
     p.add_argument('--output-root', default=DEFAULT_OUTPUT_ROOT)
 
 
 def _add_scenarios(subparsers) -> None:
     p = subparsers.add_parser(
-        'scenarios', help='Affiche la table des scénarios.',
-        description="Probabilités de comportement, source unique de vérité "
+        'scenarios', help='Print the scenario table.',
+        description="Behaviour probabilities, single source of truth "
                     "(src/experiments/config.py).")
     p.set_defaults(func=cmd_scenarios)
 
 
 def _add_methods(subparsers) -> None:
     p = subparsers.add_parser(
-        'methods', help="Affiche le plan d'ablation (méthodes disponibles).",
-        description="Composants activés par chaque méthode. Source unique de "
-                    "vérité : src/experiments/methods.py.")
+        'methods', help="Print the ablation plan (available methods).",
+        description="Components enabled by each method. Single source of "
+                    "truth: src/experiments/methods.py.")
     p.set_defaults(func=cmd_methods)
     p.add_argument('--detail', action='store_true',
-                   help='Ajoute la note explicative de chaque méthode.')
+                   help='Add the explanatory note of each method.')
 
 
 def _add_ablation(subparsers) -> None:
     p = subparsers.add_parser(
-        'ablation', help="Décompose les gains par composant.",
-        description="Recalcule ablation.csv / ablation_mean.csv depuis "
-                    "summary.csv et affiche la contribution de chaque "
-                    "composant. Ne relance aucune simulation.")
+        'ablation', help="Decompose the gains per component.",
+        description="Recompute ablation.csv / ablation_mean.csv from "
+                    "summary.csv and print the contribution of each component. "
+                    "Re-runs no simulation.")
     p.set_defaults(func=cmd_ablation)
     _add_run_selector(p)
     p.add_argument('--metrics', nargs='+', default=None, metavar='COL',
-                   help='Métriques affichées (défaut : sélection lisible). '
-                        'Toutes restent écrites dans ablation.csv.')
+                   help='Metrics printed (default: a readable selection). '
+                        'All of them stay written in ablation.csv.')
     p.add_argument('--no-write', action='store_true',
-                   help="Affiche sans réécrire les tables du run.")
+                   help="Print without rewriting the tables of the run.")
 
 
 def _add_run_selector(p: argparse.ArgumentParser) -> None:
     group = p.add_mutually_exclusive_group(required=True)
-    group.add_argument('--run-dir', type=Path, help='Dossier du run.')
+    group.add_argument('--run-dir', type=Path, help='Directory of the run.')
     group.add_argument('--latest', action='store_true',
-                       help='Utilise le run le plus récent.')
+                       help='Use the most recent run.')
     p.add_argument('--output-root', default=DEFAULT_OUTPUT_ROOT,
-                   help='Racine où chercher avec --latest.')
+                   help='Root directory to search with --latest.')
 
 
 # ----------------------------------------------------------------------
-# Commandes
+# Commands
 # ----------------------------------------------------------------------
 
 PARAM_OPTIONS = ('seed', 'scenarios', 'fleet_sizes', 'methods',
@@ -244,7 +244,7 @@ PARAM_OPTIONS = ('seed', 'scenarios', 'fleet_sizes', 'methods',
 
 
 def params_from_args(args: argparse.Namespace) -> ExperimentParams:
-    """Fichier de configuration éventuel, surchargé par les options fournies."""
+    """Optional configuration file, overridden by the options supplied."""
     base = (ExperimentParams.from_file(args.config) if args.config
             else ExperimentParams())
     overrides = {name: getattr(args, name, None) for name in PARAM_OPTIONS}
@@ -257,15 +257,15 @@ def cmd_run(args: argparse.Namespace) -> int:
     if args.dry_run:
         print(params.describe())
         nb_scenarios = len(params.scenarios)
-        shared_with = ('commune aux ' + ', '.join(params.scenarios)
-                       if nb_scenarios > 1 else f'scénario {params.scenarios[0]}')
-        print(f'\nEnvironnement partagé (seed={params.seed}) :')
-        print(f'  grille unique : {params.nb_stations} stations / '
-              f'{params.nb_societies} sociétés — {shared_with}')
-        print(f'  {len(params.fleet_sizes)} flotte(s) : '
-              f'{list(params.fleet_sizes)} véhicules — positions initiales '
-              f'fixées avant toute simulation, communes aux scénarios')
-        print('\nCas planifiés :')
+        shared_with = ('common to ' + ', '.join(params.scenarios)
+                       if nb_scenarios > 1 else f'scenario {params.scenarios[0]}')
+        print(f'\nShared environment (seed={params.seed}):')
+        print(f'  single grid: {params.nb_stations} stations / '
+              f'{params.nb_societies} companies — {shared_with}')
+        print(f'  {len(params.fleet_sizes)} fleet(s): '
+              f'{list(params.fleet_sizes)} vehicles — initial positions fixed '
+              f'before any simulation, common to the scenarios')
+        print('\nPlanned cases:')
         for case in params.cases():
             print(f'  {case.tag}')
         return EXIT_OK
@@ -275,7 +275,7 @@ def cmd_run(args: argparse.Namespace) -> int:
     if params.figures:
         written = figures.render_all(store.read_summary(), store.figures_dir,
                                      **_shared_tables(store))
-        logger.info(f'{len(written)} figures écrites dans {store.figures_dir}')
+        logger.info(f'{len(written)} figures written in {store.figures_dir}')
 
     means = ablation.mean_rows(ablation.detail_rows(store.read_summary()))
     if means:
@@ -286,7 +286,7 @@ def cmd_run(args: argparse.Namespace) -> int:
     manifest = store.read_manifest()
     failed = [c['tag'] for c in manifest['cases'] if not c['invariant_ok']]
     if failed:
-        logger.error(f"Invariant de réservation violé pour : {failed}")
+        logger.error(f"Reservation invariant violated for: {failed}")
         return EXIT_INVARIANT
 
     print(store.root)
@@ -295,9 +295,9 @@ def cmd_run(args: argparse.Namespace) -> int:
 
 def _shared_tables(store: RunStore) -> dict:
     """
-    Tables décrivant l'environnement partagé, telles que `figures.render_all`
-    les attend. Absentes (run antérieur à la grille partagée), les figures
-    correspondantes sont simplement omises.
+    Tables describing the shared environment, as `figures.render_all` expects
+    them. When absent (run predating the shared grid), the corresponding
+    figures are simply omitted.
     """
     params = store.read_params()
     fleet_rows = {n: store.read_shared_table(f'fleet_{n}cars')
@@ -313,11 +313,11 @@ def cmd_report(args: argparse.Namespace) -> int:
     store = _resolve_store(args)
     summary = store.read_summary()
     if not summary:
-        logger.error(f'{store.summary_path} est vide ou absent')
+        logger.error(f'{store.summary_path} is empty or missing')
         return EXIT_ERROR
     written = figures.render_all(summary, store.figures_dir,
                                  **_shared_tables(store))
-    logger.info(f'{len(written)} figures écrites dans {store.figures_dir}')
+    logger.info(f'{len(written)} figures written in {store.figures_dir}')
     for path in written:
         print(path)
     return EXIT_OK
@@ -334,29 +334,29 @@ def cmd_show(args: argparse.Namespace) -> int:
     store = _resolve_store(args)
     rows = store.read_summary()
     if not rows:
-        logger.error(f'{store.summary_path} est vide ou absent')
+        logger.error(f'{store.summary_path} is empty or missing')
         return EXIT_ERROR
 
     params = store.read_params()
     manifest = store.read_manifest()
-    print(f'Run       : {store.root}')
-    print(f'Graine    : {params.seed}   (commit {manifest.get("git_commit")})')
-    print(f'Plan      : {params.describe()}')
-    print(f'Cas       : {manifest["nb_cases_done"]}/{manifest["nb_cases_planned"]}')
+    print(f'Run    : {store.root}')
+    print(f'Seed   : {params.seed}   (commit {manifest.get("git_commit")})')
+    print(f'Plan   : {params.describe()}')
+    print(f'Cases  : {manifest["nb_cases_done"]}/{manifest["nb_cases_planned"]}')
     print()
 
     columns = list(args.columns) if args.columns else list(SHOW_COLUMNS)
     unknown = [c for c in columns if c not in rows[0]]
     if unknown:
-        logger.error(f'Colonnes inconnues : {unknown}')
+        logger.error(f'Unknown columns: {unknown}')
         return EXIT_ERROR
     print(_render_table(rows, columns))
 
     diagnostics = _collect_diagnostics(store)
     if diagnostics:
-        print('\nDiagnostics :')
+        print('\nDiagnostics:')
         for warning, tags in diagnostics:
-            scope = 'tous les cas' if len(tags) == len(rows) else ', '.join(tags)
+            scope = 'every case' if len(tags) == len(rows) else ', '.join(tags)
             print(f'  ({scope})\n    {warning}')
     return EXIT_OK
 
@@ -364,17 +364,17 @@ def cmd_show(args: argparse.Namespace) -> int:
 def cmd_runs(args: argparse.Namespace) -> int:
     runs = RunStore.list_runs(args.output_root)
     if not runs:
-        print(f'Aucun run dans {args.output_root}')
+        print(f'No run in {args.output_root}')
         return EXIT_OK
     for path in runs:
         store = RunStore(path)
         try:
             manifest = store.read_manifest()
             done = f"{manifest['nb_cases_done']}/{manifest['nb_cases_planned']}"
-            state = 'terminé' if manifest.get('finished_utc') else 'interrompu'
-            print(f"{path}  seed={manifest['seed']}  cas={done}  {state}")
+            state = 'finished' if manifest.get('finished_utc') else 'interrupted'
+            print(f"{path}  seed={manifest['seed']}  cases={done}  {state}")
         except (OSError, KeyError, ValueError):
-            print(f'{path}  (manifeste illisible)')
+            print(f'{path}  (unreadable manifest)')
     return EXIT_OK
 
 
@@ -386,9 +386,9 @@ def cmd_methods(args: argparse.Namespace) -> int:
             spec = methods_module.resolve(name)
             print(f"  {name} — {spec.label}")
             print(f"      {spec.note}")
-    print(f"\nGroupes : {', '.join(sorted(methods_module.METHOD_GROUPS))}")
-    print(f"Alias   : {', '.join(sorted(methods_module.ALIASES))}")
-    print("\nUtiliser avec : --methods ablation | --methods all | --methods "
+    print(f"\nGroups : {', '.join(sorted(methods_module.METHOD_GROUPS))}")
+    print(f"Aliases: {', '.join(sorted(methods_module.ALIASES))}")
+    print("\nUse with: --methods ablation | --methods all | --methods "
           "greedy bramev")
     return EXIT_OK
 
@@ -397,39 +397,39 @@ def cmd_ablation(args: argparse.Namespace) -> int:
     store = _resolve_store(args)
     rows = store.read_summary()
     if not rows:
-        logger.error(f'{store.summary_path} est vide ou absent')
+        logger.error(f'{store.summary_path} is empty or missing')
         return EXIT_ERROR
 
     try:
         detail = ablation.detail_rows(rows)
-    except ValueError as exc:          # doublons dans summary.csv
+    except ValueError as exc:          # duplicates in summary.csv
         logger.error(str(exc))
         return EXIT_ERROR
 
     if not detail:
         present = sorted({r['method'] for r in rows})
         logger.error(
-            "Aucun couple comparable dans ce run : méthodes présentes "
-            f"{present}. Relancer avec --methods ablation pour obtenir "
-            "les quatre configurations."
+            "No comparable pair in this run: methods present "
+            f"{present}. Re-run with --methods ablation to obtain the four "
+            "configurations."
         )
         return EXIT_ERROR
 
     if not args.no_write:
         for path in ablation.write_tables(store, rows):
-            logger.info(f'écrit : {path}')
+            logger.info(f'written: {path}')
 
     metrics = args.metrics or ablation.DEFAULT_REPORT_METRICS
     unknown = [m for m in metrics if m not in ablation.METRICS_BY_COLUMN]
     if unknown:
-        logger.error(f'Métriques inconnues : {unknown} '
-                     f'(attendu {list(ablation.METRICS_BY_COLUMN)})')
+        logger.error(f'Unknown metrics: {unknown} '
+                     f'(expected {list(ablation.METRICS_BY_COLUMN)})')
         return EXIT_ERROR
 
     means = ablation.mean_rows(detail)
     nb_worlds = len({(r['scenario'], r['nb_cars']) for r in rows})
     print(f'Run    : {store.root}')
-    print(f'Mondes : {nb_worlds}   méthodes : '
+    print(f'Worlds : {nb_worlds}   methods: '
           f'{", ".join(sorted({r["method"] for r in rows}))}')
     print()
     print(ablation.render_mean_table(means, metrics))
@@ -438,17 +438,17 @@ def cmd_ablation(args: argparse.Namespace) -> int:
 
 def cmd_scenarios(args: argparse.Namespace) -> int:
     table = cfg_module.SimulationConfig.SCENARIOS
-    print(f"  {'scénario':<14}{'pres':>6}{'abs':>6}{'early':>7}{'late':>6}{'noise':>7}")
+    print(f"  {'scenario':<14}{'pres':>6}{'abs':>6}{'early':>7}{'late':>6}{'noise':>7}")
     for name in SCENARIOS:
         p = table[name]
         print(f"  {name:<14}{p['pres']:>6}{p['abs']:>6}{p['early']:>7}"
               f"{p['late']:>6}{p['noise']:>7}")
-    print("\nAppliquer avec : config.set_scenario(nom) ou --scenarios")
+    print("\nApply with: config.set_scenario(name) or --scenarios")
     return EXIT_OK
 
 
 # ----------------------------------------------------------------------
-# Utilitaires
+# Utilities
 # ----------------------------------------------------------------------
 
 def _resolve_store(args: argparse.Namespace) -> RunStore:
@@ -458,7 +458,7 @@ def _resolve_store(args: argparse.Namespace) -> RunStore:
 
 
 def _collect_diagnostics(store: RunStore) -> list[tuple[str, list[str]]]:
-    """Diagnostics groupés par message, avec la liste des cas concernés."""
+    """Diagnostics grouped by message, with the list of the cases concerned."""
     grouped: dict[str, list[str]] = {}
     for result in store.iter_results():
         tag = f"{result['scenario']}/{result['config']['nb_cars']}/{result['mode']}"
@@ -495,7 +495,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         logger.error(str(exc))
         return EXIT_ERROR
     except KeyboardInterrupt:                       # pragma: no cover
-        logger.warning('Interrompu par l\'utilisateur.')
+        logger.warning('Interrupted by the user.')
         return EXIT_ERROR
 
 

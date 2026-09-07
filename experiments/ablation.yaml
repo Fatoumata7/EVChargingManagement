@@ -1,34 +1,35 @@
-# Étude d'ablation : les 4 barreaux de l'échelle + les 3 baselines de référence.
+# Ablation study: the 4 rungs of the ladder + the 3 reference baselines.
 #
 #   python -m src.pipeline.cli run --config experiments/ablation.yaml
 #   python -m src.pipeline.cli ablation --latest
 #
-# Deux questions, une seule campagne — les deux se lisent sur le *même* monde
-# (même graine, même grille, même flotte, mêmes tirages de comportement) :
+# Two questions, one campaign — both are read on the *same* world (same seed,
+# same grid, same fleet, same behaviour draws):
 #
-#   Échelle (`ablation`) — chaque barreau n'ajoute qu'un composant au précédent,
-#   donc l'écart entre deux barreaux consécutifs *est* la contribution du
-#   composant :
+#   Ladder (`ablation`) — each rung adds exactly one component to the previous
+#   one, so the gap between two consecutive rungs *is* the contribution of that
+#   component:
 #       greedy -> multistation -> multistation_rep -> bramev
 #
-#   Baselines (`baselines`) — politiques de choix pures, comparées à BRAM-EV.
-#   Elles partagent le protocole de `multistation` (diffusion aux stations du
-#   rayon de recherche, sans réputation ni adaptation) et n'en diffèrent que par
-#   la règle de sélection de l'offre. À périmètre d'information identique,
-#   l'écart mesuré est donc imputable à la règle seule :
-#       min_waiting      offre dont l'attente est la plus faible
-#       load_aware       offre de la station la moins chargée à venir
-#       random_feasible  offre tirée au hasard parmi les offres reçues
+#   Baselines (`baselines`) — pure choice policies, compared against BRAM-EV.
+#   They share the protocol of `multistation` (broadcast to the stations within
+#   the search radius, no reputation and no adaptation) and differ from it only
+#   by the offer selection rule. At identical information scope, the measured
+#   gap is therefore attributable to the rule alone:
+#       min_waiting      offer with the lowest waiting time
+#       load_aware       offer of the least loaded upcoming station
+#       random_feasible  offer drawn at random among the offers received
 #
-# `greedy` (une seule station contactée) reste le plancher de l'échelle et sert
-# aussi de baseline mono-station : il est déjà inclus par le groupe `ablation`.
+# `greedy` (a single station contacted) remains the floor of the ladder and
+# doubles as the single-station baseline: the `ablation` group already includes
+# it.
 label: ablation
 seed: 42
 scenarios: [optimistic, balance, pessimistic]
 fleet_sizes: [50, 100, 150, 200, 250]
 methods: [ablation, baselines]
 
-total_time: 1440          # 5 jours en slots de 5 min
+total_time: 1440          # 5 days in 5 min slots
 nb_stations: 40
 nb_societies: 4
 strategy_noise: 0.5

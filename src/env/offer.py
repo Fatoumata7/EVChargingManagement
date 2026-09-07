@@ -1,18 +1,18 @@
 """
-offer.py — Offre de recharge émise par une station.
+offer.py — Charging offer issued by a station.
 
-Une offre est un *engagement révocable* : elle est émise pour un slot courant,
-porte une date d'expiration, et référence la version du calendrier de la borne
-au moment de l'émission. La station revalide ces éléments à la confirmation
-(cf. `Station.validate_offer`), ce qui interdit de confirmer une offre périmée
-ou devenue incohérente avec le calendrier.
+An offer is a *revocable commitment*: it is issued for a given slot, carries an
+expiry date, and references the version of the charger calendar at the time it
+was issued. The station revalidates all of these at confirmation time (see
+`Station.validate_offer`), which makes it impossible to confirm an offer that has
+expired or become inconsistent with the calendar.
 
-Cycle de vie
-------------
+Life cycle
+----------
     PENDING ──confirm()──> CONFIRMED
        │
-       ├──expire()───────> EXPIRED    (non retenue par le véhicule, ou TTL)
-       └──reject(reason)─> REJECTED   (revalidation station en échec)
+       ├──expire()───────> EXPIRED    (not retained by the vehicle, or TTL)
+       └──reject(reason)─> REJECTED   (station revalidation failed)
 """
 
 
@@ -25,11 +25,11 @@ class Offer:
         self.station_id = station_id
         self.charger_id = charger_id
 
-        # Taux d'occupation *futur* de la station au moment de l'émission :
-        # part des créneaux-bornes déjà réservés de `t_issued` à la fin de
-        # l'horizon. Porté par l'offre — et non lu sur la station — pour que le
-        # classement des offres reste une fonction pure de ce que le véhicule a
-        # reçu (baseline `load_aware`, cf. `Car.rank_offers`).
+        # *Future* occupancy rate of the station at issuing time: share of
+        # charger-slots already booked from `t_issued` to the end of the
+        # horizon. Carried by the offer — rather than read off the station — so
+        # that offer ranking stays a pure function of what the vehicle actually
+        # received (`load_aware` baseline, see `Car.rank_offers`).
         self.station_load = float(station_load)
 
         self.t_arr = t_arr
@@ -38,7 +38,7 @@ class Offer:
 
         self.distance = distance
 
-        # ---- Sécurisation de la confirmation
+        # ---- Confirmation safety
         self.offer_id        = offer_id if offer_id is not None else f"{station_id}:{charger_id}:{t_arr}"
         self.t_issued        = t_issued
         self.t_expire        = t_expire if t_expire is not None else t_issued + 1
@@ -48,18 +48,18 @@ class Offer:
         self.reject_reason = None
 
     # ------------------------------------------------------------------
-    # État
+    # State
     # ------------------------------------------------------------------
 
     def is_pending(self):
         return self.status == 'PENDING'
 
     def is_expired(self, t_c):
-        """Une offre est valable pour les slots t_issued <= t_c < t_expire."""
+        """An offer is valid for the slots t_issued <= t_c < t_expire."""
         return t_c >= self.t_expire
 
     def is_contiguous(self):
-        """La durée proposée doit couvrir exactement l'intervalle [t_arr, t_dep)."""
+        """The proposed duration must cover exactly the interval [t_arr, t_dep)."""
         return (self.t_dep - self.t_arr) == self.d_prop
 
     # ------------------------------------------------------------------
@@ -70,7 +70,7 @@ class Offer:
         self.status = 'CONFIRMED'
 
     def expire(self):
-        """Abandon volontaire (offre non retenue) ou dépassement du TTL."""
+        """Voluntary drop (offer not retained) or TTL exceeded."""
         if self.status == 'PENDING':
             self.status = 'EXPIRED'
 

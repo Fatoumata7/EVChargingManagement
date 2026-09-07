@@ -1,31 +1,31 @@
 """
-config.py — Paramètres de simulation (réalistes)
+config.py — Simulation parameters (realistic)
 """
 import numpy as np
 
 
 class SimulationConfig:
 
-    # ------------------------------------------------------------------ GRILLE
-    # 3×3 km : taille raisonnable pour une zone urbaine dense.
-    C_GRID = 3 * 1e3            # 9 km^2 (1/10e de Paris)
+    # ------------------------------------------------------------------ GRID
+    # 3×3 km: reasonable size for a dense urban area.
+    C_GRID = 3 * 1e3            # 9 km^2 (1/10th of Paris)
 
-    # ------------------------------------------------------------------ TEMPS
-    SLOT_DURATION = 5               # 5 minutes, doit être multiple de 60
+    # ------------------------------------------------------------------ TIME
+    SLOT_DURATION = 5               # 5 minutes, must divide 60
     NB_SLOTS_IN_ONE_HOUR = 12       # 60 / SLOT_DURATION
 
     # ------------------------------------------------------------------ VISUALIZATION
     VIS_DELAY = 1
 
-    # ------------------------------------------------------------------ APPRENTISSAGE
+    # ------------------------------------------------------------------ LEARNING
     GAMMA = 0.1
 
-    # ------------------------------------------------------------------ VOITURE
-    # SOC initial : entre 0.3 et 1.0 (pas de voiture quasi-vide au départ)
+    # ------------------------------------------------------------------ CAR
+    # Initial SoC: between 0.3 and 1.0 (no nearly empty car at the start)
     CAR_INIT_SOC = {'low': 0.30, 'high': 0.80}
 
-    # Seuil de déclenchement de la recharge : moyenne 20%, max 35%
-    # → une voiture ne cherche jamais à se recharger au-dessus de 35% de batterie
+    # Charging trigger threshold: mean 20%, max 35%
+    # → a car never looks for a charge above 35% of battery
     CAR_SOC_THRESHOLD_PARAMS = {
         'mean': 0.35,
         'sd':   0.06,
@@ -33,7 +33,7 @@ class SimulationConfig:
         'high': 0.70
     }
 
-    # Autonomie réaliste : 300-500 km (citadines électriques)
+    # Realistic autonomy: 300-500 km (electric city cars)
     CAR_AUTONOMY_PARAMS_KM = {
         'mean': 400,
         'sd':    60,
@@ -41,33 +41,33 @@ class SimulationConfig:
         'high': 500
     }
 
-    LATE_CANCEL_REF = 12    # annulation tardive si < 1h = 12 slots
+    LATE_CANCEL_REF = 12    # late cancellation if < 1h = 12 slots
 
-    # Consommation énergétique : 10 kWh / 100 km
+    # Energy consumption: 10 kWh / 100 km
     ENERGY_CONSUMPTION = {
         'quantity_kW':     10,          # kWh (5)
-        'distance_unit_m': 100 * 1e3    # 100 km en mètres (1000e3)
+        'distance_unit_m': 100 * 1e3    # 100 km in meters (1000e3)
     }
 
-    # ------------------------------------------------------------------ PANNE
-    # Seuil en dessous duquel la voiture est considérée en panne (soc ≈ 0)
-    SOC_BREAKDOWN_THRESHOLD = 3 * 1e3   # 1% → ~3 km restants
+    # ------------------------------------------------------------------ BREAKDOWN
+    # Threshold below which the car counts as broken down (soc ≈ 0)
+    SOC_BREAKDOWN_THRESHOLD = 3 * 1e3   # 1% → ~3 km left
 
-    # ------------------------------------------------------------------ SCÉNARIOS
-    # Source unique de vérité pour les probabilités de comportement.
-    # Les notebooks doivent appeler `set_scenario(nom)` au lieu de redéfinir
-    # BASE_CANCEL_PROB localement (c'est ce qui avait produit des jeux de
-    # paramètres divergents entre notebooks et rapport).
+    # ------------------------------------------------------------------ SCENARIOS
+    # Single source of truth for the behaviour probabilities.
+    # Notebooks must call `set_scenario(name)` instead of redefining
+    # BASE_CANCEL_PROB locally (which is what produced diverging parameter sets
+    # between the notebooks and the report).
     #
-    # Convention :
-    #   pres  : se présente et honore la réservation
-    #   abs   : no-show complet (créneau jamais libéré avant t_dep)
-    #   early : annulation anticipée  (> LATE_CANCEL_REF slots avant l'arrivée)
-    #   late  : annulation tardive    (<= LATE_CANCEL_REF slots avant l'arrivée)
+    # Convention:
+    #   pres  : shows up and honours the reservation
+    #   abs   : complete no-show (slot never released before t_dep)
+    #   early : early cancellation  (> LATE_CANCEL_REF slots before arrival)
+    #   late  : late cancellation   (<= LATE_CANCEL_REF slots before arrival)
     #
-    # La sévérité croît de `optimistic` à `pessimistic` sur les deux dimensions
-    # coûteuses pour l'opérateur (`abs` et `late`), et `noise` est identique
-    # partout pour que les scénarios ne diffèrent que par les probabilités.
+    # Severity grows from `optimistic` to `pessimistic` on the two dimensions
+    # that cost the operator (`abs` and `late`), and `noise` is identical
+    # everywhere so that scenarios differ only by their probabilities.
     SCENARIOS = {
         'optimistic':  {'pres': 75, 'abs': 10, 'early':  9, 'late':  6, 'noise': 0.15},
         'balance':     {'pres': 60, 'abs': 20, 'early': 12, 'late':  8, 'noise': 0.15},
@@ -77,45 +77,45 @@ class SimulationConfig:
 
     def __init__(self):
 
-        self.TOTAL_TIME = 12 * 4 # 12 * 24 * 5        # 12 slots de 5min dans une heure, 4 heures
+        self.TOTAL_TIME = 12 * 4 # 12 * 24 * 5        # 12 slots of 5 min in one hour, 4 hours
 
-        # ------------------------------------------------------------------ REPRODUCTIBILITÉ
-        # Graine unique de l'expérience. Fixée via set_seed() ; enregistrée avec
-        # chaque résultat par le pipeline (src/pipeline).
+        # ------------------------------------------------------------------ REPRODUCIBILITY
+        # Single seed of the experiment. Set through set_seed(); recorded with
+        # every result by the pipeline (src/pipeline).
         self.SEED = None
-        self.SCENARIO_NAME = 'custom'      # renseigné par set_scenario()
+        self.SCENARIO_NAME = 'custom'      # filled in by set_scenario()
 
-        # ------------------------------------------------------------------ PROTOCOLE D'OFFRE
-        # Durée de validité d'une offre, en slots. 1 = l'offre expire à la fin du
-        # slot d'émission (une offre non confirmée immédiatement est perdue).
+        # ------------------------------------------------------------------ OFFER PROTOCOL
+        # Validity of an offer, in slots. 1 = the offer expires at the end of
+        # the issuing slot (an offer not confirmed immediately is lost).
         self.OFFER_TTL_SLOTS = 1
 
-        # Part du délai requête → arrivée en dessous de laquelle une annulation
-        # est considérée tardive, quand ce délai est plus court que
-        # LATE_CANCEL_REF (cf. late_cancel_threshold).
+        # Share of the request → arrival delay below which a cancellation counts
+        # as late, when that delay is shorter than LATE_CANCEL_REF
+        # (see late_cancel_threshold).
         self.LATE_CANCEL_FRACTION = 0.5
 
-        # ------------------------------------------------------------------ HORIZON DE PLANIFICATION
-        # Nombre de slots entre l'émission d'une requête et le créneau souhaité
-        # (`request['l_n']`, tiré par requête dans `Car.emit_request`). Le
-        # conducteur ne demande plus « charger maintenant » mais « charger dans
-        # l_n slots » : le créneau nominal devient t_n + l_n + trajet
-        # (cf. `utils.nominal_arrival`).
+        # ------------------------------------------------------------------ PLANNING HORIZON
+        # Number of slots between the emission of a request and the targeted
+        # slot (`request['l_n']`, drawn per request in `Car.emit_request`). The
+        # driver no longer asks to "charge now" but to "charge in l_n slots":
+        # the nominal slot becomes t_n + l_n + travel
+        # (see `utils.nominal_arrival`).
         #
-        # Atteignabilité de l'annulation anticipée : elle se déclenche au plus
-        # tôt en t_n + 1, donc slots_left = lead - 1, à comparer au seuil
-        # late_cancel_threshold(lead). Il faut un délai effectif >= 3 slots
-        # (cf. min_lead_for_early_cancel), et ce délai vaut l_n + ceil(trajet),
-        # soit l_n + 1 sur cette grille : l_n >= 2 suffit donc ici. Au-delà de
-        # 24, le gain est nul — la fenêtre ILP est plafonnée par la patience g_n.
+        # Reachability of the early cancellation: it fires at the earliest at
+        # t_n + 1, so slots_left = lead - 1, to be compared with the threshold
+        # late_cancel_threshold(lead). An effective delay >= 3 slots is required
+        # (see min_lead_for_early_cancel), and that delay is l_n + ceil(travel),
+        # i.e. l_n + 1 on this grid: l_n >= 2 is therefore enough here. Beyond
+        # 24 the gain is nil — the ILP window is capped by the patience g_n.
         #
-        # `low = 0` est délibéré : une partie des requêtes reste « je charge
-        # maintenant » (conducteur déjà à court d'autonomie), ce qui conserve
-        # dans chaque exécution un groupe témoin non anticipable et garde
-        # observable la reclassification `early -> late`.
+        # `low = 0` is deliberate: part of the requests stay "charge now"
+        # (driver already short on autonomy), which keeps a non-anticipable
+        # control group in every execution and keeps the `early -> late`
+        # reclassification observable.
         #
-        # {'low': 0, 'high': 0} désactive l'horizon : c'est le bras de contrôle
-        # de l'ablation, celui où l'annulation anticipée est inatteignable.
+        # {'low': 0, 'high': 0} disables the horizon: that is the control arm of
+        # the ablation, the one where an early cancellation is unreachable.
         self.RESERVATION_LEAD_PARAMS = {'low': 12, 'high': 48}
 
         self.VISUALIZE = True
@@ -124,66 +124,65 @@ class SimulationConfig:
         self.NB_SOCIETIES  = 5
         self.NB_STATIONS   = 40
 
-        self.w1 = 1.0    # poids profit dans l'objectif station
-        self.w2 = 1.0    # poids pénalité éloignement temporel
-        self.z  = 2.0    # constante de priorité profit (z > 1)
+        self.w1 = 1.0    # profit weight in the station objective
+        self.w2 = 1.0    # weight of the temporal-distance penalty
+        self.z  = 2.0    # profit priority constant (z > 1)
 
-        # Valeur commune de alpha pour les méthodes dont `alpha_mode == 'fixed'`
-        # (variante `bramev_fixed_alpha`, cf. src/experiments/methods.py).
-        # Sans effet sur les autres méthodes, où alpha est tiré par station.
+        # Common alpha value for the methods whose `alpha_mode == 'fixed'`
+        # (`bramev_fixed_alpha` variant, see src/experiments/methods.py).
+        # No effect on the other methods, where alpha is drawn per station.
         self.ALPHA_FIXED = 0.5
 
-        self.NB_CHARG_SPOT = {'low': 4, 'high': 6}      # nombre de bornes par station
-        self.SOCIETY_UPDATE_INTERVAL = 12 * 12          # mise à jour stratégie toutes <nb_slot>, 2 heures
+        self.NB_CHARG_SPOT = {'low': 4, 'high': 6}      # number of chargers per station
+        self.SOCIETY_UPDATE_INTERVAL = 12 * 2          # strategy update every <nb_slot>, 2 hours
 
-        # Vitesse réduite : 50 km/h en zone urbaine dense
+        # Reduced speed: 50 km/h in a dense urban area
         # 50 km/h × (5/60) h/slot = 4.167 km/slot = 4.167 m/slot
         self.CAR_SPEED = 4.167e3             # m / slot
 
-        # Rayon de recherche pour l'émission d'une demande
-        self.MIN_RAY_SEARCH = 0        # rayon minimal de recherche d'une station (5km)
+        # Search radius for the emission of a demand
+        self.MIN_RAY_SEARCH = 0        # minimal search radius for a station (5km)
         self.MAX_RAY_SEARCH = 1 * 1e3
-        self.COEFF_MAX_DIST = 0.5            # coeff de max distance définie comme max_ray_search
+        self.COEFF_MAX_DIST = 0.5            # coefficient of the max distance defined as max_ray_search
 
-        # ------------------------------------------------------------------ RELANCE DE RECHERCHE
-        # Un véhicule qui ne trouve ni station éligible, ni offre, ni
-        # confirmation ne repart pas au hasard : il s'arrête (PARKED_SEARCHING)
-        # et relance la même demande avec un rayon élargi. S'arrêter évite de
-        # consommer de l'énergie pendant une recherche infructueuse, et de
-        # dériver loin des stations qu'on essaie justement d'atteindre.
+        # ------------------------------------------------------------------ SEARCH RETRY
+        # A vehicle that finds neither an eligible station, nor an offer, nor a
+        # confirmation does not drive off at random: it stops
+        # (PARKED_SEARCHING) and re-emits the same demand with a widened radius.
+        # Stopping avoids consuming energy during an unsuccessful search, and
+        # avoids drifting away from the very stations it is trying to reach.
         #
-        # L'élargissement dépasse volontairement MAX_RAY_SEARCH : ce plafond
-        # borne la recherche *de routine*, pas l'élargissement exceptionnel. Le
-        # rayon reste borné par la diagonale de la grille (cf.
-        # `max_search_radius`), au-delà de laquelle il ne peut plus rien
-        # découvrir.
+        # The widening deliberately exceeds MAX_RAY_SEARCH: that cap bounds the
+        # *routine* search, not the exceptional widening. The radius stays
+        # bounded by the grid diagonal (see `max_search_radius`), beyond which
+        # it can no longer discover anything.
         self.SEARCH_RADIUS_GROWTH = 1.5
-        # Budget de relances par demande. Au-delà, le véhicule renonce et
-        # repart en DRIVING : sans ce garde-fou, un véhicule immobile dans une
-        # zone sans borne resterait garé indéfiniment, jamais en panne
-        # puisqu'il ne consomme plus, et fausserait les taux de service.
+        # Retry budget per demand. Beyond it the vehicle gives up and drives on
+        # in DRIVING: without that guard, a vehicle stopped in an area with no
+        # charger would stay parked indefinitely, never breaking down since it
+        # no longer consumes, and would bias the service rates.
         self.MAX_SEARCH_RETRIES = 4
 
-        self.REDUCE_SPEED_FACTORS = [1.05, 1.25]  # facteurs de réduction si comportement non-présent
+        self.REDUCE_SPEED_FACTORS = [1.05, 1.25]  # reduction factors for a non-present behaviour
 
-        # Probabilités de comportement
+        # Behaviour probabilities
         self.BASE_CANCEL_PROB = {
-            'pres':  75,    # présent et honore la réservation
-            'abs':   10,    # no-show complet
-            'early':  9,    # annulation anticipée (> 2h avant)
-            'late':   6,    # annulation tardive (< 2h avant)
-            'noise':  0.15  # bruit ±15%
+            'pres':  75,    # present and honours the reservation
+            'abs':   10,    # complete no-show
+            'early':  9,    # early cancellation (> 2h before)
+            'late':   6,    # late cancellation (< 2h before)
+            'noise':  0.15  # noise ±15%
         }
         assert (self.BASE_CANCEL_PROB['pres'] + self.BASE_CANCEL_PROB['abs'] +
                 self.BASE_CANCEL_PROB['early'] + self.BASE_CANCEL_PROB['late']) == 100
 
-        # Durée de recharge demandée : majoritairement "recharge complète"
+        # Requested charging duration: mostly "full charge"
         self.CHARGING_DURATION_PARAMS = [
-            (0.9, (0.8, 1.0)),   # recharge quasi-complète -> 90% des véhicules demande entre 80-100% de batterie
-            (0.1, (0.6, 0.8)),   # recharge partielle      -> 10% des véhicules demande entre 60-80% de batterie
+            (0.9, (0.8, 1.0)),   # nearly full charge -> 90% of the vehicles ask for 80-100% of battery
+            (0.1, (0.6, 0.8)),   # partial charge     -> 10% of the vehicles ask for 60-80% of battery
         ]
 
-        # ------------------------------------------------------------------ SOCIÉTÉ
+        # ------------------------------------------------------------------ COMPANY
         self.BASE_POINTS_STRATEGY = {
             'pres':  4.0,
             'abs':   3.0,
@@ -192,48 +191,47 @@ class SimulationConfig:
         }
         self.STRATEGY_NOISE = 0.5
 
-        # ------------------------------------------------------------------ RÉPUTATION
-        # Nombre de réservations retenues dans le score d'un véhicule : au-delà,
-        # les plus anciennes sortent de la fenêtre (droit à l'oubli).
+        # ------------------------------------------------------------------ REPUTATION
+        # Number of reservations retained in a vehicle's score: beyond it, the
+        # oldest ones leave the window (right to be forgotten).
         #
-        # Le score n'est plus une somme cumulée mais la moyenne pondérée des
-        # enjeux normalisés de cette fenêtre, donc borné dans [-1, 1]
-        # (cf. `Car.record_score_event`). C'est ce qui rend `alpha` à nouveau
-        # signifiant : l'ancienne somme atteignait ±380 face à un terme de
-        # profit de w1*z = 2, et l'arbitrage profit/risque était purement
-        # nominal — tout véhicule ayant connu un seul incident devenait
-        # définitivement inéligible.
+        # The score is no longer a cumulative sum but the weighted mean of the
+        # normalised stakes of that window, hence bounded in [-1, 1]
+        # (see `Car.record_score_event`). That is what makes `alpha` meaningful
+        # again: the former sum reached ±380 against a profit term of w1*z = 2,
+        # and the profit/risk trade-off was purely nominal — any vehicle with a
+        # single incident became permanently ineligible.
         self.SCORE_MEMORY = 5
 
         self.log_iter = 10
 
     def set_TOTAL_TIME(self, value: int) -> None:
         """
-        Définit le temps total de simulation.
+        Set the total simulation time.
 
         Parameters
         ----------
         value : int
-            Nombre total de slots (> 0)
+            Total number of slots (> 0)
         """
         if not isinstance(value, int):
             raise TypeError(
-                f"TOTAL_TIME doit être un entier, reçu : {type(value).__name__}"
+                f"TOTAL_TIME must be an integer, got: {type(value).__name__}"
             )
         if value <= 0:
             raise ValueError(
-                f"TOTAL_TIME doit être strictement positif, reçu : {value}"
+                f"TOTAL_TIME must be strictly positive, got: {value}"
             )
         self.TOTAL_TIME = value
         
 
     def set_VISUALIZE(self, value: bool) -> None:
         """
-        Active ou désactive la visualisation.
+        Enable or disable the visualization.
         """
         if type(value) is not bool:
             raise TypeError(
-                f"VISUALIZE doit être un bool, reçu : {type(value).__name__}"
+                f"VISUALIZE must be a bool, got: {type(value).__name__}"
             )
         self.VISUALIZE = value
 
@@ -242,12 +240,12 @@ class SimulationConfig:
 
         if type(value) is not int:
             raise TypeError(
-                f"NB_CARS doit être un int, reçu : {type(value).__name__}"
+                f"NB_CARS must be an int, got: {type(value).__name__}"
             )
 
         if value <= 0:
             raise ValueError(
-                f"NB_CARS doit être > 0, reçu : {value}"
+                f"NB_CARS must be > 0, got: {value}"
             )
 
         self.NB_CARS = value
@@ -257,12 +255,12 @@ class SimulationConfig:
 
         if type(value) is not int:
             raise TypeError(
-                f"NB_SOCIETIES doit être un int, reçu : {type(value).__name__}"
+                f"NB_SOCIETIES must be an int, got: {type(value).__name__}"
             )
 
         if value <= 0:
             raise ValueError(
-                f"NB_SOCIETIES doit être > 0, reçu : {value}"
+                f"NB_SOCIETIES must be > 0, got: {value}"
             )
 
         self.NB_SOCIETIES = value
@@ -272,12 +270,12 @@ class SimulationConfig:
 
         if type(value) is not int:
             raise TypeError(
-                f"NB_STATIONS doit être un int, reçu : {type(value).__name__}"
+                f"NB_STATIONS must be an int, got: {type(value).__name__}"
             )
 
         if value <= 0:
             raise ValueError(
-                f"NB_STATIONS doit être > 0, reçu : {value}"
+                f"NB_STATIONS must be > 0, got: {value}"
             )
 
         self.NB_STATIONS = value
@@ -287,12 +285,12 @@ class SimulationConfig:
 
         if not isinstance(value, (int, float)):
             raise TypeError(
-                f"CAR_SPEED doit être numérique, reçu : {type(value).__name__}"
+                f"CAR_SPEED must be numeric, got: {type(value).__name__}"
             )
 
         if value <= 0:
             raise ValueError(
-                f"CAR_SPEED doit être > 0, reçu : {value}"
+                f"CAR_SPEED must be > 0, got: {value}"
             )
 
         self.CAR_SPEED = float(value)
@@ -310,14 +308,14 @@ class SimulationConfig:
 
         if not isinstance(value, dict):
             raise TypeError(
-                f"BASE_CANCEL_PROB doit être un dict, reçu : {type(value).__name__}"
+                f"BASE_CANCEL_PROB must be a dict, got: {type(value).__name__}"
             )
 
         missing = required_keys - set(value.keys())
 
         if missing:
             raise ValueError(
-                f"Clés manquantes : {missing}"
+                f"Missing keys: {missing}"
             )
 
         total = (
@@ -329,12 +327,12 @@ class SimulationConfig:
 
         if total != 100:
             raise ValueError(
-                f"La somme des probabilités doit valoir 100, reçu : {total}"
+                f"The probabilities must sum to 100, got: {total}"
             )
 
         if value['noise'] < 0:
             raise ValueError(
-                "noise doit être >= 0"
+                "noise must be >= 0"
             )
 
         self.BASE_CANCEL_PROB = value.copy()
@@ -351,26 +349,26 @@ class SimulationConfig:
 
         if not isinstance(value, dict):
             raise TypeError(
-                f"BASE_POINTS_STRATEGY doit être un dict, reçu : {type(value).__name__}"
+                f"BASE_POINTS_STRATEGY must be a dict, got: {type(value).__name__}"
             )
 
         missing = required_keys - set(value.keys())
 
         if missing:
             raise ValueError(
-                f"Clés manquantes : {missing}"
+                f"Missing keys: {missing}"
             )
 
         for k, v in value.items():
 
             if not isinstance(v, (int, float)):
                 raise TypeError(
-                    f"La valeur associée à '{k}' doit être numérique"
+                    f"The value associated with '{k}' must be numeric"
                 )
 
             if v <= 0:
                 raise ValueError(
-                    f"La valeur associée à '{k}' doit être > 0"
+                    f"The value associated with '{k}' must be > 0"
                 )
 
         self.BASE_POINTS_STRATEGY = value.copy()
@@ -380,12 +378,12 @@ class SimulationConfig:
 
         if not isinstance(value, (int, float)):
             raise TypeError(
-                f"STRATEGY_NOISE doit être numérique, reçu : {type(value).__name__}"
+                f"STRATEGY_NOISE must be numeric, got: {type(value).__name__}"
             )
 
         if value < 0:
             raise ValueError(
-                "STRATEGY_NOISE doit être >= 0"
+                "STRATEGY_NOISE must be >= 0"
             )
 
         self.STRATEGY_NOISE = float(value)
@@ -397,14 +395,14 @@ class SimulationConfig:
 
         if not isinstance(value, dict):
             raise TypeError(
-                f"NB_CHARG_SPOT doit être un dict, reçu : {type(value).__name__}"
+                f"NB_CHARG_SPOT must be a dict, got: {type(value).__name__}"
             )
 
         missing = required_keys - set(value.keys())
 
         if missing:
             raise ValueError(
-                f"Clés manquantes : {missing}"
+                f"Missing keys: {missing}"
             )
 
         low = value['low']
@@ -412,17 +410,17 @@ class SimulationConfig:
 
         if type(low) is not int or type(high) is not int:
             raise TypeError(
-                "low et high doivent être des int"
+                "low and high must be ints"
             )
 
         if low <= 0 or high <= 0:
             raise ValueError(
-                "low et high doivent être > 0"
+                "low and high must be > 0"
             )
 
         if low > high:
             raise ValueError(
-                "low doit être <= high"
+                "low must be <= high"
             )
 
         self.NB_CHARG_SPOT = value.copy()
@@ -435,20 +433,20 @@ class SimulationConfig:
     ) -> None:
 
         if not isinstance(min_ray, (int, float)):
-            raise TypeError("min_ray doit être numérique")
+            raise TypeError("min_ray must be numeric")
 
         if not isinstance(max_ray, (int, float)):
-            raise TypeError("max_ray doit être numérique")
+            raise TypeError("max_ray must be numeric")
 
         if min_ray < 0:
-            raise ValueError("min_ray doit être >= 0")
+            raise ValueError("min_ray must be >= 0")
 
         if max_ray <= 0:
-            raise ValueError("max_ray doit être > 0")
+            raise ValueError("max_ray must be > 0")
 
         if min_ray > max_ray:
             raise ValueError(
-                "min_ray doit être <= max_ray"
+                "min_ray must be <= max_ray"
             )
 
         self.MIN_RAY_SEARCH = float(min_ray)
@@ -461,23 +459,23 @@ class SimulationConfig:
 
     def set_seed(self, value: int) -> None:
         """
-        Fixe la graine de l'expérience.
+        Set the seed of the experiment.
 
-        Ne graine pas les générateurs : c'est `RngHub(seed)` (cf.
-        src/experiments/seeding.py) qui le fait, appelé par `define_agents`.
+        Does not seed the generators: `RngHub(seed)` does that (see
+        src/experiments/seeding.py), called by `define_agents`.
         """
         if not isinstance(value, int):
             raise TypeError(
-                f"SEED doit être un entier, reçu : {type(value).__name__}"
+                f"SEED must be an integer, got: {type(value).__name__}"
             )
         if value < 0:
-            raise ValueError(f"SEED doit être >= 0, reçu : {value}")
+            raise ValueError(f"SEED must be >= 0, got: {value}")
         self.SEED = value
 
 
     def set_scenario(self, name: str) -> None:
         """
-        Applique les probabilités de comportement d'un scénario nommé.
+        Apply the behaviour probabilities of a named scenario.
 
         Parameters
         ----------
@@ -485,8 +483,8 @@ class SimulationConfig:
         """
         if name not in self.SCENARIOS:
             raise ValueError(
-                f"Scénario inconnu : {name!r}. "
-                f"Attendu parmi {sorted(self.SCENARIOS)}"
+                f"Unknown scenario: {name!r}. "
+                f"Expected one of {sorted(self.SCENARIOS)}"
             )
         self.set_BASE_CANCEL_PROB(self.SCENARIOS[name])
         self.SCENARIO_NAME = name
@@ -494,69 +492,69 @@ class SimulationConfig:
 
     def set_ALPHA_FIXED(self, value: float) -> None:
         """
-        Valeur commune de alpha imposée aux variantes à alpha fixe.
+        Common alpha value imposed on the fixed-alpha variants.
 
         Parameters
         ----------
         value : float
-            Arbitrage profit/risque dans [0, 1]. Les alpha tirés par station le
-            sont dans [0.1, 0.9] : rester dans cet intervalle garde la variante
-            comparable au reste de la grille.
+            Profit/risk trade-off in [0, 1]. The per-station alphas are drawn in
+            [0.1, 0.9]: staying inside that interval keeps the variant
+            comparable with the rest of the grid.
         """
         if not isinstance(value, (int, float)) or isinstance(value, bool):
             raise TypeError(
-                f"ALPHA_FIXED doit être un nombre, reçu : {type(value).__name__}"
+                f"ALPHA_FIXED must be a number, got: {type(value).__name__}"
             )
         if not 0. <= float(value) <= 1.:
-            raise ValueError(f"ALPHA_FIXED doit être dans [0, 1], reçu : {value}")
+            raise ValueError(f"ALPHA_FIXED must be in [0, 1], got: {value}")
         self.ALPHA_FIXED = float(value)
 
     def set_OFFER_TTL_SLOTS(self, value: int) -> None:
 
         if type(value) is not int:
             raise TypeError(
-                f"OFFER_TTL_SLOTS doit être un int, reçu : {type(value).__name__}"
+                f"OFFER_TTL_SLOTS must be an int, got: {type(value).__name__}"
             )
         if value < 1:
-            raise ValueError(f"OFFER_TTL_SLOTS doit être >= 1, reçu : {value}")
+            raise ValueError(f"OFFER_TTL_SLOTS must be >= 1, got: {value}")
         self.OFFER_TTL_SLOTS = value
 
 
     def set_RESERVATION_LEAD_PARAMS(self, value: dict) -> None:
         """
-        Bornes du tirage de l'horizon de planification, en slots.
+        Bounds of the planning-horizon draw, in slots.
 
         Parameters
         ----------
         value : dict
-            `{'low': int, 'high': int}`, bornes inclusives avec 0 <= low <= high.
-            `{'low': 0, 'high': 0}` reproduit le comportement historique
-            (réservation pour le créneau immédiat).
+            `{'low': int, 'high': int}`, inclusive bounds with 0 <= low <= high.
+            `{'low': 0, 'high': 0}` reproduces the historical behaviour
+            (reservation for the immediate slot).
         """
         if not isinstance(value, dict):
             raise TypeError(
-                f"RESERVATION_LEAD_PARAMS doit être un dict, reçu : "
+                f"RESERVATION_LEAD_PARAMS must be a dict, got: "
                 f"{type(value).__name__}"
             )
 
         missing = {'low', 'high'} - set(value)
         if missing:
-            raise ValueError(f"Clés manquantes : {missing}")
+            raise ValueError(f"Missing keys: {missing}")
 
         low, high = value['low'], value['high']
         for name, v in (('low', low), ('high', high)):
             if not isinstance(v, int) or isinstance(v, bool):
                 raise TypeError(
-                    f"RESERVATION_LEAD_PARAMS['{name}'] doit être un int, "
-                    f"reçu : {type(v).__name__}"
+                    f"RESERVATION_LEAD_PARAMS['{name}'] must be an int, "
+                    f"got: {type(v).__name__}"
                 )
             if v < 0:
                 raise ValueError(
-                    f"RESERVATION_LEAD_PARAMS['{name}'] doit être >= 0, reçu : {v}"
+                    f"RESERVATION_LEAD_PARAMS['{name}'] must be >= 0, got: {v}"
                 )
         if low > high:
             raise ValueError(
-                f"RESERVATION_LEAD_PARAMS : low ({low}) doit être <= high ({high})"
+                f"RESERVATION_LEAD_PARAMS: low ({low}) must be <= high ({high})"
             )
 
         self.RESERVATION_LEAD_PARAMS = {'low': int(low), 'high': int(high)}
@@ -564,16 +562,16 @@ class SimulationConfig:
 
     def late_cancel_threshold(self, lead: int) -> int:
         """
-        Seuil (en slots avant l'arrivée prévue) séparant annulation anticipée et
-        annulation tardive, pour une réservation dont le délai requête → arrivée
-        vaut `lead`.
+        Threshold (in slots before the planned arrival) separating an early from
+        a late cancellation, for a reservation whose request → arrival delay is
+        `lead`.
 
-        `LATE_CANCEL_REF` (2 h = 24 slots) suppose une réservation prise
-        longtemps à l'avance. Ici le délai est souvent de quelques slots
-        seulement (le trajet vers la station est court) : appliqué tel quel, le
-        seuil absolu classait *toute* annulation comme tardive et rendait la
-        branche « anticipée » inatteignable. Le seuil est donc borné par une
-        fraction du délai réel, ce qui garantit que les deux régimes existent.
+        `LATE_CANCEL_REF` (1 h = 12 slots) assumes a reservation taken well in
+        advance. Here the delay is often only a few slots (the trip to the
+        station is short): applied as is, the absolute threshold classified
+        *every* cancellation as late and made the "early" branch unreachable.
+        The threshold is therefore bounded by a fraction of the actual delay,
+        which guarantees that both regimes exist.
         """
         lead = max(0, int(lead))
         relative = int(lead * self.LATE_CANCEL_FRACTION)
@@ -582,70 +580,70 @@ class SimulationConfig:
 
     def max_search_radius(self) -> float:
         """
-        Plafond du rayon élargi : la diagonale de la grille.
+        Cap of the widened radius: the grid diagonal.
 
-        Au-delà, toutes les stations du monde sont déjà éligibles — élargir
-        davantage ne peut plus rien découvrir.
+        Beyond it, every station of the world is already eligible — widening
+        further cannot discover anything more.
         """
         return float(self.C_GRID) * np.sqrt(2.)
 
 
     def set_SCORE_MEMORY(self, value: int) -> None:
-        """Nombre de réservations retenues dans le score de réputation (>= 1)."""
+        """Number of reservations retained in the reputation score (>= 1)."""
         if not isinstance(value, int) or isinstance(value, bool):
             raise TypeError(
-                f"SCORE_MEMORY doit être un int, reçu : {type(value).__name__}"
+                f"SCORE_MEMORY must be an int, got: {type(value).__name__}"
             )
         if value < 1:
-            raise ValueError(f"SCORE_MEMORY doit être >= 1, reçu : {value}")
+            raise ValueError(f"SCORE_MEMORY must be >= 1, got: {value}")
         self.SCORE_MEMORY = int(value)
 
 
     def set_SEARCH_RADIUS_GROWTH(self, value: float) -> None:
-        """Facteur d'élargissement du rayon à chaque relance (> 1)."""
+        """Widening factor of the radius at each retry (> 1)."""
         if not isinstance(value, (int, float)) or isinstance(value, bool):
             raise TypeError(
-                f"SEARCH_RADIUS_GROWTH doit être un nombre, reçu : "
+                f"SEARCH_RADIUS_GROWTH must be a number, got: "
                 f"{type(value).__name__}"
             )
         if float(value) <= 1.:
             raise ValueError(
-                f"SEARCH_RADIUS_GROWTH doit être > 1 (sinon la relance "
-                f"n'élargit rien), reçu : {value}"
+                f"SEARCH_RADIUS_GROWTH must be > 1 (otherwise the retry "
+                f"widens nothing), got: {value}"
             )
         self.SEARCH_RADIUS_GROWTH = float(value)
 
 
     def set_MAX_SEARCH_RETRIES(self, value: int) -> None:
-        """Budget de relances par demande. 0 = pas de relance."""
+        """Retry budget per demand. 0 = no retry."""
         if not isinstance(value, int) or isinstance(value, bool):
             raise TypeError(
-                f"MAX_SEARCH_RETRIES doit être un int, reçu : "
+                f"MAX_SEARCH_RETRIES must be an int, got: "
                 f"{type(value).__name__}"
             )
         if value < 0:
-            raise ValueError(f"MAX_SEARCH_RETRIES doit être >= 0, reçu : {value}")
+            raise ValueError(f"MAX_SEARCH_RETRIES must be >= 0, got: {value}")
         self.MAX_SEARCH_RETRIES = int(value)
 
 
     def min_lead_for_early_cancel(self) -> int:
         """
-        Plus petit délai requête → arrivée permettant une annulation *observée*
-        comme anticipée.
+        Smallest request → arrival delay allowing a cancellation to be *observed*
+        as early.
 
-        L'annulation anticipée se déclenche au plus tôt au slot suivant la
-        réservation (`t_c = reservation_slot + 1`, cf.
-        `Simulation._process_cancellations`), d'où `slots_left = lead - 1`.
-        Elle n'est qualifiée `early` que si `slots_left > late_cancel_threshold(lead)`.
-        En dessous de ce seuil, une intention `early` est nécessairement
-        réalisée en `late` : la branche est inatteignable, ce qui était le
-        comportement observé sur toute la grille (`reclassified` saturé à 100 %).
+        An early cancellation fires at the earliest at the slot following the
+        reservation (`t_c = reservation_slot + 1`, see
+        `Simulation._process_cancellations`), hence `slots_left = lead - 1`.
+        It is qualified as `early` only if `slots_left > late_cancel_threshold(lead)`.
+        Below that threshold, an `early` intent is necessarily realised as
+        `late`: the branch is unreachable, which was the behaviour observed on
+        the whole grid (`reclassified` saturated at 100%).
 
-        Vaut 3 avec `LATE_CANCEL_FRACTION = 0.5`. Renvoie -1 si aucun délai ne
-        convient (fraction trop proche de 1).
+        Equals 3 with `LATE_CANCEL_FRACTION = 0.5`. Returns -1 if no delay fits
+        (fraction too close to 1).
 
-        Le délai effectif est `l_n + ceil(trajet)` : sur une grille où le trajet
-        dure moins d'un slot il vaut `l_n + 1`, donc `l_n >= 2` suffit ici.
+        The effective delay is `l_n + ceil(travel)`: on a grid where the trip
+        takes less than one slot it equals `l_n + 1`, so `l_n >= 2` is enough.
         """
         for lead in range(1, 3 * self.LATE_CANCEL_REF + 2):
             if lead - 1 > self.late_cancel_threshold(lead):
@@ -655,7 +653,7 @@ class SimulationConfig:
 
     def summary(self) -> dict:
         """
-        Paramètres à enregistrer avec chaque résultat (traçabilité).
+        Parameters to record with every result (traceability).
         """
         return {
             'seed':                  self.SEED,
@@ -698,8 +696,8 @@ if __name__ == "__main__":
     conso = c.ENERGY_CONSUMPTION['quantity_kW'] / c.ENERGY_CONSUMPTION['distance_unit_m']
     delta_soc = dist_slot * conso / (c.ENERGY_CONSUMPTION['quantity_kW'] * autonomy_mean / 100)
 
-    print(f"Grille            : {c.C_GRID/1e3:.1f} km × {c.C_GRID/1e3:.1f} km")
-    print(f"Vitesse           : {c.CAR_SPEED} m/slot  ({c.CAR_SPEED/1000/slot_h:.0f} km/h)")
-    print(f"ΔSoC / slot       : {delta_soc:.5f}  ({1/delta_soc:.0f} slots pour vider)")
-    print(f"Autonomie moy.    : {autonomy_mean} km")
-    print(f"Distance max grille traversée avec soc=0.10 : {0.10*autonomy_mean:.0f} km >> {c.C_GRID/1e3:.1f} km ✓")
+    print(f"Grid              : {c.C_GRID/1e3:.1f} km × {c.C_GRID/1e3:.1f} km")
+    print(f"Speed             : {c.CAR_SPEED} m/slot  ({c.CAR_SPEED/1000/slot_h:.0f} km/h)")
+    print(f"ΔSoC / slot       : {delta_soc:.5f}  ({1/delta_soc:.0f} slots to empty)")
+    print(f"Mean autonomy     : {autonomy_mean} km")
+    print(f"Max grid distance crossed with soc=0.10 : {0.10*autonomy_mean:.0f} km >> {c.C_GRID/1e3:.1f} km ✓")

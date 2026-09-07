@@ -1,7 +1,7 @@
 """
-run.py — Point d'entrée d'une simulation unique (avec visualisation).
+run.py — Entry point of a single simulation (with visualization).
 
-Pour lancer une campagne d'expériences, utiliser le pipeline :
+To launch a campaign of experiments, use the pipeline:
 
     python main.py run --config experiments/full_grid.yaml
 """
@@ -17,26 +17,26 @@ from src.experiments.world import WorldSpec, generate_world_spec, build_world
 
 def define_agents(config, seed=None, return_spec=False):
     """
-    Construit (cars, stations, societies) de façon reproductible.
+    Build (cars, stations, societies) reproducibly.
 
-    Le monde est d'abord décrit par un `WorldSpec` tiré à partir de `seed`, puis
-    matérialisé sans aucun tirage supplémentaire. Deux appels avec la même graine
-    et la même config renvoient donc deux mondes **identiques et indépendants** :
-    c'est ce qui permet d'évaluer Greedy et BRAM-EV sur exactement le même
-    environnement (positions, capacités, autonomies, préférences, comportements).
+    The world is first described by a `WorldSpec` drawn from `seed`, then
+    materialised without any further draw. Two calls with the same seed and the
+    same config therefore return two **identical and independent** worlds: that
+    is what allows Greedy and BRAM-EV to be evaluated on exactly the same
+    environment (positions, capacities, autonomies, preferences, behaviours).
 
     Parameters
     ----------
     config : SimulationConfig
     seed : int | None
-        Graine. Par défaut `config.SEED`, sinon `DEFAULT_SEED`.
+        Seed. Defaults to `config.SEED`, otherwise `DEFAULT_SEED`.
     return_spec : bool
-        Si True, renvoie aussi la spécification du monde (à enregistrer avec les
-        résultats).
+        If True, also return the world specification (to record with the
+        results).
 
     Returns
     -------
-    (cars, stations, societies) ou (cars, stations, societies, spec)
+    (cars, stations, societies) or (cars, stations, societies, spec)
     """
     if seed is None:
         seed = config.SEED if config.SEED is not None else DEFAULT_SEED
@@ -52,7 +52,7 @@ def define_agents(config, seed=None, return_spec=False):
 
 
 def define_agents_from_spec(spec, config):
-    """Matérialise un monde déjà spécifié (rejouer une expérience à l'identique)."""
+    """Materialise an already specified world (replay an experiment identically)."""
     if isinstance(spec, str):
         spec = WorldSpec.load(spec)
     return build_world(spec, config)
@@ -99,16 +99,16 @@ if __name__ == "__main__":
     with open(f'{LOG_DIR}/summary_agents_{SIM_ID}.txt', 'w', encoding='utf-8') as summary_file, \
          open(f'{LOG_DIR}/outputs_{SIM_ID}.txt', 'w', encoding='utf-8') as outputs_file:
 
-        # FIX : les agents n'étaient construits qu'une fois pour l'affichage
-        # et une seconde fois pour la simulation — le résumé décrivait donc des
-        # agents qui ne tournaient pas.
+        # FIX: the agents used to be built once for the summary and a second
+        # time for the simulation — the summary therefore described agents that
+        # were not the ones running.
         cars, stations, societies, spec = define_agents(
             config, seed=SEED, return_spec=True)
         spec.save(f'{LOG_DIR}/world_spec_{SIM_ID}.json')
 
         _dump_agents(cars, stations, societies, config, summary_file)
 
-        print(f"\n=== Lancement simulation (seed={SEED}) : {config.NB_CARS} voitures, "
+        print(f"\n=== Simulation start (seed={SEED}): {config.NB_CARS} cars, "
               f"{config.NB_STATIONS} stations, {config.TOTAL_TIME} slots ===",
               file=summary_file)
 

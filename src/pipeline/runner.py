@@ -1,25 +1,25 @@
 """
-runner.py — Exécution d'un cas et de la grille d'expériences.
+runner.py — Execution of one case and of the experiment grid.
 
-Le runner ne connaît ni la ligne de commande, ni la disposition des fichiers
-(déléguée à `RunStore`), ni la mise en forme des figures. Il orchestre :
+The runner knows neither the command line, nor the file layout (delegated to
+`RunStore`), nor the styling of the figures. It orchestrates:
 
-    une fois par campagne            -> une grille unique (sociétés, stations)
-    une fois par taille de flotte    -> une population de véhicules
-        pour chaque scénario         -> composition : seul `theta` change
-            pour chaque méthode      -> une simulation sur une copie du monde
+    once per campaign             -> a single grid (companies, stations)
+    once per fleet size           -> a vehicle population
+        for each scenario         -> composition: only `theta` changes
+            for each method       -> a simulation on a copy of the world
 
-C'est cette structure qui rend les comparaisons propres, à deux niveaux :
+That structure is what makes the comparisons clean, at two levels:
 
-* **entre méthodes** — le monde est matérialisé autant de fois qu'il y a de
-  méthodes, sans nouveau tirage (cf. `world.build_world`) ;
-* **entre scénarios** — la grille et les positions initiales des véhicules sont
-  tirées avant toute simulation et réutilisées telles quelles, si bien que
-  l'écart mesuré entre `optimistic`, `balance` et `pessimistic` ne peut venir
-  que des probabilités de comportement (cf. `world.compose_world_spec`).
+* **between methods** — the world is materialised as many times as there are
+  methods, with no new draw (see `world.build_world`);
+* **between scenarios** — the grid and the initial vehicle positions are drawn
+  before any simulation and reused as is, so that the gap measured between
+  `optimistic`, `balance` and `pessimistic` can only come from the behaviour
+  probabilities (see `world.compose_world_spec`).
 
-La grille et les flottes sont persistées (JSON + CSV) dès leur tirage : elles
-sont disponibles même si la campagne est interrompue au premier cas.
+The grid and the fleets are persisted (JSON + CSV) as soon as they are drawn:
+they are available even if the campaign is interrupted at the first case.
 """
 
 from __future__ import annotations
@@ -41,7 +41,7 @@ from src.pipeline.store import RunStore
 
 @dataclass
 class CaseOutcome:
-    """Ce qu'un cas produit, indépendamment de son stockage."""
+    """What a case produces, independently of how it is stored."""
 
     case: CaseParams
     result: dict
@@ -57,21 +57,21 @@ class CaseOutcome:
 def run_case(case: CaseParams, params: ExperimentParams, spec,
              log_path=None) -> tuple[Simulation, CaseOutcome]:
     """
-    Exécute un cas sur une matérialisation neuve du monde `spec`.
+    Run one case on a fresh materialisation of the world `spec`.
 
     Returns
     -------
     (simulation, outcome)
-        La simulation est renvoyée pour permettre d'en extraire les tables
-        détaillées ; l'appelant décide de ce qu'il persiste.
+        The simulation is returned so that the detailed tables can be extracted
+        from it; the caller decides what to persist.
     """
     config = params.build_config(case.scenario, case.nb_cars)
     cars, stations, societies = build_world(spec, config)
 
-    # Une seule classe pour toutes les méthodes : `mode` sélectionne le jeu de
-    # drapeaux (cf. src/experiments/methods.py). Deux méthodes exécutent donc
-    # strictement le même code sur le même monde, aux drapeaux près — condition
-    # nécessaire pour attribuer un écart mesuré à un composant.
+    # A single class for every method: `mode` selects the flag set (see
+    # src/experiments/methods.py). Two methods therefore run strictly the same
+    # code on the same world, up to the flags — the condition required to
+    # attribute a measured gap to a component.
     simulation = Simulation(
         cars=cars, stations=stations, societies=societies,
         t_max=config.TOTAL_TIME, config=config, mode=case.method,
@@ -82,8 +82,8 @@ def run_case(case: CaseParams, params: ExperimentParams, spec,
         with open(log_path, 'w', encoding='utf-8') as handle:
             simulation.run(handle, print_metrics=False)
     else:
-        # Le journal détaillé pèse plusieurs centaines de Mo sur la grille
-        # complète et n'alimente aucune métrique : il est jeté par défaut.
+        # The detailed log weighs several hundred MB on the full grid and
+        # feeds no metric: it is discarded by default.
         simulation.run(io.StringIO(), print_metrics=False)
     wall_time_s = time.perf_counter() - started
 
@@ -105,15 +105,15 @@ def run_case(case: CaseParams, params: ExperimentParams, spec,
 
 def prepare_shared_world(params: ExperimentParams, store: RunStore):
     """
-    Tire et persiste ce que tous les cas partagent : la grille et les flottes.
+    Draw and persist what every case shares: the grid and the fleets.
 
-    Appelée une seule fois, avant toute simulation. La configuration utilisée
-    ne fixe aucun scénario : ce qui est tiré ici ne peut donc pas en dépendre.
+    Called only once, before any simulation. The configuration used sets no
+    scenario: what is drawn here therefore cannot depend on one.
 
     Returns
     -------
     (grid, fleets)
-        `grid` : `GridSpec` unique ; `fleets` : `{nb_cars: FleetSpec}`.
+        `grid`: the single `GridSpec`; `fleets`: `{nb_cars: FleetSpec}`.
     """
     shared_config = params.build_shared_config()
 
@@ -122,8 +122,8 @@ def prepare_shared_world(params: ExperimentParams, store: RunStore):
     store.write_shared_table('grid_stations', tables.grid_station_table(grid))
     store.write_shared_table('grid_societies', tables.grid_society_table(grid))
     logger.info(
-        f'Grille partagée : {grid.nb_stations} stations / {grid.nb_societies} '
-        f'sociétés, {sum(s["nb_charg_spot"] for s in grid.stations)} bornes '
+        f'Shared grid: {grid.nb_stations} stations / {grid.nb_societies} '
+        f'companies, {sum(s["nb_charg_spot"] for s in grid.stations)} chargers '
         f'-> {store.grid_path.name}'
     )
 
@@ -133,7 +133,7 @@ def prepare_shared_world(params: ExperimentParams, store: RunStore):
         store.save_fleet(fleet)
         store.write_shared_table(f'fleet_{nb_cars}cars', tables.fleet_table(fleet))
         fleets[nb_cars] = fleet
-    logger.info(f'Flottes partagées : {list(fleets)} véhicules '
+    logger.info(f'Shared fleets: {list(fleets)} vehicles '
                 f'-> {store.fleets_dir.name}/')
 
     return grid, fleets
@@ -142,26 +142,26 @@ def prepare_shared_world(params: ExperimentParams, store: RunStore):
 def run_grid(params: ExperimentParams, store: RunStore | None = None,
              on_case: Callable[[CaseOutcome], None] | None = None) -> RunStore:
     """
-    Exécute toute la grille définie par `params` et persiste les artefacts.
+    Run the whole grid defined by `params` and persist the artifacts.
 
-    Les résultats sont écrits au fur et à mesure (résultat, tables, summary.csv,
-    manifeste) : une campagne interrompue reste exploitable et le `summary.csv`
-    partiel est déjà valide.
+    Results are written as they come (result, tables, summary.csv, manifest): an
+    interrupted campaign stays usable and the partial `summary.csv` is already
+    valid.
     """
     store = store or RunStore.create(params)
-    logger.info(f'Run : {store.root}')
+    logger.info(f'Run: {store.root}')
     logger.info(params.describe())
 
     grid, fleets = prepare_shared_world(params, store)
 
     summary_rows: list[dict] = []
-    # Les diagnostics sont structurels : les répéter à chaque cas noie la sortie.
+    # Diagnostics are structural: repeating them at every case drowns the output.
     seen_diagnostics: set[str] = set()
     started = time.perf_counter()
     case_no = 0
 
     for scenario, nb_cars in params.worlds():
-        # Composition : grille et flotte partagées, `theta` du scénario.
+        # Composition: shared grid and fleet, `theta` of the scenario.
         config_ref = params.build_config(scenario, nb_cars)
         spec = compose_world_spec(grid, fleets[nb_cars], config_ref)
         world_seed = spec.seed
@@ -185,10 +185,10 @@ def run_grid(params: ExperimentParams, store: RunStore | None = None,
 
             summary_rows.append(outcome.summary)
             store.write_summary(summary_rows, tables.SUMMARY_FIELDS)
-            # La décomposition est réécrite à chaque cas, comme summary.csv :
-            # une campagne longue s'analyse pendant qu'elle tourne, et une
-            # campagne interrompue reste exploitable. Le calcul est une simple
-            # relecture des lignes déjà en mémoire.
+            # The decomposition is rewritten at every case, like summary.csv:
+            # a long campaign can be analysed while it runs, and an interrupted
+            # campaign stays usable. The computation is a mere re-read of the
+            # rows already in memory.
             ablation.write_tables(store, summary_rows)
             store.record_case({
                 'tag': case.tag,
@@ -205,14 +205,14 @@ def run_grid(params: ExperimentParams, store: RunStore | None = None,
             if on_case is not None:
                 on_case(outcome)
 
-            # Libère explicitement le monde de ce cas avant le suivant.
+            # Explicitly release the world of this case before the next one.
             del simulation
 
     for path in ablation.write_tables(store, summary_rows):
         logger.info(f'Ablation → {path}')
 
     store.close_manifest(time.perf_counter() - started)
-    logger.info(f'{len(summary_rows)} cas terminés → {store.root}')
+    logger.info(f'{len(summary_rows)} cases finished → {store.root}')
     return store
 
 
@@ -221,7 +221,7 @@ def _log_outcome(outcome: CaseOutcome,
     row = outcome.summary
     logger.info(
         '    satisf={exact} | no-show={abs} early={early} late={late} | '
-        'offres {issued}→{confirmed} | e2e {e2e} ms | {wall}s'.format(
+        'offers {issued}→{confirmed} | e2e {e2e} ms | {wall}s'.format(
             exact=row['exact_satisfaction'],
             abs=row['nb_no_show'], early=row['nb_early_canc'],
             late=row['nb_late_canc'],
@@ -230,7 +230,7 @@ def _log_outcome(outcome: CaseOutcome,
         )
     )
     if not outcome.invariant_ok:
-        logger.error(f'    invariant de réservation violé : '
+        logger.error(f'    reservation invariant violated: '
                      f'{outcome.result["invariant_errors"][:2]}')
     for warning in outcome.diagnostics:
         if seen_diagnostics is not None:

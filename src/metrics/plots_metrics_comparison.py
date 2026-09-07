@@ -1,5 +1,5 @@
 """
-plots_metrics_comparison.py — Fonctions de visualisation de la comparaison des métriques de simulation
+plots_metrics_comparison.py — Visualization functions comparing the simulation metrics
 """
 
 import numpy as np
@@ -60,7 +60,7 @@ def plot_metric_comparison(
     if max_value > 0:
         ax.set_ylim(0, 1.15 * max_value)
 
-    # Valeurs sur les barres
+    # Values on the bars
     for bars in [bars1, bars2]:
 
         for bar in bars:

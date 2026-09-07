@@ -1,18 +1,18 @@
-# Grille complète du rapport : 3 scénarios x 5 flottes x 6 méthodes, 5 jours.
+# Published grid of the report: 3 scenarios x 5 fleets x 5 methods, 5 days.
 #
 #   python -m src.pipeline.cli run --config experiments/full_grid.yaml
 #
-# Toute option de la CLI surcharge ce fichier :
+# Every CLI option overrides this file:
 #   python -m src.pipeline.cli run --config experiments/full_grid.yaml --seed 7
 label: full-grid
 seed: 42
 scenarios: [optimistic, balance, pessimistic]
 fleet_sizes: [50, 100, 150, 200, 250]
-# Le groupe `reference` développe BRAM-EV, les trois baselines et greedy :
-# c'est la comparaison publiée.
+# The `reference` group expands to BRAM-EV, the three baselines and greedy:
+# this is the published comparison.
 methods: [reference]
 
-total_time: 1440          # 5 jours en slots de 5 min
+total_time: 1440          # 5 days in 5 min slots
 nb_stations: 40
 nb_societies: 4
 strategy_noise: 0.5

@@ -1,35 +1,34 @@
 """
-simulation.py — Boucle principale avec collecte des métriques
+simulation.py — Main loop with metrics collection
 
-Une seule classe couvre **toutes** les méthodes comparées ; elles ne diffèrent
-que par des interrupteurs déclarés dans `src/experiments/methods.py` :
+A single class covers **every** compared method; they differ only by switches
+declared in `src/experiments/methods.py`:
 
-    broadcast            la requête part vers toutes les stations éligibles
-                         ou vers la plus proche seulement (Nearest)
-    use_reputation       les stations mettent à jour le score comportemental
-    collective_learning  les sociétés propagent l'alpha de leur meilleure station
-    offer_choice         le véhicule classe les offres par utilité multicritère
-                         ou par distance
-    alpha_mode           alpha tiré par station, ou identique partout
-    reputation_scope     score par société, ou score global partagé
-    score_weighting      pénalité proportionnelle à la durée, ou forfaitaire
+    broadcast            the request goes to every eligible station, or to the
+                         nearest one only (Nearest)
+    use_reputation       stations update the behavioural score
+    collective_learning  companies propagate the alpha of their best station
+    offer_choice         the vehicle ranks the offers by multi-criteria utility
+                         or by distance
+    alpha_mode           alpha drawn per station, or identical everywhere
+    reputation_scope     score per company, or a shared global score
+    score_weighting      penalty proportional to the duration, or flat
 
-Le reste du protocole (émission, PLI, confirmation, annulations, métriques) est
-partagé : un correctif profite ainsi à toutes les méthodes, et la comparaison ne
-peut pas diverger par recopie de code. C'est cette propriété qui rend l'étude
-d'ablation interprétable — entre deux barreaux de l'échelle, *un seul*
-interrupteur change.
+The rest of the protocol (emission, ILP, confirmation, cancellations, metrics)
+is shared: a fix therefore benefits every method, and the comparison cannot
+diverge through copy-pasted code. That property is what makes the ablation study
+interpretable — between two rungs of the ladder, *one single* switch changes.
 
-Ordre d'un slot
----------------
-1. décisions d'annulation (début de slot, avant tout déplacement)
-2. déplacements (vers station, puis libres)
-3. détection des pannes
-4. émission des requêtes
-5. optimisation PLI par station
-6. sélection puis confirmation sécurisée
-7. recharge active
-8. apprentissage collectif
+Order within a slot
+-------------------
+1. cancellation decisions (start of slot, before any movement)
+2. movements (towards a station, then free)
+3. breakdown detection
+4. request emission
+5. ILP optimisation per station
+6. selection then safe confirmation
+7. active charging
+8. collective learning
 """
 
 import time
@@ -44,8 +43,8 @@ from src.metrics.metrics import MetricsCollector, BreakdownTracker, BehaviorTrac
 
 class Simulation:
 
-    #: Drapeaux des composants, par méthode. Vue dérivée du registre, conservée
-    #: pour le code (et les tests) qui interrogeaient `Simulation.MODES`.
+    #: Component flags, per method. A view derived from the registry, kept for
+    #: the code (and the tests) that queried `Simulation.MODES`.
     MODES = {
         name: {'broadcast': spec.broadcast,
                'use_reputation': spec.use_reputation,
@@ -59,11 +58,11 @@ class Simulation:
         Parameters
         ----------
         mode : str
-            Nom d'une méthode du registre `src/experiments/methods.py` (alias
-            acceptés). Le monde reçu est *identique* quelle que soit la
-            méthode : les drapeaux ne changent que la façon dont il est
-            exploité, ce qui est la condition pour attribuer un écart mesuré à
-            un composant plutôt qu'à un tirage.
+            Name of a method of the `src/experiments/methods.py` registry
+            (aliases accepted). The world received is *identical* whatever the
+            method: the flags only change the way it is exploited, which is the
+            condition for attributing a measured gap to a component rather than
+            to a draw.
         """
         try:
             spec = methods.resolve(mode)
@@ -85,19 +84,19 @@ class Simulation:
         self.config    = config
         self.nb_demands = 0
 
-        # Les mécanismes internes portés par les stations (portée du score,
-        # pondération du score, alpha fixe) sont appliqués ici, après le tirage
-        # du monde : `WorldSpec` reste la source de vérité de l'environnement.
+        # The internal mechanisms carried by the stations (score scope, score
+        # weighting, fixed alpha) are applied here, after the world has been
+        # drawn: `WorldSpec` remains the source of truth for the environment.
         for station in stations:
             station.apply_method(spec, config)
 
-        # Index O(1) : `next(...)` sur toute la liste à chaque accès était le
-        # point chaud de la boucle pour 250 véhicules × 40 stations.
+        # O(1) index: `next(...)` over the whole list at every access was the
+        # hot spot of the loop for 250 vehicles × 40 stations.
         self._car_by_idx     = {c.idx: c for c in cars}
         self._station_by_id  = {s.m: s for s in stations}
 
-        # La fenêtre pygame n'est ouverte que si la visualisation est demandée :
-        # indispensable pour exécuter la grille d'expériences sans affichage.
+        # The pygame window is only opened when visualization is requested:
+        # essential to run the experiment grid headless.
         self.viz = None
         if getattr(config, 'VISUALIZE', False):
             from src.env.visualizer import Visualizer
@@ -108,7 +107,7 @@ class Simulation:
 
         self.breakdowns = BreakdownTracker()
         self.behaviors  = BehaviorTracker(config)
-        self._broken_cars = set()   # car.idx des voitures actuellement en panne
+        self._broken_cars = set()   # car.idx of the cars currently broken down
 
     # ------------------------------------------------------------------
     def run(self, file, print_metrics=True):
@@ -116,7 +115,7 @@ class Simulation:
             self.current_t = t
             self.step(t, self.config.log_iter, file=file)
         self._finalize(file)
-        print(f"\n\n=== Simulation terminée ({self.t_max} slots) ===", file=file)
+        print(f"\n\n=== Simulation finished ({self.t_max} slots) ===", file=file)
         if print_metrics:
             self.metrics.print_report()
             self.breakdowns.print_report()
@@ -131,12 +130,12 @@ class Simulation:
         if (((t_c + 1) % log_iter) == 0) or ((t_c + 1) == self.config.TOTAL_TIME):
             logger.info(f'INSTANT {t_c + 1}/{self.config.TOTAL_TIME}')
 
-        # 1. Annulations — décidées en début de slot, avant tout déplacement.
-        #    (auparavant en fin de slot : un véhicule devant annuler tardivement
-        #     avait déjà atteint la station et était compté comme présent)
+        # 1. Cancellations — decided at the start of the slot, before any move.
+        #    (previously at the end of the slot: a vehicle due to cancel late
+        #     had already reached the station and was counted as present)
         self._process_cancellations(t_c, file=file)
 
-        # 2.a Déplacement vers station
+        # 2.a Movement towards a station
         arrived = []
         for car_idx, target_station in list(self._driving_to_station.items()):
             car = self._get_car(car_idx)
@@ -149,36 +148,36 @@ class Simulation:
         for car_idx in arrived:
             del self._driving_to_station[car_idx]
 
-        # 2.b Déplacement libre
+        # 2.b Free movement
         for car in self.cars:
             if car.state == 'DRIVING':
                 car.update_state()
 
-        # 3. Pannes & gestion
+        # 3. Breakdowns & handling
         self._step_breakdown_detection(t_c, file=file)
 
-        # 4. Émission des requêtes
+        # 4. Request emission
         demands   = {s.m: [] for s in self.stations}
         eligibles = {c.idx: None for c in self.cars}
         min_dists = {}
 
         for car in self.cars:
 
-            # Véhicule déjà lié à une réservation
+            # Vehicle already bound to a reservation
             if car.reservation is not None:
                 continue
 
             if not car.needs_charging():
                 continue
 
-            # Identifiant de demande unique : (slot, véhicule). Auparavant
-            # `t_c * len(cars)`, identique pour tous les véhicules d'un même
-            # slot — les enregistrements de latence s'écrasaient mutuellement.
-            # Une relance conserve l'identifiant : du point de vue de l'usager
-            # c'est un seul besoin de recharge, dont on mesure la latence de
-            # bout en bout. Réémettre sous un nouvel identifiant gonflerait le
-            # nombre de demandes et ferait chuter le taux de confirmation sans
-            # qu'aucun besoin supplémentaire n'ait été exprimé.
+            # Unique demand identifier: (slot, vehicle). Previously
+            # `t_c * len(cars)`, identical for every vehicle of a given slot —
+            # the latency records overwrote each other. A retry keeps the
+            # identifier: from the user's point of view this is a single
+            # charging need, whose end-to-end latency is measured. Re-emitting
+            # under a new identifier would inflate the number of demands and
+            # sink the confirmation rate without any extra need having been
+            # expressed.
             retrying = car.state == 'PARKED_SEARCHING'
             if retrying:
                 req = car.reemit_request(t_c)
@@ -188,7 +187,7 @@ class Simulation:
                 req = car.emit_request(t_c, (car.x, car.y), id_demand)
 
             print(f'\ncar_{car.idx} NEED CHARGING (soc:{car.soc_m * 1e-3:.2f}km < {car.soc_threshold_m * 1e-3:.2f}km)'
-                  + (f' [RELANCE {car.search_retries}/{self.config.MAX_SEARCH_RETRIES}]'
+                  + (f' [RETRY {car.search_retries}/{self.config.MAX_SEARCH_RETRIES}]'
                      if retrying else ''), file=file)
             print(f'\n-> REQUEST {req['n']}'
                   f' | DURATION: {req['d_n']} slots '
@@ -207,8 +206,8 @@ class Simulation:
             print(f'\n-> MIN_DIST = {min_d*1e-3:.2f}km, station {min_s.m if min_s else None}', file=file)
             print(f'\n-> {len(eligible)} ELIGIBLE STATION', file=file)
 
-            # Stations effectivement contactées : toutes les éligibles (BRAM-EV)
-            # ou la plus proche seulement (Greedy).
+            # Stations actually contacted: every eligible one (BRAM-EV) or the
+            # nearest one only (Greedy).
             targets = eligible if self.broadcast else ([min_s] if min_s else [])
 
             if retrying:
@@ -221,10 +220,10 @@ class Simulation:
                 )
                 self.nb_demands += 1
 
-            # Aucune station dans le rayon : le véhicule s'arrête et relance
-            # avec un rayon élargi plutôt que de repartir au hasard.
+            # No station within the radius: the vehicle stops and retries with a
+            # widened radius rather than driving off at random.
             if not targets:
-                self._retry_or_give_up(car, id_demand, 'aucune station éligible',
+                self._retry_or_give_up(car, id_demand, 'no eligible station',
                                        t_c, file)
                 continue
 
@@ -232,7 +231,7 @@ class Simulation:
             for s in targets:
                 demands[s.m].append((car, req))
 
-        # 5. Optimisation ILP par station
+        # 5. ILP optimisation per station
         car_offers = {car.idx: [] for car in self.cars}
 
         for s in self.stations:
@@ -249,7 +248,7 @@ class Simulation:
                 car_offers[c.idx].append(offer)
                 self.metrics.record_demand_responded(c.request['n'], s.m)
 
-        # 6. Sélection de l'offre puis confirmation sécurisée
+        # 6. Offer selection then safe confirmation
         for car in self.cars:
             if car.state != 'REQUESTING':
                 continue
@@ -257,7 +256,7 @@ class Simulation:
                                      eligibles.get(car.idx) or [],
                                      min_dists.get(car.idx, 0.), t_c, file)
 
-        # 7. Recharge active
+        # 7. Active charging
         for car in self.cars:
 
             if car.state not in ('AT_STATION', 'CHARGING', 'WAITING') or car.reservation is None:
@@ -282,37 +281,37 @@ class Simulation:
                 car.set_state('DRIVING')
                 car.clear_reservation()
 
-        # 8. Mise à jour sociétés
+        # 8. Company update
         if (self.collective_learning and t_c > 0
                 and t_c % self.config.SOCIETY_UPDATE_INTERVAL == 0):
             logger.info('-> UPDATE SOCIETY STRATEGY')
             for society in self.societies:
                 society.update_strategy(file=file)
 
-        # --- VISUALISATION
+        # --- VISUALIZATION
         if self.viz is not None:
             time.sleep(self.config.VIS_DELAY)
             self.viz.draw(self.cars, self.stations, t_c)
 
     # ------------------------------------------------------------------
-    # Relance de recherche
+    # Search retry
     # ------------------------------------------------------------------
 
     def _retry_or_give_up(self, car, demand_id, reason, t_c, file=None):
         """
-        Échec de recherche : le véhicule se gare et relance avec un rayon
-        élargi, ou renonce si son budget de relances est épuisé.
+        Search failure: the vehicle parks and retries with a widened radius, or
+        gives up if its retry budget is exhausted.
 
-        S'arrêter plutôt que de reprendre la route a deux effets : le véhicule
-        ne consomme plus pendant une recherche infructueuse — il ne peut donc
-        pas tomber en panne faute d'avoir trouvé une borne — et il ne dérive
-        pas loin des stations qu'il essaie d'atteindre.
+        Stopping rather than driving on has two effects: the vehicle no longer
+        consumes during an unsuccessful search — so it cannot break down for
+        want of a charger — and it does not drift away from the stations it is
+        trying to reach.
         """
         if car.widen_search():
             car.set_state('PARKED_SEARCHING')
             if file is not None:
                 print(f'\ncar_{car.idx} PARKED_SEARCHING ({reason}) '
-                      f'-> rayon élargi à {car.request["r_n"] * 1e-3:.2f}km '
+                      f'-> radius widened to {car.request["r_n"] * 1e-3:.2f}km '
                       f'[{car.search_retries}/{self.config.MAX_SEARCH_RETRIES}]',
                       file=file)
             return True
@@ -320,34 +319,34 @@ class Simulation:
         self.metrics.record_demand_selection(demand_id)
         self.metrics.record_demand_confirmation(demand_id, False, 0)
         if file is not None:
-            print(f'\ncar_{car.idx} ABANDON RECHERCHE ({reason}) après '
-                  f'{car.search_retries} relance(s)', file=file)
+            print(f'\ncar_{car.idx} SEARCH ABANDONED ({reason}) after '
+                  f'{car.search_retries} retry(ies)', file=file)
         car.give_up_search()
         return False
 
     # ------------------------------------------------------------------
-    # Sélection & confirmation
+    # Selection & confirmation
     # ------------------------------------------------------------------
 
     def _select_and_confirm(self, car, offers, eligible, min_d, t_c, file):
         """
-        Le véhicule classe les offres reçues (utilité multicritère, ou distance
-        si `offer_choice == 'nearest'`) et n'en confirme **qu'une**.
+        The vehicle ranks the offers received (multi-criteria utility, or
+        distance if `offer_choice == 'nearest'`) and confirms **only one**.
 
-        Garanties :
-          * une seule offre confirmée par demande ;
-          * toutes les autres passent explicitement en EXPIRED — elles ne
-            pourront plus être confirmées, même par erreur ;
-          * la station revalide l'offre (TTL, contiguïté, créneaux réellement
-            libres) avant d'écrire au calendrier ; en cas de refus, le véhicule
-            se rabat sur l'offre suivante au lieu de renoncer.
+        Guarantees:
+          * a single confirmed offer per demand;
+          * every other one moves explicitly to EXPIRED — they can no longer be
+            confirmed, even by mistake;
+          * the station revalidates the offer (TTL, contiguity, slots actually
+            free) before writing to the calendar; on refusal, the vehicle falls
+            back on the next offer instead of giving up.
         """
         demand_id = car.request['n']
         car.nb_offers_received += len(offers)
         car.nb_rejected += max(0, len(eligible) - len(offers))
 
         if not offers:
-            self._retry_or_give_up(car, demand_id, 'aucune offre reçue', t_c, file)
+            self._retry_or_give_up(car, demand_id, 'no offer received', t_c, file)
             return
 
         ranked = car.rank_offers(offers, car.request, min_d, self.offer_choice)
@@ -364,7 +363,7 @@ class Simulation:
             print(f'\ncar_{car.idx} CONFIRM REFUSED {offer.offer_id} '
                   f'({offer.reject_reason})', file=file)
 
-        # Les offres non retenues expirent immédiatement.
+        # The offers not retained expire immediately.
         for offer, _ in ranked:
             if offer is not chosen:
                 self._get_station(offer.station_id).expire_offer(offer)
@@ -372,7 +371,7 @@ class Simulation:
         self.metrics.record_demand_confirmation(demand_id, chosen is not None, attempts)
 
         if chosen is None:
-            self._retry_or_give_up(car, demand_id, 'aucune confirmation acceptée',
+            self._retry_or_give_up(car, demand_id, 'no confirmation accepted',
                                    t_c, file)
             return
 
@@ -390,18 +389,18 @@ class Simulation:
         self.behaviors.record_intent(behavior, car.reservation_lead)
 
         if behavior == 'abs':
-            # La réservation reste active dans le planning : le créneau est
-            # perdu jusqu'à t_dep. Le véhicule ne se présentera jamais et reste
-            # immobile jusque-là (PARKED_NO_SHOW) — il a renoncé à son trajet,
-            # pas seulement à sa recharge. Conséquence importante : un no-show
-            # ne consomme plus pendant toute la durée de son créneau gelé, et
-            # ne peut donc plus tomber en panne de ce fait.
+            # The reservation stays active in the schedule: the slot is lost
+            # until t_dep. The vehicle will never show up and stays put until
+            # then (PARKED_NO_SHOW) — it gave up its trip, not only its charge.
+            # Important consequence: a no-show no longer consumes for the whole
+            # duration of its frozen slot, and can therefore no longer break
+            # down because of it.
             car.set_state('PARKED_NO_SHOW')
             return
 
-        # `t_hat_arr` inclut l'horizon de planification : le délai voulu par le
-        # conducteur n'est pas de l'attente subie et ne doit pas dégrader la
-        # métrique de qualité de service.
+        # `t_hat_arr` includes the planning horizon: the delay wanted by the
+        # driver is not endured waiting and must not degrade the quality-of-
+        # service metric.
         t_hat_arr     = utils.nominal_arrival(car.request['t_n'],
                                               car.request.get('l_n', 0),
                                               chosen.distance, self.config)
@@ -415,38 +414,39 @@ class Simulation:
         self._driving_to_station[car.idx] = target_station
 
     # ------------------------------------------------------------------
-    # Annulations
+    # Cancellations
     # ------------------------------------------------------------------
 
     def _process_cancellations(self, t_c, file=None):
         """
-        Réalise les intentions d'annulation tirées à la réservation.
+        Realise the cancellation intents drawn at reservation time.
 
-        Correction apportée
-        -------------------
-        L'ancienne logique reclassait d'abord l'intention selon le temps
-        restant, puis exigeait que la classe recalculée corresponde à
-        l'intention. Comme le délai requête → arrivée est presque toujours
-        inférieur à LATE_CANCEL_REF (24 slots = 2 h) alors que le trajet ne dure
-        que quelques slots, tout était classé « tardif » et la branche
-        « anticipé » était **inatteignable** : un véhicule d'intention `early`
-        n'annulait jamais et finissait compté comme présent.
+        Correction applied
+        ------------------
+        The former logic first reclassified the intent according to the time
+        left, then required the recomputed class to match the intent. Since the
+        request → arrival delay is almost always shorter than LATE_CANCEL_REF
+        (12 slots = 1 h) while the trip lasts only a few slots, everything was
+        classified as "late" and the "early" branch was **unreachable**: a
+        vehicle with an `early` intent never cancelled and ended up counted as
+        present.
 
-        Nouvelle logique : l'intention détermine *quand* l'annulation a lieu,
-        et l'issue observée est déduite du temps réellement restant.
+        New logic: the intent determines *when* the cancellation happens, and
+        the observed outcome is derived from the time actually left.
 
-          early  → annule dès le slot suivant la réservation (au plus tôt)
-          late   → annule quand il reste <= seuil slots avant l'arrivée prévue
+          early  → cancels as soon as the slot after the reservation (earliest)
+          late   → cancels when <= threshold slots are left before the planned
+                   arrival
 
-        Le seuil est `config.late_cancel_threshold(lead)` : borné à la fois par
-        LATE_CANCEL_REF et par une fraction du délai réel, de sorte que les deux
-        régimes soient atteignables. L'issue observée peut donc différer de
-        l'intention (une intention `early` sur une réservation à très court
-        délai est réalisée comme `late`) : `BehaviorTracker` enregistre les deux.
+        The threshold is `config.late_cancel_threshold(lead)`: bounded both by
+        LATE_CANCEL_REF and by a fraction of the actual delay, so that both
+        regimes are reachable. The observed outcome may therefore differ from
+        the intent (an `early` intent on a very short-delay reservation is
+        realised as `late`): `BehaviorTracker` records both.
         """
 
         # --------------------------------------------------
-        # No-show (absence) : créneau occupé jusqu'à t_dep
+        # No-show (absence): slot occupied until t_dep
         # --------------------------------------------------
         for car in self.cars:
 
@@ -469,12 +469,12 @@ class Simulation:
                 car.set_state('DRIVING')
 
         # --------------------------------------------------
-        # Annulation anticipée / tardive
+        # Early / late cancellation
         # --------------------------------------------------
         for car in self.cars:
             if car.reservation is None or car.cancel_intent not in ('early', 'late'):
                 continue
-            # Une session déjà commencée ne s'annule plus.
+            # A session already started can no longer be cancelled.
             if car.state == 'CHARGING':
                 continue
 
@@ -503,25 +503,25 @@ class Simulation:
             self.behaviors.record_outcome(car.cancel_intent, observed)
 
             if file is not None:
-                print(f'\ncar_{car.idx} CANCEL {observed} (intention={car.cancel_intent}, '
-                      f'slots_left={slots_left}, seuil={threshold}) station_{s.m}', file=file)
+                print(f'\ncar_{car.idx} CANCEL {observed} (intent={car.cancel_intent}, '
+                      f'slots_left={slots_left}, threshold={threshold}) station_{s.m}', file=file)
 
             self._driving_to_station.pop(car.idx, None)
             car.clear_reservation()
             car.set_state('DRIVING')
 
     # ------------------------------------------------------------------
-    # Clôture
+    # Closing
     # ------------------------------------------------------------------
 
     def _finalize(self, file=None):
         """
-        Résout les réservations encore ouvertes à la fin de l'horizon.
+        Resolve the reservations still open at the end of the horizon.
 
-        Sans cette étape, toute réservation dont `t_dep` dépasse l'horizon reste
-        comptée comme confirmée sans jamais recevoir d'issue : l'invariant
-        `nb_reservations == somme des issues` était faux et les taux de no-show
-        sous-estimés.
+        Without this step, any reservation whose `t_dep` exceeds the horizon
+        stayed counted as confirmed without ever receiving an outcome: the
+        invariant `nb_reservations == sum of the outcomes` was false and the
+        no-show rates under-estimated.
         """
         for car in self.cars:
             if car.reservation is None:
@@ -545,8 +545,8 @@ class Simulation:
 
     def check_reservation_invariant(self):
         """
-        Vérifie, station par station, que chaque réservation confirmée a reçu
-        exactement une issue.
+        Check, station by station, that every confirmed reservation received
+        exactly one outcome.
         """
         errors = []
         for s in self.stations:
@@ -554,19 +554,19 @@ class Simulation:
                         + s.nb_late_canc + s.nb_breakdown_canc + s.nb_unresolved)
             if outcomes != s.nb_reservations:
                 errors.append(
-                    f"Station {s.m}: {s.nb_reservations} réservations != "
-                    f"{outcomes} issues (pres={s.nb_pres}, abs={s.nb_no_show}, "
+                    f"Station {s.m}: {s.nb_reservations} reservations != "
+                    f"{outcomes} outcomes (pres={s.nb_pres}, abs={s.nb_no_show}, "
                     f"early={s.nb_early_canc}, late={s.nb_late_canc}, "
                     f"breakdown={s.nb_breakdown_canc}, unresolved={s.nb_unresolved})"
                 )
         return (not errors), errors
 
     # ------------------------------------------------------------------
-    # Résultats
+    # Results
     # ------------------------------------------------------------------
 
     def results(self) -> dict:
-        """Résultat complet et sérialisable d'une exécution."""
+        """Complete, serialisable result of one execution."""
         ok, errors = self.check_reservation_invariant()
         return {
             'mode':             self.mode,
@@ -587,8 +587,8 @@ class Simulation:
 
     # ------------------------------------------------------------------
     def _demand_id(self, t_c, car_idx):
-        """Identifiant unique d'une demande : un véhicule émet au plus une
-        requête par slot (garde `car.reservation is None` + état DRIVING)."""
+        """Unique identifier of a demand: a vehicle emits at most one request
+        per slot (guarded by `car.reservation is None` + DRIVING state)."""
         return f"t{t_c:05d}-c{car_idx:05d}"
 
     def _get_car(self, idx):
@@ -603,7 +603,7 @@ class Simulation:
         return np.sqrt((xc - xs)**2 + (yc - ys)**2)
 
     def _get_eligible_stations(self, x_n, y_n, r_n):
-        """Retourne (stations éligibles, distance minimale, station la plus proche)."""
+        """Return (eligible stations, minimal distance, nearest station)."""
         eligible, min_dist = [], float('inf')
         min_stat = None
         for s in self.stations:
@@ -618,19 +618,19 @@ class Simulation:
 
     def _step_breakdown_detection(self, t_c, file):
 
-        """Phase 3 — détecte les nouvelles pannes et gère la reprise."""
+        """Phase 3 — detect the new breakdowns and handle recovery."""
 
         for car in self.cars:
 
-            # ── Nouvelle panne ──────────────────────────────────────────
+            # ── New breakdown ───────────────────────────────────────────
             if (car.state == 'BREAKDOWN'
                     and car.idx not in self._broken_cars):
                 self._broken_cars.add(car.idx)
                 self.breakdowns.record(car, t_c)
-                print(f"\n  [PANNE] car_{car.idx} tombe en panne "
+                print(f"\n  [BREAKDOWN] car_{car.idx} breaks down "
                     f"(soc={car.soc_m:.3f}) pos=({car.x:.0f},{car.y:.0f})", file=file)
 
-                # Libère la réservation si elle existait
+                # Release the reservation if there was one
                 if car.reservation is not None:
                     s = self._get_station(car.reservation.station_id)
                     s.release_reservation(car.idx, car.reservation)
@@ -641,11 +641,11 @@ class Simulation:
                     self._driving_to_station.pop(car.idx, None)
                     car.clear_reservation()
 
-            # ── Reprise après recharge complète ─────────────────────────
-            # Une voiture en BREAKDOWN peut redémarrer si son soc a remonté
-            # (cas où elle a quand même atteint une station malgré soc~0)
+            # ── Recovery after a full charge ────────────────────────────
+            # A car in BREAKDOWN can restart if its soc went back up
+            # (case where it did reach a station despite soc~0)
             if (car.state == 'BREAKDOWN'
                     and car.soc_m > self.config.SOC_BREAKDOWN_THRESHOLD * 5):
                 car.set_state('DRIVING')
                 self._broken_cars.discard(car.idx)
-                print(f"\n  [REPRISE] car_{car.idx} redémarre (soc={car.soc_m:.3f})", file=file)
+                print(f"\n  [RECOVERY] car_{car.idx} restarts (soc={car.soc_m:.3f})", file=file)

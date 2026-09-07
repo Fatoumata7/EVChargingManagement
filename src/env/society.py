@@ -1,5 +1,5 @@
 """
-society.py — Agent société de recharge
+society.py — Charging company agent.
 """
 
 import copy
@@ -18,8 +18,8 @@ class Society:
         Parameters
         ----------
         spec : dict | None
-            Paramètres explicites (loc, strategy) issus d'un `WorldSpec`.
-            Si fourni, aucun tirage n'a lieu ici.
+            Explicit parameters (loc, strategy) coming from a `WorldSpec`.
+            When provided, no random draw happens here.
         """
         self.f_id = f_id
         self.config = config
@@ -41,12 +41,12 @@ class Society:
 
     def add_station(self, s: station.Station):
         self.stations.append(s)
-        s.strategy = self.strategy   # injection par référence
+        s.strategy = self.strategy   # injected by reference
 
     def update_strategy(self, file):
         """
-        FIX : on copie la stratégie de la meilleure station, pas l'objet station.
-        Apprentissage collectif : la meilleure station dicte la stratégie commune.
+        FIX: the *strategy* of the best station is copied, not the station object.
+        Collective learning: the best station dictates the common strategy.
         """
         if not self.stations:
             return
@@ -57,7 +57,7 @@ class Society:
         best_idx = int(np.argmax(perf))
         print(f'best_station perf: {perf[best_idx]} allocated_slots', file=file)
 
-        # Propagation à toutes les stations
+        # Propagation to every station
         best_alpha = self.stations[best_idx].alpha
         for idx, s in enumerate(self.stations):
             if idx != best_idx:

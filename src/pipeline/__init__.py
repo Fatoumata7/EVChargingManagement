@@ -1,16 +1,16 @@
 """
-pipeline — Orchestration des expériences BRAM-EV.
+pipeline — Orchestration of the BRAM-EV experiments.
 
-Séparation des responsabilités :
+Separation of concerns:
 
-    params.py    paramètres d'expérience (dataclasses, validation, fichier/CLI)
-    store.py     disposition et persistance des artefacts d'un run
-    runner.py    exécution d'un cas et de la grille
-    tables.py    extraction de tables « tidy » (simulation ou disque)
-    figures.py   figures à partir des tables, sans re-simuler
-    cli.py       interface en ligne de commande
+    params.py    experiment parameters (dataclasses, validation, file/CLI)
+    store.py     layout and persistence of the artifacts of a run
+    runner.py    execution of a case and of the grid
+    tables.py    extraction of tidy tables (from a simulation or from disk)
+    figures.py   figures built from the tables, without re-simulating
+    cli.py       command line interface
 
-Point d'entrée :
+Entry point:
 
     python -m src.pipeline.cli run --scenarios pessimistic --cars 50 100
 """

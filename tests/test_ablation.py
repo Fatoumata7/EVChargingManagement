@@ -1,20 +1,20 @@
 """
-test_ablation.py — Tests de l'étude d'ablation.
+test_ablation.py — Tests of the ablation study.
 
     python -m tests.test_ablation
 
-Ce que ces tests protègent, dans l'ordre d'importance :
+What these tests protect, in order of importance:
 
-1. **Un composant à la fois.** Deux barreaux consécutifs de l'échelle ne
-   diffèrent que par un drapeau. Si cette propriété casse, un écart mesuré
-   n'est plus attribuable à un composant et toute l'étude devient fausse sans
-   qu'aucun résultat n'ait l'air anormal.
-2. **Les drapeaux atteignent les agents.** Un drapeau déclaré mais jamais lu
-   produirait deux méthodes identiques — et une contribution nulle qu'on
-   interpréterait comme « ce composant ne sert à rien ».
-3. **La décomposition est fidèle.** Les écarts publiés doivent être ceux du
-   `summary.csv`, avec la bonne direction (une baisse des no-shows est un
-   gain, une baisse de la satisfaction n'en est pas un).
+1. **One component at a time.** Two consecutive rungs of the ladder differ by
+   one flag only. If that property breaks, a measured gap is no longer
+   attributable to a component and the whole study becomes wrong without any
+   result looking abnormal.
+2. **The flags actually reach the agents.** A flag declared but never read
+   would produce two identical methods — and a zero contribution that would be
+   read as "this component is good for nothing".
+3. **The decomposition is faithful.** The published gaps must be those of
+   `summary.csv`, with the right direction (a drop in no-shows is a gain, a
+   drop in satisfaction is not).
 """
 
 from __future__ import annotations
@@ -55,7 +55,7 @@ def tiny_params(**overrides) -> ExperimentParams:
 
 
 def build_agents(params: ExperimentParams, scenario='pessimistic', nb_cars=12):
-    """Un monde matérialisé, identique à celui que le runner fabrique."""
+    """A materialised world, identical to the one the runner builds."""
     config = params.build_config(scenario, nb_cars)
     shared = params.build_shared_config(nb_cars)
     grid = generate_grid_spec(shared, params.seed)
@@ -65,7 +65,7 @@ def build_agents(params: ExperimentParams, scenario='pessimistic', nb_cars=12):
 
 
 # ----------------------------------------------------------------------
-# Registre : la structure de l'échelle
+# Registry: the structure of the ladder
 # ----------------------------------------------------------------------
 
 def test_ladder_changes_exactly_one_component_per_step():
@@ -76,13 +76,13 @@ def test_ladder_changes_exactly_one_component_per_step():
         assert len(changed) == 1, (
             f'{before} -> {after} change {changed}, or un barreau doit ajouter '
             f'exactement un composant ({label})')
-        assert getattr(b, changed[0]) is True, 'un barreau ajoute, il ne retire pas'
-        # Les mécanismes internes restent ceux de BRAM-EV tout au long.
+        assert getattr(b, changed[0]) is True, 'a rung adds, it does not remove'
+        # The internal mechanisms stay those of BRAM-EV throughout.
         for field in ('offer_choice', 'alpha_mode', 'reputation_scope',
                       'score_weighting'):
             assert getattr(a, field) == getattr(b, field), (
                 f'{field} varie entre {before} et {after} : le barreau '
-                'mélangerait deux effets')
+                'would mix two effects')
 
 
 def test_ladder_endpoints_are_the_historical_methods():
@@ -100,10 +100,10 @@ def test_each_variant_differs_from_bramev_by_one_mechanism():
         spec = methods.resolve(name)
         changed = [f for f in fields if getattr(full, f) != getattr(spec, f)]
         assert changed == [f for f in fields if f in changed] and len(changed) == 1, (
-            f'{name} diffère de bramev sur {changed} : une variante ne doit '
-            'neutraliser qu un seul mécanisme')
+            f'{name} differs from bramev on {changed}: a variant must '
+            'must neutralise a single mechanism')
         assert name in ablation.VARIANT_MECHANISM, (
-            f'{name} n a pas de libellé de mécanisme dans les tables')
+            f'{name} has no mechanism label in the tables')
 
 
 def test_unknown_method_is_rejected_with_a_situated_message():
@@ -112,11 +112,11 @@ def test_unknown_method_is_rejected_with_a_situated_message():
     except KeyError as exc:
         assert 'inexistante' in str(exc)
     else:
-        raise AssertionError('une méthode inconnue doit lever KeyError')
+        raise AssertionError('an unknown method must raise KeyError')
 
 
 # ----------------------------------------------------------------------
-# Les drapeaux atteignent réellement les agents
+# The flags do reach the agents
 # ----------------------------------------------------------------------
 
 def test_flags_reach_stations():
@@ -127,7 +127,7 @@ def test_flags_reach_stations():
     Simulation(cars, stations, societies, config.TOTAL_TIME, config,
                mode='bramev_global_rep')
     assert {s.score_index for s in stations} == {0}, \
-        'réputation globale : toutes les stations doivent lire la même case'
+        'global reputation: every station must read the same slot'
 
     Simulation(cars, stations, societies, config.TOTAL_TIME, config,
                mode='bramev_event_score')
@@ -138,9 +138,9 @@ def test_flags_reach_stations():
                mode='bramev_fixed_alpha')
     assert {round(s.alpha, 6) for s in stations} == {0.42}
     assert all(s.alpha_save == [0.42] for s in stations), \
-        'la trajectoire alpha doit refléter la valeur réellement utilisée'
+        'the alpha trajectory must reflect the value actually used'
 
-    # Une méthode sans drapeau alpha ne touche pas aux alpha du monde.
+    # A method with no alpha flag does not touch the alphas of the world.
     (cars, stations, societies), config = build_agents(params)
     Simulation(cars, stations, societies, config.TOTAL_TIME, config, mode='bramev')
     assert [s.alpha for s in stations] == alphas_before
@@ -148,13 +148,13 @@ def test_flags_reach_stations():
 
 def test_score_weighting_changes_the_penalty():
     """
-    Le score étant une moyenne bornée sur une fenêtre glissante, la durée agit
-    *relativement* : elle décide du poids de chaque issue dans la moyenne, pas
-    de l amplitude absolue du score.
+    Since the score is a bounded mean over a sliding window, the duration acts
+    *relatively*: it decides the weight of each outcome in the mean, not the
+    absolute amplitude of the score.
 
-    On compare donc une fenêtre hétérogène — une présence courte suivie d un
-    no-show long. En pondération par la durée, le no-show domine ; en
-    pondération forfaitaire, les deux issues comptent pareil.
+    So a heterogeneous window is compared — a short presence followed by a long
+    no-show. Under duration weighting the no-show dominates; under flat
+    weighting the two outcomes count the same.
     """
     params = tiny_params()
     (cars, stations, societies), config = build_agents(params)
@@ -164,7 +164,7 @@ def test_score_weighting_changes_the_penalty():
     def window(mode):
         Simulation(cars, stations, societies, config.TOTAL_TIME, config, mode=mode)
         car.reset_score()
-        station.update_car_score(car, 'pres', 1)    # présence courte
+        station.update_car_score(car, 'pres', 1)    # short presence
         station.update_car_score(car, 'abs', 20)    # no-show long
         return float(car.score[station.score_index])
 
@@ -172,13 +172,13 @@ def test_score_weighting_changes_the_penalty():
     per_event = window('bramev_event_score')
 
     assert proportional < per_event, (
-        'pondérée par la durée, la fenêtre doit être dominée par le no-show '
+        'weighted by duration, the window must be dominated by the no-show '
         f'long : {proportional} vs {per_event} (forfaitaire)'
     )
     assert -1. <= proportional <= 1. and -1. <= per_event <= 1.
 
-    # Sur une fenêtre homogène en durée, les deux pondérations coïncident :
-    # c est la contrepartie du bornage, et elle doit être explicite.
+    # On a window homogeneous in duration, both weightings coincide:
+    # that is the counterpart of the bounding, and it must be explicit.
     def homogeneous(mode):
         Simulation(cars, stations, societies, config.TOTAL_TIME, config, mode=mode)
         car.reset_score()
@@ -197,7 +197,7 @@ def test_reputation_scope_separates_or_shares_the_score():
     for station in stations:
         by_society.setdefault(station.society_id, station)
     if len(by_society) < 2:
-        return          # grille trop petite pour distinguer les deux portées
+        return          # grid too small to distinguish the two scopes
 
     first, second = list(by_society.values())[:2]
 
@@ -205,14 +205,14 @@ def test_reputation_scope_separates_or_shares_the_score():
     car.reset_score()
     first.update_car_score(car, 'abs', 4)
     assert car.score[second.score_index] == 0., \
-        'réputation par société : une société ne subit pas le score écrit par une autre'
+        'per-company reputation: a company does not suffer the score written by another'
 
     Simulation(cars, stations, societies, config.TOTAL_TIME, config,
                mode='bramev_global_rep')
     car.reset_score()
     first.update_car_score(car, 'abs', 4)
     assert car.score[second.score_index] < 0., \
-        'réputation globale : le score écrit par une société est lu par les autres'
+        'global reputation: the score written by one company is read by the others'
 
 
 def test_offer_choice_nearest_ignores_utility():
@@ -226,7 +226,7 @@ def test_offer_choice_nearest_ignores_utility():
         return Offer(station_id=station_id, charger_id=0, t_arr=t_arr,
                      t_dep=t_arr + d_prop, d_prop=d_prop, distance=distance)
 
-    # La plus proche est aussi la moins bonne : durée partielle et attente.
+    # The nearest one is also the worst: partial duration and waiting.
     near_but_poor = offer(1, distance=100., d_prop=1, t_arr=10)
     far_but_good = offer(2, distance=4000., d_prop=6, t_arr=0)
     offers = [far_but_good, near_but_poor]
@@ -241,11 +241,11 @@ def test_offer_choice_nearest_ignores_utility():
     except ValueError:
         pass
     else:
-        raise AssertionError('un critère inconnu doit être refusé')
+        raise AssertionError('an unknown criterion must be refused')
 
 
 # ----------------------------------------------------------------------
-# Décomposition
+# Decomposition
 # ----------------------------------------------------------------------
 
 def _summary(method: str, **values) -> dict:
@@ -263,10 +263,10 @@ def test_ladder_rows_measure_consecutive_steps_only():
               if r['metric'] == 'exact_satisfaction']
     assert len(detail) == 3
     by_component = {r['component']: r for r in detail}
-    assert round(by_component['Recherche multi-stations']['delta'], 6) == 0.10
-    assert round(by_component['Réputation']['delta'], 6) == 0.06
-    assert round(by_component['Adaptation entre stations']['delta'], 6) == 0.06
-    # Les contributions somment à l'écart total entre les deux extrémités.
+    assert round(by_component['Multi-station search']['delta'], 6) == 0.10
+    assert round(by_component['Reputation']['delta'], 6) == 0.06
+    assert round(by_component['Cross-station adaptation']['delta'], 6) == 0.06
+    # The contributions sum to the total gap between the two endpoints.
     assert abs(sum(r['delta'] for r in detail) - (0.72 - 0.50)) < 1e-9
     assert all(r['improvement'] for r in detail)
 
@@ -276,9 +276,9 @@ def test_improvement_follows_the_metric_direction():
             _summary('multistation', rate_abs=0.20, exact_satisfaction=0.40)]
     detail = {r['metric']: r for r in ablation.ladder_rows(rows)}
     assert detail['rate_abs']['delta'] < 0 and detail['rate_abs']['improvement'], \
-        'moins de no-shows est un gain'
+        'fewer no-shows is a gain'
     assert not detail['exact_satisfaction']['improvement'], \
-        'moins de satisfaction n est pas un gain'
+        'less satisfaction is not a gain'
 
 
 def test_variant_rows_compare_to_the_full_method():
@@ -289,9 +289,9 @@ def test_variant_rows_compare_to_the_full_method():
     assert len(detail) == 1
     row = detail[0]
     assert row['from_method'] == 'bramev' and row['to_method'] == 'bramev_global_rep'
-    assert row['component'] == 'Réputation par société'
+    assert row['component'] == 'Per-company reputation'
     assert not row['improvement'], \
-        'neutraliser la réputation par société dégrade ici : le mécanisme sert'
+        'neutralising the per-company reputation degrades here: the mechanism is useful'
 
 
 def test_mean_rows_report_robustness_not_only_the_average():
@@ -304,7 +304,7 @@ def test_mean_rows_report_robustness_not_only_the_average():
     assert len(means) == 1
     assert means[0]['nb_worlds'] == 2
     assert means[0]['share_improved'] == 0.5, \
-        'un composant qui n aide que la moitié des mondes doit se voir'
+        'a component that only helps half of the worlds must show'
 
 
 def test_duplicate_methods_in_summary_are_rejected():
@@ -313,9 +313,9 @@ def test_duplicate_methods_in_summary_are_rejected():
     try:
         ablation.ladder_rows(rows)
     except ValueError as exc:
-        assert 'doublons' in str(exc)
+        assert 'duplicates' in str(exc)
     else:
-        raise AssertionError('un summary.csv dupliqué doit être refusé')
+        raise AssertionError('a duplicated summary.csv must be refused')
 
 
 def test_incomparable_run_produces_no_table():
@@ -324,38 +324,38 @@ def test_incomparable_run_produces_no_table():
 
 
 # ----------------------------------------------------------------------
-# Configurations livrées
+# Shipped configurations
 # ----------------------------------------------------------------------
 
 def test_shipped_configs_declare_their_methods():
     """
-    Chaque preset de `experiments/` doit déclarer `methods` explicitement.
+    Every preset of `experiments/` must declare `methods` explicitly.
 
-    `ExperimentParams.methods` a une valeur par défaut — l'échelle d'ablation.
-    Un fichier qui omet la clé ne lève donc aucune erreur : il exécute
-    silencieusement une *autre* campagne que celle que ses commentaires
-    décrivent. C'est arrivé : `ablation_variants.yaml` privé de sa ligne
-    `methods` a refait l'échelle pendant 21 h sous le label des variantes.
+    `ExperimentParams.methods` has a default value — the ablation ladder. A
+    file that omits the key therefore raises no error: it silently runs a
+    *different* campaign from the one its comments describe. It happened:
+    `ablation_variants.yaml` deprived of its `methods` line redid the ladder for
+    21 h under the label of the variants.
     """
     import yaml
 
     configs = sorted(Path('experiments').glob('*.yaml'))
-    assert configs, 'aucune configuration livrée trouvée'
+    assert configs, 'no shipped configuration found'
 
     for path in configs:
         data = yaml.safe_load(path.read_text(encoding='utf-8')) or {}
         assert 'methods' in data, (
-            f"{path} ne déclare pas `methods` : la campagne retomberait sur "
-            f"le défaut {list(methods.LADDER)} sans rien signaler")
+            f"{path} does not declare `methods`: the campaign would fall back on "
+            f"the default {list(methods.LADDER)} without reporting anything")
         params = ExperimentParams.from_file(path)
-        assert params.methods, f'{path} : liste de méthodes vide'
+        assert params.methods, f'{path}: empty method list'
 
 
 def test_variants_config_actually_runs_the_variants():
     """
-    Le preset des variantes doit contenir la référence *et* les quatre
-    variantes : sans `bramev`, aucun écart n'est calculable ; sans les
-    variantes, il n'y a rien à comparer.
+    The variants preset must contain the reference *and* the four variants:
+    without `bramev` no gap is computable; without the variants there is
+    nothing to compare.
     """
     params = ExperimentParams.from_file('experiments/ablation_variants.yaml')
     assert set(params.methods) == {'bramev'} | set(methods.VARIANTS), (
@@ -364,40 +364,40 @@ def test_variants_config_actually_runs_the_variants():
 
 def test_ablation_config_runs_the_ladder_and_the_baselines():
     """
-    Le preset d ablation porte deux plans à la fois : l échelle complète — sans
-    quoi aucune contribution de composant n est calculable — et les trois
-    baselines, qui se comparent à `bramev`. Les deux se lisent sur le même
-    monde, ce qui est tout l intérêt de les exécuter dans la même campagne.
+    The ablation preset carries two plans at once: the complete ladder —
+    without which no component contribution is computable — and the three
+    baselines, which compare against `bramev`. Both are read on the same world,
+    which is the whole point of running them in the same campaign.
     """
     params = ExperimentParams.from_file('experiments/ablation.yaml')
-    manquants = set(methods.LADDER) - set(params.methods)
-    assert not manquants, f'échelle incomplète, manque {sorted(manquants)}'
-    manquants = set(methods.BASELINES) - set(params.methods)
-    assert not manquants, f'baselines manquantes : {sorted(manquants)}'
-    # L échelle garde son ordre : les barreaux se lisent dans l ordre d ajout.
+    missing = set(methods.LADDER) - set(params.methods)
+    assert not missing, f'incomplete ladder, missing {sorted(missing)}'
+    missing = set(methods.BASELINES) - set(params.methods)
+    assert not missing, f'baselines manquantes : {sorted(missing)}'
+    # The ladder keeps its order: the rungs read in the order components are added.
     rang = {m: i for i, m in enumerate(params.methods)}
     assert [rang[m] for m in methods.LADDER] == sorted(rang[m] for m in methods.LADDER)
 
 
 def test_reference_config_compares_bramev_to_every_baseline():
-    """`full_grid.yaml` est la comparaison publiée : BRAM-EV face aux baselines."""
+    """`full_grid.yaml` is the published comparison: BRAM-EV against the baselines."""
     params = ExperimentParams.from_file('experiments/full_grid.yaml')
-    assert 'bramev' in params.methods, 'sans bramev, aucun écart calculable'
-    manquants = set(methods.BASELINES) - set(params.methods)
-    assert not manquants, f'baselines manquantes : {sorted(manquants)}'
-    assert 'greedy' in params.methods, 'le plancher mono-station doit rester lisible'
+    assert 'bramev' in params.methods, 'without bramev, no computable gap'
+    missing = set(methods.BASELINES) - set(params.methods)
+    assert not missing, f'baselines manquantes : {sorted(missing)}'
+    assert 'greedy' in params.methods, 'the single-station floor must stay readable'
 
 
 # ----------------------------------------------------------------------
-# Baselines de référence
+# Reference baselines
 # ----------------------------------------------------------------------
 
 def test_baselines_are_pure_choice_policies():
     """
-    Les trois baselines ne doivent différer de `multistation` que par la règle
-    de sélection de l offre. Même diffusion, même rayon, ni réputation ni
-    adaptation : à périmètre d information identique, un écart mesuré est
-    imputable à la règle seule.
+    The three baselines must differ from `multistation` only by the offer
+    selection rule. Same broadcast, same radius, no reputation and no
+    adaptation: at identical information scope, a measured gap is attributable
+    to the rule alone.
     """
     assert set(methods.BASELINES) == {'min_waiting', 'load_aware',
                                       'random_feasible'}
@@ -408,23 +408,23 @@ def test_baselines_are_pure_choice_policies():
     for name in methods.BASELINES:
         spec = methods.resolve(name)
         assert spec.family == 'baseline'
-        derive = [f for f in partages if getattr(spec, f) != getattr(reference, f)]
-        assert not derive, (
-            f'{name} diffère de multistation sur {derive} : une baseline ne '
-            'doit se distinguer que par sa règle de choix')
+        drift = [f for f in partages if getattr(spec, f) != getattr(reference, f)]
+        assert not drift, (
+            f'{name} differs from multistation on {drift}: a baseline must '
+            'must differ only by its choice rule')
         assert spec.offer_choice != reference.offer_choice, (
-            f'{name} : une baseline ne doit pas utiliser l utilité BRAM-EV')
+            f'{name}: a baseline must not use the BRAM-EV utility')
 
-    choix = {methods.resolve(n).offer_choice for n in methods.BASELINES}
-    assert choix == {'waiting', 'load', 'random'}, (
-        f'chaque baseline doit avoir sa propre règle, reçu {choix}')
+    choices = {methods.resolve(n).offer_choice for n in methods.BASELINES}
+    assert choices == {'waiting', 'load', 'random'}, (
+        f'each baseline must have its own rule, got {choices}')
 
 
 def test_baselines_see_the_same_stations_as_multistation():
     """
-    Le périmètre de diffusion doit être *identique* à celui de `multistation` :
-    c est ce qui rend l écart imputable à la règle de choix et non à un
-    avantage d information.
+    The broadcast scope must be *identical* to that of `multistation`: that is
+    what makes the gap attributable to the choice rule and not to an
+    information advantage.
     """
     params = tiny_params()
     contactees = {}
@@ -447,27 +447,27 @@ def test_baselines_see_the_same_stations_as_multistation():
             Simulation._get_eligible_stations = original
         contactees[name] = vues
 
-    assert contactees['multistation'], 'aucune requête émise : test non concluant'
+    assert contactees['multistation'], 'no request emitted: inconclusive test'
     for name in methods.BASELINES:
         assert contactees[name] == contactees['multistation'], (
-            f'{name} ne voit pas le même périmètre que multistation')
+            f'{name} does not see the same scope as multistation')
 
-    # ... et ce périmètre reste borné par le rayon de recherche.
+    # ... and that scope stays bounded by the search radius.
     assert max(n for _, n in contactees['multistation']) <= params.nb_stations
     assert min(n for _, n in contactees['multistation']) < params.nb_stations, (
-        'le rayon devrait exclure au moins une station sur cette grille')
+        'the radius should exclude at least one station on this grid')
 
 
 def test_each_baseline_applies_its_own_rule():
-    """Chaque règle doit classer les offres selon son propre critère."""
+    """Each rule must rank the offers according to its own criterion."""
     params = tiny_params()
     (cars, stations, societies), config = build_agents(params)
     car = cars[0]
     request = {'n': 'test', 't_n': 0, 'd_n': 6, 'loc': (0., 0.),
                'r_n': 5000., 'g_n': 12, 'l_n': 0}
 
-    # Trois offres où attente, charge et distance ordonnent différemment.
-    offres = [
+    # Three offers where waiting, load and distance order differently.
+    offers = [
         Offer(station_id=1, charger_id=0, t_arr=9, t_dep=15, d_prop=6,
               distance=100., station_load=0.9),
         Offer(station_id=2, charger_id=0, t_arr=1, t_dep=7, d_prop=6,
@@ -476,35 +476,35 @@ def test_each_baseline_applies_its_own_rule():
               distance=2000., station_load=0.1),
     ]
 
-    par_attente = car.rank_offers(offres, request, 100., criterion='waiting')
-    assert par_attente[0][0].station_id == 2, 'min_waiting : attente la plus faible'
+    par_attente = car.rank_offers(offers, request, 100., criterion='waiting')
+    assert par_attente[0][0].station_id == 2, 'min_waiting: lowest waiting time'
 
-    par_charge = car.rank_offers(offres, request, 100., criterion='load')
-    assert par_charge[0][0].station_id == 3, 'load_aware : station la moins chargée'
+    par_charge = car.rank_offers(offers, request, 100., criterion='load')
+    assert par_charge[0][0].station_id == 3, 'load_aware: least loaded station'
 
-    par_distance = car.rank_offers(offres, request, 100., criterion='nearest')
+    par_distance = car.rank_offers(offers, request, 100., criterion='nearest')
     assert par_distance[0][0].station_id == 1
 
-    # Les trois règles doivent bien désigner des gagnants différents ici.
+    # The three rules must indeed designate different winners here.
     assert len({par_attente[0][0].station_id, par_charge[0][0].station_id,
                 par_distance[0][0].station_id}) == 3
 
-    # Toutes les offres reçues restent classées, aucune n est écartée.
+    # Every offer received stays ranked, none is discarded.
     for classement in (par_attente, par_charge, par_distance):
-        assert len(classement) == len(offres)
+        assert len(classement) == len(offers)
 
 
 def test_random_feasible_is_random_but_reproducible():
     """
-    Le tirage doit varier d une requête à l autre, être identique à graine
-    égale, et ne pas dépendre de l ordre d arrivée des offres — qui suit
-    l ordre des stations et n a aucun sens pour le véhicule.
+    The draw must vary from one request to the next, be identical at equal
+    seed, and not depend on the arrival order of the offers — which follows the
+    station order and means nothing to the vehicle.
     """
     params = tiny_params()
     request = {'n': 'test', 't_n': 0, 'd_n': 6, 'loc': (0., 0.),
                'r_n': 5000., 'g_n': 12, 'l_n': 0}
 
-    def offres():
+    def offers():
         return [Offer(station_id=i, charger_id=0, t_arr=2, t_dep=8, d_prop=6,
                       distance=100. * (i + 1), station_load=0.1 * i)
                 for i in range(6)]
@@ -512,7 +512,7 @@ def test_random_feasible_is_random_but_reproducible():
     def tirages(car, n=15, ordre=None):
         out = []
         for _ in range(n):
-            lot = offres()
+            lot = offers()
             if ordre is not None:
                 lot = [lot[i] for i in ordre]
             out.append(car.rank_offers(lot, request, 100.,
@@ -523,28 +523,28 @@ def test_random_feasible_is_random_but_reproducible():
     (cars_b, *_), _ = build_agents(params)
 
     a = tirages(cars_a[0])
-    assert len(set(a)) > 1, 'le tirage doit varier d une requête à l autre'
+    assert len(set(a)) > 1, 'the draw must vary from one request to the next'
 
     b = tirages(cars_b[0])
-    assert a == b, 'à graine égale, le tirage doit être reproductible'
+    assert a == b, 'at equal seed, the draw must be reproducible'
 
-    # Ordre d arrivée inversé : le résultat ne doit pas changer.
+    # Arrival order reversed: the result must not change.
     (cars_c, *_), _ = build_agents(params)
     c = tirages(cars_c[0], ordre=list(reversed(range(6))))
-    assert a == c, "le tirage ne doit pas dépendre de l ordre d arrivée des offres"
+    assert a == c, "the draw must not depend on the arrival order of the offers"
 
 
 def test_baseline_rows_compare_bramev_to_each_baseline():
     """
-    La table doit lire « baseline -> BRAM-EV » : un `improvement` vrai signifie
-    que BRAM-EV fait mieux, ce qui est la question posée à une baseline.
+    The table must read "baseline -> BRAM-EV": a true `improvement` means that
+    BRAM-EV does better, which is the question asked of a baseline.
     """
-    monde = {'scenario': 'balance', 'nb_cars': 50, 'seed': 1,
+    world = {'scenario': 'balance', 'nb_cars': 50, 'seed': 1,
              'world_seed': 1, 'grid_seed': 1}
-    rows = [dict(monde, method='bramev', exact_satisfaction=0.90),
-            dict(monde, method='min_waiting', exact_satisfaction=0.70),
-            dict(monde, method='load_aware', exact_satisfaction=0.95),
-            dict(monde, method='random_feasible', exact_satisfaction=0.60)]
+    rows = [dict(world, method='bramev', exact_satisfaction=0.90),
+            dict(world, method='min_waiting', exact_satisfaction=0.70),
+            dict(world, method='load_aware', exact_satisfaction=0.95),
+            dict(world, method='random_feasible', exact_satisfaction=0.60)]
 
     metric = ablation.METRICS_BY_COLUMN['exact_satisfaction']
     produites = ablation.baseline_rows(rows, [metric])
@@ -557,10 +557,10 @@ def test_baseline_rows_compare_bramev_to_each_baseline():
 
     assert par_methode['min_waiting']['improvement'] is True
     assert par_methode['load_aware']['improvement'] is False, (
-        'une baseline qui bat BRAM-EV doit apparaître comme telle')
+        'a baseline that beats BRAM-EV must appear as such')
     assert abs(par_methode['random_feasible']['delta'] - 0.30) < 1e-9
 
-    # Les baselines rejoignent la table détaillée complète.
+    # The baselines join the complete detailed table.
     kinds = {r['kind'] for r in ablation.detail_rows(rows, [metric])}
     assert 'baseline' in kinds
 
@@ -583,7 +583,7 @@ def test_run_grid_writes_the_ablation_tables():
 
         summary = store.read_summary()
         assert {r['method'] for r in summary} == set(methods.LADDER)
-        # Les drapeaux voyagent jusqu'à summary.csv : la table se lit seule.
+        # The flags travel all the way to summary.csv: the table reads on its own.
         by_method = {r['method']: r for r in summary}
         assert by_method['greedy']['broadcast'] is False
         assert by_method['multistation']['broadcast'] is True
@@ -595,31 +595,31 @@ def test_run_grid_writes_the_ablation_tables():
 
 def test_ablation_tables_are_written_incrementally():
     """
-    Une campagne complète met des heures. Les tables de décomposition doivent
-    donc exister *pendant* la campagne, comme `summary.csv` : autrement un run
-    encore en cours — ou interrompu — n'a rien à analyser, alors que tous les
-    cas nécessaires sont déjà calculés.
+    A complete campaign takes hours. The decomposition tables must therefore
+    exist *during* the campaign, like `summary.csv`: otherwise a run still going
+    — or interrupted — has nothing to analyse, although every case needed is
+    already computed.
     """
     with tempfile.TemporaryDirectory() as tmp:
         params = tiny_params(output_root=tmp)
         store = RunStore.create(params)
-        vus = []
+        seen = []
 
         def apres_chaque_cas(outcome):
-            vus.append(outcome.case.method)
-            # Dès que deux barreaux consécutifs sont faits, la table existe.
-            if len(vus) >= 2:
+            seen.append(outcome.case.method)
+            # As soon as two consecutive rungs are done, the table exists.
+            if len(seen) >= 2:
                 assert store.read_root_table('ablation'), (
-                    f'ablation.csv absent après {len(vus)} cas ({vus})')
+                    f'ablation.csv missing after {len(seen)} cases ({seen})')
 
         run_grid(params, store=store, on_case=apres_chaque_cas)
-        assert len(vus) == params.nb_cases
+        assert len(seen) == params.nb_cases
 
 
 def test_broadcast_actually_contacts_more_stations():
     """
-    Le premier barreau doit se voir dans les métriques, pas seulement dans les
-    drapeaux : sans cela, une contribution nulle serait ininterprétable.
+    The first rung must show in the metrics, not only in the flags: without
+    that, a zero contribution would be uninterpretable.
     """
     with tempfile.TemporaryDirectory() as tmp:
         params = tiny_params(output_root=tmp, methods=('greedy', 'multistation'),
@@ -628,14 +628,14 @@ def test_broadcast_actually_contacts_more_stations():
         by_method = {r['method']: r for r in store.read_summary()}
         assert (by_method['multistation']['mean_offers_per_demand'] >
                 by_method['greedy']['mean_offers_per_demand']), (
-            'la diffusion doit produire strictement plus d offres par demande')
+            'broadcasting must produce strictly more offers per demand')
 
 
 def test_occupancy_survives_the_release_of_the_calendar():
     """
-    `schedule` est remis à -1 à chaque fin de session : un taux d'occupation
-    lu à la fin du run y valait 0 pour toutes les méthodes. Les compteurs
-    cumulés doivent, eux, refléter l'activité réelle.
+    `schedule` is reset to -1 at every session end: an occupancy rate read
+    there at the end of the run was 0 for every method. The cumulative counters,
+    on the other hand, must reflect the actual activity.
     """
     with tempfile.TemporaryDirectory() as tmp:
         params = tiny_params(output_root=tmp, methods=('bramev',),
@@ -663,7 +663,7 @@ def main() -> int:
             failures.append((name, traceback.format_exc()))
             print(f'  FAIL  {name}: {exc}')
 
-    print(f'\n{len(tests) - len(failures)}/{len(tests)} tests réussis')
+    print(f'\n{len(tests) - len(failures)}/{len(tests)} tests passed')
     for name, tb in failures:
         print(f'\n===== {name} =====\n{tb}')
     return 1 if failures else 0
