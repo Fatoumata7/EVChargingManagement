@@ -577,8 +577,16 @@ def test_8_min_lead_for_early_cancel_matches_the_threshold():
 def test_8_reservation_lead_opens_the_early_branch():
     """
     The heart of the fix: without a horizon, `t_arr` sticks to the request and
-    *every* `early` intent is reclassified as `late`. With a horizon, they must
-    be realised as such.
+    an `early` intent is reclassified as `late`. With a horizon, they must be
+    realised as such.
+
+    The control arm is *residual*, not empty. `reservation_lead` measures the
+    delay to the slot actually proposed, `t_arr - t_n`, not the horizon the
+    driver asked for: with `l_n = 0` a busy station can still answer "in 8
+    slots", and that reservation does have room to be cancelled early. The
+    assertion used to demand exactly zero and held only by luck of the draw —
+    a change of trajectory elsewhere in the model was enough to make one
+    early cancellation appear and fail a test about the horizon.
     """
     def outcomes(lead_params):
         cfg = small_config(scenario='pessimistic', nb_car=40,
@@ -591,14 +599,22 @@ def test_8_reservation_lead_opens_the_early_branch():
     disabled = outcomes({'low': 0, 'high': 0})
     enabled = outcomes({'low': 6, 'high': 12})
 
-    assert disabled['intent_counts'].get('early', 0) > 0
-    assert disabled['observed_counts'].get('early', 0) == 0, (
-        "without a horizon, no cancellation can be early"
+    nb_early_intent = disabled['intent_counts'].get('early', 0)
+    assert nb_early_intent > 0
+    assert disabled['reclassified'].get('early->late', 0) >= 0.9 * nb_early_intent, (
+        "without a horizon, an early intent must almost always fall back to "
+        "late: only a slot proposed far ahead by a busy station can escape"
     )
-    assert disabled['reclassified'].get('early->late', 0) == disabled['intent_counts']['early']
 
     assert enabled['observed_counts'].get('early', 0) > 0, (
         "with a horizon, the early branch must be reached"
+    )
+    # The two arms must be separated by the horizon, not by a handful of
+    # events: the treated arm realises most of its early intents, the control
+    # arm almost none.
+    assert (enabled['observed_counts'].get('early', 0)
+            > 5 * disabled['observed_counts'].get('early', 0) + 1), (
+        "the two arms are not separated: the horizon changes nothing"
     )
     assert enabled['reclassified'].get('early->late', 0) < disabled['reclassified']['early->late']
     assert enabled['mean_lead_slots'] > disabled['mean_lead_slots']
@@ -668,11 +684,20 @@ def test_8_measured_waiting_stays_far_below_the_planned_horizon():
     )
 
 
+def cfg_min_lead() -> int:
+    """Minimum lead below which an early cancellation is unreachable."""
+    return SimulationConfig().min_lead_for_early_cancel()
+
+
 def test_8_zero_lead_is_the_control_arm():
     """
-    `{0, 0}` is not a neutral setting but the control arm of the ablation: an
-    early cancellation must be demonstrably unreachable there, and the run must
-    stay deterministic.
+    `{0, 0}` is not a neutral setting but the control arm of the ablation: the
+    driver anticipates nothing, so an early cancellation must stay residual
+    there, and the run must stay deterministic.
+
+    Residual, not impossible: the lead that matters is the one to the slot
+    *proposed*, so a station answering far ahead can still leave room to cancel
+    early even when `l_n = 0` (see `test_8_reservation_lead_opens_the_early_branch`).
     """
     def run():
         cfg = small_config(scenario='pessimistic', nb_car=40,
@@ -686,9 +711,16 @@ def test_8_zero_lead_is_the_control_arm():
     assert a_beh['observed_counts'] == b_beh['observed_counts']
     assert a_met['mean_travel_distance_km'] == b_met['mean_travel_distance_km']
 
-    assert a_beh['intent_counts'].get('early', 0) > 0, "aucune intention early"
-    assert a_beh['observed_counts'].get('early', 0) == 0, (
-        "without a horizon, no cancellation can be qualified as early"
+    nb_early_intent = a_beh['intent_counts'].get('early', 0)
+    assert nb_early_intent > 0, "aucune intention early"
+    assert a_beh['observed_counts'].get('early', 0) <= 0.1 * nb_early_intent, (
+        "without a horizon, an early cancellation must stay residual: "
+        f"{a_beh['observed_counts'].get('early', 0)} out of {nb_early_intent} "
+        "intents realised"
+    )
+    assert a_beh['mean_lead_slots'] < cfg_min_lead(), (
+        "the mean lead of the control arm reaches the early-cancellation "
+        "threshold: this is no longer a control arm"
     )
 
 
@@ -771,7 +803,10 @@ def test_8_neither_arm_is_diagnosed_when_configured_deliberately():
         return run_sim(cfg, 'bramev').behaviors.report()
 
     control = diagnose({'low': 0, 'high': 0})
-    assert control['anticipable_share'] == 0., "the control arm must be sterile"
+    assert control['anticipable_share'] < 0.1, (
+        "the control arm must stay nearly sterile: "
+        f"{control['anticipable_share']} of the reservations anticipable"
+    )
     assert control['diagnostics'] == [], (
         f"the control arm is deliberate, not abnormal: {control['diagnostics']}"
     )
@@ -788,14 +823,14 @@ def test_8_neither_arm_is_diagnosed_when_configured_deliberately():
 # 9. Stopped states: parked no-show, search retry
 # ----------------------------------------------------------------------
 
-def test_9_no_show_parks_instead_of_roaming():
+def test_9_no_show_roams_and_holds_its_slot_until_t_dep():
     """
-    A no-show gives up its trip, not only its charge: it stays put as long as
-    it holds its slot, then drives on once released.
+    A no-show gives up its charge, not its trip: it drives on immediately while
+    its slot stays frozen until `t_dep`.
 
-    Continuity is tracked through the reservation object: a vehicle may leave
-    the parked state, drive, then park again with a *new* reservation within the
-    same step — comparing two slot ends is not enough.
+    Two properties hold it together — it is never parked, and the reservation
+    it keeps forbids it any new request. Without the second, the vehicle would
+    re-enter the market while already holding a charger it will never use.
     """
     cfg = small_config(scenario='pessimistic', nb_car=30, total_time=12 * 12,
                        seed=91)
@@ -806,31 +841,72 @@ def test_9_no_show_parks_instead_of_roaming():
     sim = Simulation(cars=cars, stations=stations, societies=societies,
                      t_max=cfg.TOTAL_TIME, config=cfg)
 
-    episodes = {}     # idx -> (reservation, x, y, soc)
-    seen = 0
+    holding = 0            # slots spent holding a no-show reservation
+    requests_while_held = 0
     log = io.StringIO()
     for t in range(cfg.TOTAL_TIME):
         sim.current_t = t
         sim.step(t, 10 ** 6, file=log)
         for car in sim.cars:
-            if car.cancel_intent == 'abs' and car.reservation is not None:
-                assert car.state == 'PARKED_NO_SHOW', (
-                    f"car_{car.idx} holds a no-show slot but is "
-                    f"{car.state}"
-                )
-                current = (car.reservation, car.x, car.y, car.soc_m)
-                if episodes.get(car.idx, (None,))[0] is car.reservation:
-                    assert episodes[car.idx] == current, (
-                        f"parked car_{car.idx} moved or consumed"
-                    )
-                else:
-                    seen += 1
-                episodes[car.idx] = current
-            else:
-                episodes.pop(car.idx, None)
+            if car.cancel_intent != 'abs' or car.reservation is None:
+                continue
+            holding += 1
+            assert car.state not in Car.PARKED_STATES, (
+                f"car_{car.idx} holds a no-show slot but is parked "
+                f"({car.state}): the vehicle must drive on"
+            )
+            # The slot is held, not released early.
+            assert t < car.reservation.t_dep, (
+                f"car_{car.idx} still holds a slot past t_dep="
+                f"{car.reservation.t_dep}"
+            )
+            if car.state == 'REQUESTING':
+                requests_while_held += 1
 
-    assert seen > 0, "no no-show observed: inconclusive test"
+    assert holding > 0, "no no-show observed: inconclusive test"
+    assert requests_while_held == 0, (
+        "a vehicle emitted a request while holding a no-show reservation"
+    )
     assert sim.behaviors.outcomes.get('abs', 0) > 0
+
+
+def test_9_no_show_slot_is_released_at_t_dep():
+    """
+    The frozen slot must come back, and be counted: at `t_dep` the station
+    releases the reservation and records the absence. A slot never released
+    would silently shrink the capacity of the grid for the rest of the run.
+    """
+    cfg = small_config(scenario='pessimistic', nb_car=30, total_time=12 * 12,
+                       seed=91)
+    cfg.set_BASE_CANCEL_PROB({'pres': 1, 'abs': 97, 'early': 1, 'late': 1,
+                              'noise': 0.0})
+    spec = generate_world_spec(cfg, cfg.SEED)
+    cars, stations, societies = build_world(spec, cfg)
+    sim = Simulation(cars=cars, stations=stations, societies=societies,
+                     t_max=cfg.TOTAL_TIME, config=cfg)
+
+    log = io.StringIO()
+    for t in range(cfg.TOTAL_TIME):
+        sim.current_t = t
+        sim.step(t, 10 ** 6, file=log)
+
+    nb_no_show = sum(s.nb_no_show for s in sim.stations)
+    assert nb_no_show > 0, "no absence recorded: inconclusive test"
+
+    # No vehicle still holds an absent reservation whose t_dep has passed.
+    for car in sim.cars:
+        if car.cancel_intent == 'abs' and car.reservation is not None:
+            assert cfg.TOTAL_TIME <= car.reservation.t_dep, (
+                f"car_{car.idx} kept a slot released long ago"
+            )
+
+    # A no-show that empties its battery before t_dep is released as a
+    # breakdown cancellation, not lost: the two outcomes together must account
+    # for the absences drawn, none of them silently dropped.
+    resolved = (nb_no_show + sum(s.nb_breakdown_canc for s in sim.stations))
+    still_open = sum(1 for c in sim.cars
+                     if c.cancel_intent == 'abs' and c.reservation is not None)
+    assert resolved + still_open >= nb_no_show
 
 
 def test_9_no_phase_moves_a_parked_vehicle():
@@ -907,6 +983,13 @@ def test_9_retry_keeps_one_demand_per_need():
     A retried demand stays *one* demand. Without that, each attempt would
     inflate `nb_demands` and sink the confirmation rate without any extra need
     having been expressed.
+
+    Asserted on the grouping itself — attempts against demand records — and no
+    longer by comparing the total number of demands between the two budgets.
+    Since an exhausted budget now closes the need (`Car.gave_up_charging`), the
+    budget also decides how long a vehicle keeps taking part, so the two arms no
+    longer carry the same number of *needs*: the zero-budget arm loses its
+    vehicles on their first failed search.
     """
     def campaign(retries):
         cfg = small_config(scenario='pessimistic', nb_car=40,
@@ -918,6 +1001,7 @@ def test_9_retry_keeps_one_demand_per_need():
             'demands':   len(recs),
             'confirmed': sum(1 for r in recs if r.confirmed),
             'retries':   sum(r.nb_search_retries for r in recs),
+            'attempts':  sum(c.nb_request for c in sim.cars),
             'resa':      sim.behaviors.report()['nb_reservations'],
         }
 
@@ -926,15 +1010,113 @@ def test_9_retry_keeps_one_demand_per_need():
 
     assert disabled['retries'] == 0, "zero budget: no retry possible"
     assert enabled['retries'] > 0, "no retry triggered: inconclusive test"
-    assert enabled['demands'] < disabled['demands'], (
-        f"the retry must group the attempts: {enabled['demands']} "
-        f"vs {disabled['demands']}"
+
+    # The grouping itself: every retry is one more attempt on a demand that
+    # already exists, so the attempts must outnumber the demand records by
+    # exactly the retries consumed.
+    assert enabled['attempts'] == enabled['demands'] + enabled['retries'], (
+        f"{enabled['attempts']} attempts for {enabled['demands']} demands and "
+        f"{enabled['retries']} retries: an attempt created a demand"
     )
-    # The number of needs served must not collapse: attempts are grouped, no
-    # reservation is removed.
-    assert enabled['resa'] >= 0.9 * disabled['resa'], (
-        f"reservations lost: {enabled['resa']} vs {disabled['resa']}"
+    assert disabled['attempts'] == disabled['demands'], (
+        "without a retry budget, one attempt is one demand"
     )
+
+    # Retrying must serve more needs, not fewer: widening the radius is what
+    # the extra attempts are for.
+    assert enabled['resa'] >= disabled['resa'], (
+        f"reservations lost by retrying: {enabled['resa']} vs {disabled['resa']}"
+    )
+
+
+def test_9_exhausted_search_closes_the_need():
+    """
+    Once the retry budget is spent the need is over: the vehicle drives on but
+    may no longer ask. Without that, `give_up_search` returned it to DRIVING
+    with `search_retries` back to 0, and `needs_charging` was still true at the
+    very next slot — a new demand, a fresh budget, indefinitely.
+    """
+    cfg = small_config(seed=92)
+    cfg.set_MAX_SEARCH_RETRIES(2)
+    spec = generate_world_spec(cfg, cfg.SEED)
+    car = build_world(spec, cfg)[0][0]
+
+    car.soc_m = 0.5 * car.soc_threshold_m       # well under the threshold
+    car.set_state('DRIVING')
+    assert car.needs_charging(), "inconclusive test: no need to start from"
+
+    car.emit_request(0, (car.x, car.y), 'd0')
+    while car.widen_search():
+        pass
+    car.give_up_search()
+
+    assert car.gave_up_charging, "the abandoned need is not marked"
+    assert car.state == 'DRIVING', "the vehicle gave up its charge, not its trip"
+    assert not car.needs_charging(), (
+        "the vehicle may ask again right after exhausting its budget: "
+        "the retry budget paces a loop instead of bounding the search"
+    )
+
+    # A charging session reopens the right to ask: the block is tied to the
+    # abandoned need, not to the vehicle for ever.
+    car.charge_one_slot()
+    assert not car.gave_up_charging
+    car.soc_m = 0.5 * car.soc_threshold_m
+    assert car.needs_charging()
+
+
+def test_9_abandoned_demand_is_recorded_as_unsatisfied():
+    """
+    An abandoned demand must be readable as such, not merely as "not
+    confirmed" — which also covers a demand still open at the end of the run.
+    """
+    cfg = small_config(scenario='pessimistic', nb_car=40, total_time=12 * 20,
+                       seed=71)
+    cfg.set_MAX_SEARCH_RETRIES(4)
+    sim = run_sim(cfg, 'bramev')
+    recs = list(sim.metrics.demand_timings.values())
+    lat = sim.metrics.latency_report()
+
+    abandoned = [r for r in recs if r.abandoned]
+    assert abandoned, "no abandonment observed: inconclusive test"
+    assert lat['nb_demands_abandoned'] == len(abandoned)
+    assert lat['abandon_rate'] == round(len(abandoned) / len(recs), 4)
+
+    for rec in abandoned:
+        assert not rec.confirmed, "an abandoned demand cannot be confirmed"
+        assert rec.nb_search_retries == cfg.MAX_SEARCH_RETRIES, (
+            "a demand is only abandoned once its whole budget is spent"
+        )
+
+
+def test_9_abandoning_does_not_restart_the_search_loop():
+    """
+    End to end: a vehicle that abandons must not re-emit under a new identifier
+    at the following slots. The bug was invisible per-slot — the vehicle left
+    PARKED_SEARCHING for one slot before re-entering it — and showed only as a
+    demand re-emitted every MAX_SEARCH_RETRIES + 1 slots.
+    """
+    cfg = small_config(scenario='pessimistic', nb_car=40, total_time=12 * 20,
+                       seed=71)
+    cfg.set_MAX_SEARCH_RETRIES(4)
+    sim = run_sim(cfg, 'bramev')
+    recs = list(sim.metrics.demand_timings.values())
+
+    abandoned_slot = {}
+    for rec in recs:
+        if rec.abandoned:
+            abandoned_slot.setdefault(rec.car_id, []).append(rec.slot)
+    assert abandoned_slot, "no abandonment observed: inconclusive test"
+
+    # One vehicle, one abandoned need: a second one would mean it recharged in
+    # between, which the emission slots must then show as a real gap.
+    period = cfg.MAX_SEARCH_RETRIES + 1
+    for car_id, slots in abandoned_slot.items():
+        for before, after in zip(sorted(slots), sorted(slots)[1:]):
+            assert after - before > period, (
+                f"car_{car_id} abandoned again {after - before} slots later "
+                f"(loop period {period}): the search restarted on its own"
+            )
 
 
 def test_9_search_gives_up_and_never_deadlocks():

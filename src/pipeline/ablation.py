@@ -68,7 +68,11 @@ METRICS: tuple[Metric, ...] = (
     Metric('mean_occupancy_rate',         'Occupancy rate',          GOAL_UP,   '%'),
     Metric('mean_service_rate',           'Service rate',            GOAL_UP,   '%'),
     Metric('slot_waste_rate',             'Wasted reserved slots',   GOAL_DOWN, '%'),
+    Metric('no_offer_rate',               'Demands with no offer',   GOAL_DOWN, '%'),
+    Metric('abandon_rate',                'Abandoned searches',      GOAL_DOWN, '%'),
+    Metric('request_rejection_rate',      'Unserved demands',        GOAL_DOWN, '%'),
     Metric('nb_station_level_rejections', 'Rejected demands',        GOAL_DOWN, ''),
+    Metric('station_rejection_rate',      'Station rejection rate',  GOAL_DOWN, '%'),
     Metric('total_ms_mean',               'End-to-end latency',      GOAL_DOWN, 'ms'),
     Metric('wall_time_s',                 'Wall time',               GOAL_DOWN, 's'),
 )

@@ -76,8 +76,8 @@ class Car:
         self.x, self.y = float(self.loc[0]), float(self.loc[1])
         self.soc_m = self.autonomy * self.soc_init # distance still drivable with the current battery level
         # 'DRIVING', 'REQUESTING', 'DRIVING_TO_STATION', 'AT_STATION',
-        # 'CHARGING', 'WAITING', 'BREAKDOWN', 'PARKED_SEARCHING',
-        # 'PARKED_NO_SHOW' (see PARKED_STATES)
+        # 'CHARGING', 'WAITING', 'BREAKDOWN', 'PARKED_SEARCHING'
+        # (see PARKED_STATES)
         self.state = 'DRIVING'
         self.request = None
         self.reservation = None
@@ -104,6 +104,12 @@ class Car:
 
         # ---- Search retries (see Simulation, PARKED_SEARCHING state)
         self.search_retries = 0    # retries consumed by the current demand
+        # Set once the retry budget of a demand has been spent without result.
+        # The need is then closed as unsatisfied and the vehicle stops asking:
+        # without this, it returned to DRIVING and re-emitted a *new* demand at
+        # the very next slot with a fresh budget, looping every
+        # MAX_SEARCH_RETRIES + 1 slots until the end of the horizon.
+        self.gave_up_charging = False
 
         self.schedule_requested = np.zeros(config.TOTAL_TIME)
 
@@ -113,7 +119,9 @@ class Car:
 
     #: States where the vehicle is stopped: it does not move, hence consumes
     #: nothing. No phase of `Simulation.step` moves a vehicle in these states.
-    PARKED_STATES = frozenset({'PARKED_NO_SHOW', 'PARKED_SEARCHING'})
+    #: A no-show is *not* one of them: it drives on while holding its slot,
+    #: until `t_dep` releases it (see `Simulation._select_and_confirm`).
+    PARKED_STATES = frozenset({'PARKED_SEARCHING'})
 
     def set_state(self, new_state):
         valid = {'WAITING', 'DRIVING', 'CHARGING', 'REQUESTING',
@@ -282,13 +290,19 @@ class Car:
         """Charge the battery for one slot (called from Simulation)."""
         delta_soc = self.charging_power * 1e3
         self.soc_m = min(self.autonomy, self.soc_m + delta_soc)
+        # Energy is flowing: whatever earlier search was abandoned, this need is
+        # being served and the vehicle regains the right to ask again later.
+        self.clear_gave_up()
 
     def needs_charging(self):
         # do not emit a request if already broken down.
         # `PARKED_SEARCHING` is allowed: the vehicle stopped for lack of a
         # station or an offer and must be able to re-emit its demand. It does
         # not consume in the meantime, so its SoC — hence `d_n` — stays valid.
-        return (self.soc_m <= self.soc_threshold_m
+        # `gave_up_charging` closes the loop: a need whose retry budget was
+        # spent is over, and re-asking would restart it with a fresh budget.
+        return (not self.gave_up_charging
+                and self.soc_m <= self.soc_threshold_m
                 and self.state in ('DRIVING', 'PARKED_SEARCHING')
                 and self.soc_m > self.config.SOC_BREAKDOWN_THRESHOLD)
 
@@ -455,10 +469,24 @@ class Car:
         return self.request
 
     def give_up_search(self):
-        """Give up once the retry budget is exhausted: the vehicle drives on."""
+        """
+        Give up once the retry budget is exhausted.
+
+        The vehicle drives on — it has not given up its trip — but its charging
+        need is **closed as unsatisfied**: `gave_up_charging` blocks any new
+        request, so the budget bounds the search instead of merely pacing it.
+        The flag is lifted only by a charging session (`clear_gave_up`), which
+        the vehicle can no longer obtain on its own: giving up is terminal for
+        this run unless something else charges it.
+        """
         self.request = None
         self.search_retries = 0
+        self.gave_up_charging = True
         self.set_state('DRIVING')
+
+    def clear_gave_up(self):
+        """Reopen the right to request (a charging session took place)."""
+        self.gave_up_charging = False
 
     def update_schedule_requested(self, min_dist):
         """FIX: == → = (assignment)"""

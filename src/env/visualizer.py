@@ -13,7 +13,6 @@ COLORS = {
     'BREAKDOWN':          (220, 53, 69),    # red
     'AT_STATION':         (212, 83, 126),   # pink / magenta
     'PARKED_SEARCHING':   (146, 109, 222),  # purple — parked, searching further
-    'PARKED_NO_SHOW':     (120, 118, 112),  # dark grey — parked, will not show up
 }
 
 STATION_COLOR = (216, 90, 48)

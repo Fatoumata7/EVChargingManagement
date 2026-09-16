@@ -318,6 +318,11 @@ class Simulation:
 
         self.metrics.record_demand_selection(demand_id)
         self.metrics.record_demand_confirmation(demand_id, False, 0)
+        # The need is closed as unsatisfied, explicitly: `give_up_search` then
+        # forbids the vehicle any new request, so the budget bounds the search
+        # instead of pacing a loop that restarted it every
+        # MAX_SEARCH_RETRIES + 1 slots under a new demand id.
+        self.metrics.record_demand_abandoned(demand_id)
         if file is not None:
             print(f'\ncar_{car.idx} SEARCH ABANDONED ({reason}) after '
                   f'{car.search_retries} retry(ies)', file=file)
@@ -390,12 +395,19 @@ class Simulation:
 
         if behavior == 'abs':
             # The reservation stays active in the schedule: the slot is lost
-            # until t_dep. The vehicle will never show up and stays put until
-            # then (PARKED_NO_SHOW) — it gave up its trip, not only its charge.
-            # Important consequence: a no-show no longer consumes for the whole
-            # duration of its frozen slot, and can therefore no longer break
-            # down because of it.
-            car.set_state('PARKED_NO_SHOW')
+            # until t_dep, and the vehicle will never show up. It drives on in
+            # the meantime — it gave up its charge, not its trip — and the
+            # reservation it still holds forbids it to emit a new request
+            # (`Simulation.step` skips a vehicle whose `reservation` is set).
+            # It therefore roams until t_dep, where `_process_cancellations`
+            # releases the slot and counts `nb_no_show`.
+            #
+            # Roaming means consuming: a no-show that empties its battery
+            # before t_dep breaks down, and a breakdown releases the
+            # reservation as `nb_breakdown_canc` instead of `nb_no_show`. That
+            # reclassification is a property of this model, not a leak — the
+            # reservation invariant still closes on exactly one outcome.
+            car.set_state('DRIVING')
             return
 
         # `t_hat_arr` includes the planning horizon: the delay wanted by the

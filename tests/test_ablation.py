@@ -365,7 +365,7 @@ def test_variants_config_actually_runs_the_variants():
 def test_ablation_config_runs_the_ladder_and_the_baselines():
     """
     The ablation preset carries two plans at once: the complete ladder —
-    without which no component contribution is computable — and the three
+    without which no component contribution is computable — and the reference
     baselines, which compare against `bramev`. Both are read on the same world,
     which is the whole point of running them in the same campaign.
     """
@@ -394,13 +394,13 @@ def test_reference_config_compares_bramev_to_every_baseline():
 
 def test_baselines_are_pure_choice_policies():
     """
-    The three baselines must differ from `multistation` only by the offer
+    Every baseline must differ from `multistation` only by the offer
     selection rule. Same broadcast, same radius, no reputation and no
     adaptation: at identical information scope, a measured gap is attributable
     to the rule alone.
     """
-    assert set(methods.BASELINES) == {'min_waiting', 'load_aware',
-                                      'random_feasible'}
+    assert set(methods.BASELINES) == {'nearest_available', 'min_waiting',
+                                      'load_aware', 'random_feasible'}
     reference = methods.resolve('multistation')
     partages = ('broadcast', 'use_reputation', 'collective_learning',
                 'alpha_mode', 'reputation_scope', 'score_weighting')
@@ -416,8 +416,10 @@ def test_baselines_are_pure_choice_policies():
             f'{name}: a baseline must not use the BRAM-EV utility')
 
     choices = {methods.resolve(n).offer_choice for n in methods.BASELINES}
-    assert choices == {'waiting', 'load', 'random'}, (
+    assert choices == {'nearest', 'waiting', 'load', 'random'}, (
         f'each baseline must have its own rule, got {choices}')
+    assert len(choices) == len(methods.BASELINES), (
+        'two baselines share the same rule: their gap would measure nothing')
 
 
 def test_baselines_see_the_same_stations_as_multistation():
@@ -428,7 +430,7 @@ def test_baselines_see_the_same_stations_as_multistation():
     """
     params = tiny_params()
     contactees = {}
-    for name in ('multistation', 'min_waiting', 'load_aware', 'random_feasible'):
+    for name in ('multistation',) + methods.BASELINES:
         (cars, stations, societies), config = build_agents(params)
         sim = Simulation(cars, stations, societies, config.TOTAL_TIME, config,
                          mode=name)
@@ -483,15 +485,45 @@ def test_each_baseline_applies_its_own_rule():
     assert par_charge[0][0].station_id == 3, 'load_aware: least loaded station'
 
     par_distance = car.rank_offers(offers, request, 100., criterion='nearest')
-    assert par_distance[0][0].station_id == 1
+    assert par_distance[0][0].station_id == 1, \
+        'nearest_available: nearest station among those able to serve'
 
-    # The three rules must indeed designate different winners here.
+    # The three deterministic rules must indeed designate different winners here.
     assert len({par_attente[0][0].station_id, par_charge[0][0].station_id,
                 par_distance[0][0].station_id}) == 3
 
     # Every offer received stays ranked, none is discarded.
     for classement in (par_attente, par_charge, par_distance):
         assert len(classement) == len(offers)
+
+
+def test_nearest_available_is_not_the_greedy_rung():
+    """
+    `nearest_available` and `greedy` both end up at "the nearest station", and
+    would be redundant if the difference were only cosmetic. It is not:
+    `greedy` contacts the single nearest station, available or not, and gives
+    up when it cannot serve; `nearest_available` broadcasts and keeps the
+    nearest station that actually answered. The baseline therefore measures
+    what falling back on the next station buys, at no other change.
+    """
+    nearest_av = methods.resolve('nearest_available')
+    greedy = methods.resolve('greedy')
+
+    assert nearest_av.broadcast and not greedy.broadcast
+    assert nearest_av.family == 'baseline' and greedy.family == 'ablation', (
+        'greedy stays the first rung of the ladder; it is not a choice policy')
+
+    # ... and the two must be separable in the metrics, not only in the flags.
+    with tempfile.TemporaryDirectory() as tmp:
+        params = tiny_params(output_root=tmp,
+                             methods=('greedy', 'nearest_available'),
+                             nb_stations=8, fleet_sizes=(16,), total_time=60)
+        store = run_grid(params)
+        by_method = {r['method']: r for r in store.read_summary()}
+        assert (by_method['nearest_available']['mean_offers_per_demand'] >
+                by_method['greedy']['mean_offers_per_demand']), (
+            'nearest_available must broadcast: without several offers it '
+            'cannot differ from greedy')
 
 
 def test_random_feasible_is_random_but_reproducible():
@@ -542,6 +574,7 @@ def test_baseline_rows_compare_bramev_to_each_baseline():
     world = {'scenario': 'balance', 'nb_cars': 50, 'seed': 1,
              'world_seed': 1, 'grid_seed': 1}
     rows = [dict(world, method='bramev', exact_satisfaction=0.90),
+            dict(world, method='nearest_available', exact_satisfaction=0.80),
             dict(world, method='min_waiting', exact_satisfaction=0.70),
             dict(world, method='load_aware', exact_satisfaction=0.95),
             dict(world, method='random_feasible', exact_satisfaction=0.60)]

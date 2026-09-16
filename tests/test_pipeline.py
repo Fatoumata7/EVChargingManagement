@@ -382,6 +382,49 @@ def test_tables_carry_case_identity():
         assert summary['nb_offer_issued'] == sum(s['nb_offer_issued'] for s in stations)
 
 
+def test_rates_are_consistent_with_their_counts():
+    """
+    The three rates must be recomputable from the counts published beside them:
+    a rate that cannot be audited from `summary.csv` alone is a number nobody
+    can check. Two of them are also the failure-side reading of `answer_rate`
+    and `confirm_rate` — they must complement them exactly.
+    """
+    with tempfile.TemporaryDirectory() as tmp:
+        params = tiny_params(output_root=tmp, fleet_sizes=(12,), methods=('bramev',))
+        store = run_grid(params)
+        result = store.load_result(CaseParams('pessimistic', 12, 'bramev'))
+        summary = tables.summary_row(result)
+
+        nb_demands = summary['nb_demands']
+        assert nb_demands, 'no demand emitted: inconclusive test'
+
+        assert summary['no_offer_rate'] == round(
+            (nb_demands - summary['nb_demands_answered']) / nb_demands, 4)
+        assert summary['request_rejection_rate'] == round(
+            (nb_demands - summary['nb_demands_confirmed']) / nb_demands, 4)
+
+        # Failure side of the two rates already published.
+        assert abs(summary['no_offer_rate'] + summary['answer_rate'] - 1) < 1e-4
+        assert abs(summary['request_rejection_rate']
+                   + summary['confirm_rate'] - 1) < 1e-4
+
+        # Station side: the denominator counts station-demand pairs, so it is at
+        # least the number of demands as soon as the request is broadcast.
+        nb_requests = summary['nb_station_requests']
+        assert nb_requests, 'no station solicited: inconclusive test'
+        assert summary['station_rejection_rate'] == round(
+            summary['nb_station_level_rejections'] / nb_requests, 4)
+        assert nb_requests >= nb_demands, (
+            'a broadcast demand reaches several stations: the station-side '
+            'denominator cannot be smaller than the number of demands')
+
+        for column in ('no_offer_rate', 'request_rejection_rate',
+                       'station_rejection_rate'):
+            assert 0. <= summary[column] <= 1., f'{column} outside [0, 1]'
+            assert column in tables.SUMMARY_FIELDS, (
+                f'{column} computed but absent from summary.csv')
+
+
 def test_figures_are_rebuilt_from_summary_only():
     """`report` must work without the simulation objects."""
     with tempfile.TemporaryDirectory() as tmp:

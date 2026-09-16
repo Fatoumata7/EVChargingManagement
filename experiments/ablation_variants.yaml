@@ -11,7 +11,7 @@
 label: ablation-variants
 seed: 42
 scenarios: [optimistic, balance, pessimistic]
-fleet_sizes: [50, 100, 150, 200, 250]
+fleet_sizes: [50, 150, 250]
 
 # The `variants` group expands to the four variants;
 # `bramev` is the reference they compare against.

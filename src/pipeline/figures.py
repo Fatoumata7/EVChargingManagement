@@ -44,6 +44,7 @@ METHOD_COLORS = {
     'multistation':         '#c9a227',
     'multistation_rep':     '#6a9a3a',
     'bramev':               '#3b7dd8',
+    'nearest_available':    '#2f6f5e',
     'min_waiting':          '#4a9c8c',
     'load_aware':           '#9c7b4a',
     'random_feasible':      '#8a8a8a',

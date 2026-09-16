@@ -30,7 +30,9 @@ SUMMARY_FIELDS: tuple[str, ...] = (
     'mean_travel_distance_km', 'mean_waiting_time_min',
     # demands & latency
     'nb_demands', 'nb_demands_answered', 'nb_demands_confirmed',
-    'answer_rate', 'confirm_rate', 'mean_offers_per_demand',
+    'nb_demands_abandoned',
+    'answer_rate', 'confirm_rate', 'no_offer_rate', 'request_rejection_rate',
+    'abandon_rate', 'mean_offers_per_demand',
     'first_offer_ms_mean', 'last_offer_ms_mean', 'last_offer_ms_p95',
     'selection_ms_mean', 'confirmation_ms_mean', 'total_ms_mean', 'total_ms_p95',
     'mean_confirm_attempts', 'mean_processing_ms',
@@ -43,11 +45,26 @@ SUMMARY_FIELDS: tuple[str, ...] = (
     # offer protocol & stations
     'nb_offer_issued', 'nb_offer_expired', 'nb_confirm_refused',
     'nb_stale_confirm', 'nb_station_level_rejections', 'nb_station_requests',
+    'station_rejection_rate',
     'mean_occupancy_rate', 'mean_service_rate', 'nb_slots_reserved',
     'nb_slots_served', 'slot_waste_rate', 'total_station_demand_kwh',
     # health of the run
     'nb_breakdowns', 'nb_diagnostics', 'invariant_ok',
 )
+
+
+def _rate(numerator: float | None, denominator: float | None) -> float | None:
+    """
+    A share, or `None` when its denominator is empty.
+
+    `None` rather than 0.: a run where no demand was ever emitted has no
+    rejection rate, and reporting 0. there would read as "nothing was ever
+    rejected" — the opposite of "the question was never asked". The ablation
+    skips a `None` instead of averaging it in.
+    """
+    if not denominator:
+        return None
+    return round(float(numerator) / float(denominator), 4)
 
 
 def _waste_rate(stations: Sequence[Mapping[str, Any]]) -> float | None:
@@ -132,6 +149,13 @@ def summary_row(result: Mapping[str, Any]) -> dict:
         'nb_stale_confirm':            total('nb_stale_confirm'),
         'nb_station_level_rejections': total('nb_station_level_rejections'),
         'nb_station_requests':         total('nb_request'),
+        # Station side: share of the demands *received by a station* that its
+        # MILP could not place. A broadcast demand is received by every station
+        # in the radius, so the denominator counts station-demand pairs, not
+        # demands: this rate says how often a station says no, and is not
+        # comparable with the demand-side rates below.
+        'station_rejection_rate': _rate(total('nb_station_level_rejections'),
+                                        total('nb_request')),
         'mean_occupancy_rate': round(
             sum(s['occupancy_rate'] for s in stations) / nb_stations, 4),
         'mean_service_rate': round(
@@ -152,11 +176,22 @@ def summary_row(result: Mapping[str, Any]) -> dict:
     })
 
     for key in ('nb_demands', 'nb_demands_answered', 'nb_demands_confirmed',
-                'answer_rate', 'confirm_rate', 'mean_offers_per_demand',
+                'nb_demands_abandoned', 'answer_rate', 'confirm_rate',
+                'abandon_rate', 'mean_offers_per_demand',
                 'first_offer_ms_mean', 'last_offer_ms_mean', 'last_offer_ms_p95',
                 'selection_ms_mean', 'confirmation_ms_mean',
                 'total_ms_mean', 'total_ms_p95', 'mean_confirm_attempts'):
         row[key] = lat.get(key)
+
+    # Demand side, the two ways a demand fails, both over the demands emitted.
+    # They are the failure-side reading of `answer_rate` and `confirm_rate`,
+    # recomputed from the counts rather than as `1 - rate` so that the rounding
+    # of the latter cannot leak into them.
+    nb_demands = lat.get('nb_demands')
+    row['no_offer_rate'] = _rate(
+        (nb_demands or 0) - (lat.get('nb_demands_answered') or 0), nb_demands)
+    row['request_rejection_rate'] = _rate(
+        (nb_demands or 0) - (lat.get('nb_demands_confirmed') or 0), nb_demands)
 
     for outcome in ('pres', 'abs', 'early', 'late'):
         row[f'rate_{outcome}'] = beh['observed_rates'].get(outcome)

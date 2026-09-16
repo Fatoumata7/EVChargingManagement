@@ -53,6 +53,10 @@ class DemandLatencyRecord:
     #: end-to-end latency is being measured.
     nb_search_retries: int = 0
     confirmed: bool = False
+    #: Retry budget spent without result: the need is closed as unsatisfied and
+    #: the vehicle stops asking. Distinct from `confirmed = False`, which also
+    #: covers a demand still open at the end of the horizon.
+    abandoned: bool = False
 
     # ---- derived
     @property
@@ -124,6 +128,7 @@ class DemandLatencyRecord:
             'search_retries':  self.nb_search_retries,
             'nb_offers':       self.nb_offers_received,
             'confirmed':       self.confirmed,
+            'abandoned':       self.abandoned,
             'confirm_attempts': self.nb_confirm_attempts,
             'first_offer_ms':  self.first_offer_ms,
             'last_offer_ms':   self.last_offer_ms,
@@ -285,6 +290,18 @@ class MetricsCollector:
             if confirmed:
                 rec.t_confirmation = time.perf_counter()
 
+    def record_demand_abandoned(self, demand_id):
+        """
+        The retry budget of a demand was spent without result.
+
+        Recorded explicitly rather than read as "not confirmed": an abandoned
+        demand is a need the system never served, whereas an unconfirmed one may
+        simply still be open at the end of the horizon.
+        """
+        rec = self.demand_timings.get(demand_id)
+        if rec is not None:
+            rec.abandoned = True
+
     def record_station_processing_start(self, station_id: int, demand_id,
                                         nb_demands: int = 0) -> StationTimingRecord:
         rec = StationTimingRecord(
@@ -407,6 +424,7 @@ class MetricsCollector:
         recs = list(self.demand_timings.values())
         answered = [r for r in recs if r.nb_offers_received > 0]
         confirmed = [r for r in recs if r.confirmed]
+        abandoned = [r for r in recs if r.abandoned]
 
         per_offer = [ms for r in recs for ms in r.per_offer_ms]
 
@@ -414,9 +432,11 @@ class MetricsCollector:
             'nb_demands':            len(recs),
             'nb_demands_answered':   len(answered),
             'nb_demands_confirmed':  len(confirmed),
+            'nb_demands_abandoned':  len(abandoned),
             'nb_offers_received':    sum(r.nb_offers_received for r in recs),
             'answer_rate':           round(len(answered) / len(recs), 4) if recs else 0.,
             'confirm_rate':          round(len(confirmed) / len(recs), 4) if recs else 0.,
+            'abandon_rate':          round(len(abandoned) / len(recs), 4) if recs else 0.,
             'mean_offers_per_demand': round(float(np.mean(
                 [r.nb_offers_received for r in recs])), 3) if recs else 0.,
             # emission → offer, all offers taken together

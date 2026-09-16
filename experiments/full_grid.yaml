@@ -1,4 +1,4 @@
-# Published grid of the report: 3 scenarios x 5 fleets x 5 methods, 5 days.
+# Published grid of the report: 3 scenarios x 3 fleets x 6 methods, 5 days.
 #
 #   python -m src.pipeline.cli run --config experiments/full_grid.yaml
 #
@@ -7,8 +7,8 @@
 label: full-grid
 seed: 42
 scenarios: [optimistic, balance, pessimistic]
-fleet_sizes: [50, 100, 150, 200, 250]
-# The `reference` group expands to BRAM-EV, the three baselines and greedy:
+fleet_sizes: [50, 150, 250]
+# The `reference` group expands to BRAM-EV, the four baselines and greedy:
 # this is the published comparison.
 methods: [reference]
 

@@ -2,7 +2,7 @@
 #
 #   python -m src.pipeline.cli run --config experiments/smoke.yaml
 #
-# Covers the 11 methods: the ablation ladder, the reference baselines and the
+# Covers the 12 methods: the ablation ladder, the reference baselines and the
 # BRAM-EV variants all go through the execution path before a long campaign.
 label: smoke
 seed: 42

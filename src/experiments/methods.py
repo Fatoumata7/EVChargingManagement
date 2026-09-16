@@ -28,6 +28,7 @@ BRAM-EV variants (one internal mechanism replaced, everything else unchanged)
 
 Reference baselines (pure choice policies)
 ------------------------------------------
+    nearest_available     offer of the nearest station able to serve
     min_waiting           offer with the lowest waiting time
     load_aware            offer of the least loaded upcoming station
     random_feasible       offer drawn at random among the offers received
@@ -163,6 +164,16 @@ _SPECS: tuple[MethodSpec, ...] = (
     # choice policies. That identical scope is what makes the comparison
     # readable — a measured gap comes from the rule, not from an information
     # advantage.
+    MethodSpec(
+        name='nearest_available', label='Nearest Available',
+        broadcast=True, use_reputation=False, collective_learning=False,
+        offer_choice='nearest', family='baseline',
+        note="The vehicle queries the stations within its search radius and "
+             "keeps the offer of the nearest one. Every offer received comes "
+             "from a station able to serve the demand, so the rule selects the "
+             "nearest *available* station \u2014 unlike `greedy`, which "
+             "contacts the nearest station whether it can serve or not.",
+    ),
     MethodSpec(
         name='min_waiting', label='Minimum Waiting Time',
         broadcast=True, use_reputation=False, collective_learning=False,

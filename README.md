@@ -57,8 +57,8 @@ component.
 │                                  #   methods / ablation
 │
 ├── experiments                    # Ready-made campaigns
-│   ├── smoke.yaml                 # ~2 min, all 11 methods
-│   ├── ablation.yaml              # 4 ladder rungs + 3 baselines
+│   ├── smoke.yaml                 # ~2 min, all 12 methods
+│   ├── ablation.yaml              # 4 ladder rungs + 4 baselines
 │   ├── ablation_variants.yaml     # BRAM-EV with one mechanism replaced
 │   └── full_grid.yaml             # Published grid: BRAM-EV vs every baseline
 │
@@ -67,7 +67,7 @@ component.
 │   ├── ablation.ipynb
 │   └── ablation_variants.ipynb
 │
-├── tests                          # uv run python -m tests  (114 tests)
+├── tests                          # uv run python -m tests  (116 tests)
 ├── results_grid/                  # Run outputs (gitignored)
 ├── outputs/                       # Visualizer logs (gitignored)
 └── pyproject.toml, uv.lock
@@ -91,17 +91,17 @@ fly.
 ### Campaigns
 
 ```bash
-# 1. Smoke — run this first: 1 scenario x 2 fleets x 11 methods, 24 h. ~2 min.
+# 1. Smoke — run this first: 1 scenario x 2 fleets x 12 methods, 24 h. ~2 min.
 uv run main.py run --config experiments/smoke.yaml
 
-# 2. Ablation ladder + baselines — 3 scenarios x 5 fleets x 7 methods, 5 days.
+# 2. Ablation ladder + baselines — 3 scenarios x 3 fleets x 8 methods, 5 days.
 uv run main.py run --dry-run --config experiments/ablation.yaml
 uv run main.py run --config experiments/ablation.yaml
 
 # 3. BRAM-EV variants — bramev + its 4 variants, same grid.
 uv run main.py run --config experiments/ablation_variants.yaml
 
-# 4. Published comparison grid — bramev, the 3 baselines and greedy (5 methods).
+# 4. Published comparison grid — bramev, the 4 baselines and greedy (6 methods).
 uv run main.py run --config experiments/full_grid.yaml
 ```
 
@@ -150,7 +150,7 @@ replayed with `define_agents_from_spec`.
 ### Tests and self-checks
 
 ```bash
-uv run python -m tests                  # all suites, 114 tests, no test dependency
+uv run python -m tests                  # all suites, 116 tests, no test dependency
 
 uv run python -m src.experiments.world  # shared grid & nested fleets
 uv run python -m src.experiments.seeding
@@ -230,6 +230,29 @@ up to `MAX_SEARCH_RETRIES` (4) times and capped by the grid diagonal. Parking
 rather than driving means an unsuccessful search cannot itself cause a
 breakdown, and re-drawing nothing means the retry budget does not consume
 randomness at a method-dependent rate.
+
+**Exhausting the budget closes the need.** The vehicle drives on — it gave up
+its charge, not its trip — but `Car.gave_up_charging` bars it from any new
+request, and the demand is recorded as abandoned (`nb_demands_abandoned`,
+`abandon_rate`). Without that closure the budget bounded nothing: `give_up_search`
+returned the vehicle to `DRIVING` with `search_retries` back to 0, `needs_charging`
+was true again at the very next slot, and the vehicle re-emitted a **new** demand
+with a fresh budget — measured looping every `MAX_SEARCH_RETRIES + 1` slots until
+the end of the horizon, one vehicle alone producing 8 demands for a single need.
+The budget paced the loop instead of bounding it, inflating `nb_demands` and
+drawing `d_n`, `g_n`, `r_n` and `l_n` again at each turn — at a rate depending on
+the method under test, which is exactly what the retry protocol is built to avoid.
+
+Only a charging session lifts the flag (`Car.charge_one_slot`), and a vehicle
+that has given up can no longer obtain one: giving up is terminal for the run.
+Measured over a campaign-length horizon (40 vehicles, 1440 slots, pessimistic):
+3 vehicles out of 40 end up out of the market, `abandon_rate` 0.9%.
+
+> **`MAX_SEARCH_RETRIES = 0` is no longer a neutral control.** With no budget,
+> the first search that fails closes the need for good: one strike and the
+> vehicle is out. The parameter therefore governs how long a vehicle keeps
+> taking part, not only how many attempts one demand gets — comparing two values
+> compares two fleets that shrink at different rates.
 
 ### Reputation score
 
@@ -363,9 +386,54 @@ previously false and under-counted no-shows. `Simulation._finalize` closes any
 remaining reservation, and `check_reservation_invariant` is verified per station
 at the end of every run — a violation is exit code 3.
 
-A no-show now stays parked (`PARKED_NO_SHOW`) until its reserved slot is
-released: it has given up its trip, not only its charge, so it no longer
-consumes energy — and can no longer break down — while holding the slot.
+A no-show gives up its charge, not its trip: it drives on immediately while its
+slot stays frozen until `t_dep`. It cannot re-enter the market in the meantime —
+`Simulation.step` skips any vehicle that still holds a `reservation` — so it
+roams until `_process_cancellations` releases the slot and counts `nb_no_show`.
+
+Roaming means consuming. A no-show that empties its battery before `t_dep`
+breaks down, and a breakdown releases the reservation as `nb_breakdown_canc`
+rather than `nb_no_show`: part of the absences are therefore observed as
+breakdowns, the more so the longer the reserved slot. The reservation invariant
+still closes — every reservation resolves into exactly one outcome — but
+`nb_no_show` alone under-reads the absences drawn, and `intent_abs` vs
+`rate_abs` in the tables is where that gap is visible.
+
+### Failure rates
+
+A demand can fail in two places, and a station can refuse in a third. The three
+rates published in `summary.csv` separate them, each next to the counts it is
+computed from — a rate nobody can recompute from the table is a rate nobody can
+check:
+
+| Rate | Definition | Reads |
+| --- | --- | --- |
+| `no_offer_rate` | `(nb_demands - nb_demands_answered) / nb_demands` | the demand found nothing within its radius, even after its retries |
+| `request_rejection_rate` | `(nb_demands - nb_demands_confirmed) / nb_demands` | the demand ended with no reservation, for any reason |
+| `station_rejection_rate` | `nb_station_level_rejections / nb_station_requests` | how often a station, asked, could not place the demand in its calendar |
+
+The first two are the failure-side reading of `answer_rate` and `confirm_rate`;
+they are recomputed from the counts rather than as `1 - rate`, so the rounding of
+the published rate cannot leak into them. Since a confirmed demand is
+necessarily an answered one, `request_rejection_rate >= no_offer_rate` always
+holds, and **the gap between the two is exactly the share of demands that
+received offers but confirmed none** — the cost of the confirmation step itself,
+which neither rate shows alone.
+
+**`station_rejection_rate` does not share their denominator.** It counts
+station-demand pairs, not demands: a broadcast demand is submitted to every
+station within `r_n`, and at most one of them can win it, so the rate rises
+mechanically as soon as the request is broadcast — measured 0.21 for `greedy`
+against 0.44 for `multistation` on the same world, for the same 121 demands.
+It reads as *station-side pressure*, and comparing it across the broadcast rung
+of the ladder compares two different denominators. Within a fixed information
+scope — the baselines against each other, or one method across fleet sizes — it
+is a valid load indicator.
+
+An empty denominator yields `None`, not `0.`: a run where no demand was ever
+emitted has no rejection rate, and `0.` there would read as "nothing was ever
+rejected", the opposite of "the question was never asked". The ablation skips a
+`None` instead of averaging it in.
 
 
 ## Ablation study
@@ -393,13 +461,14 @@ figures stay readable.
 
 ### Reference baselines — does BRAM-EV beat a simpler rule at all?
 
-All three share the exact protocol of `multistation` — broadcast to the stations
+All four share the exact protocol of `multistation` — broadcast to the stations
 within `r_n`, no reputation, no adaptation — and differ from it by **one thing
 only: the rule used to pick an offer**. Same information, same protocol, so a
 measured gap is attributable to the rule and not to an information advantage.
 
 | Baseline | Method | Picks the offer with... |
 | --- | --- | --- |
+| Nearest Available | `nearest_available` | the shortest distance — the nearest station that answered |
 | Minimum Waiting Time | `min_waiting` | the lowest waiting time (proposed vs. targeted slot) |
 | Load-Aware | `load_aware` | the lowest *future* occupancy at its station |
 | Random Feasible | `random_feasible` | a uniform draw among the offers received |
@@ -407,11 +476,24 @@ measured gap is attributable to the rule and not to an information advantage.
 `greedy` completes the set as the single-station floor: it is the only method
 that contacts one station instead of broadcasting.
 
-Three implementation points make these comparable rather than merely present:
+**`nearest_available` is not `greedy` under another name.** `greedy` contacts the
+single nearest station and gives up when it cannot serve; `nearest_available`
+broadcasts and keeps the nearest station that *answered* — and a station only
+answers with an offer it can honour. The pair therefore isolates what falling
+back on the next station buys, the proximity rule being unchanged. It is also
+the closest baseline to what a driver does without an app, which makes it the
+one BRAM-EV has to beat most convincingly.
+
+Four implementation points make these comparable rather than merely present:
 
 * **Feasibility is not a filter.** Every offer received is feasible by
   construction, so `random_feasible` draws among all of them and is a genuine
-  floor: what the protocol yields with no policy at all.
+  floor: what the protocol yields with no policy at all. The same property is
+  what makes `nearest_available` mean *available*: an unserviceable station
+  sends nothing, so it cannot win the distance ranking.
+* **Distance is the one the vehicle travelled.** `nearest_available` ranks on
+  `offer.distance`, the vehicle-to-station distance carried by the offer, so the
+  rule stays a pure function of what was received — same as the other three.
 * **Future occupancy, not lifetime occupancy.** `Station.future_occupancy_rate`
   measures the share of charger-slots booked *from the current slot onwards*;
   the `occupancy_rate` in the tables spans the whole horizon, past included, and
@@ -442,10 +524,10 @@ the contribution of alpha *heterogeneity* itself.
 
 ```bash
 uv run main.py run --methods ablation     # the four rungs
-uv run main.py run --methods baselines    # the three rules
-uv run main.py run --methods reference    # bramev + the three + greedy
+uv run main.py run --methods baselines    # the four rules
+uv run main.py run --methods reference    # bramev + the four + greedy
 uv run main.py run --methods bramev variants
-uv run main.py run --methods all          # 11 methods
+uv run main.py run --methods all          # 12 methods
 ```
 
 > **Contention is the prerequisite.** None of these comparisons can separate
@@ -487,6 +569,7 @@ Reputation                        +0.6% (58%)      -11.4% (100%)      +2.2% (75%
 Cross-station adaptation          +0.2% (50%)       -0.4% (58%)       +0.3% (50%)
 
 Reference baselines (gap from the baseline to BRAM-EV)
+Nearest Available                 +1.2% (83%)       -2.0% (83%)       +2.7% (83%)
 Minimum Waiting Time              +0.3% (67%)       -1.1% (75%)       +0.8% (58%)
 Load-Aware                        +0.5% (75%)       -0.9% (67%)       +1.4% (75%)
 Random Feasible                  +2.6% (100%)       -3.4% (92%)      +5.6% (100%)
@@ -704,7 +787,7 @@ as a zero.
 ## Tests
 
 ```bash
-uv run python -m tests                     # all suites, 114 tests
+uv run python -m tests                     # all suites, 116 tests
 uv run python -m tests.test_priority1      # model
 uv run python -m tests.test_shared_world   # shared grid and fleets
 uv run python -m tests.test_pipeline       # pipeline
@@ -724,13 +807,16 @@ No external test dependency: each suite is a module exposing `main() -> int`.
   campaign, fleets independent of the scenario and nested across sizes, `theta`
   as a pure function of the fixed noise and the scenario base, verified
   end-to-end on a real campaign.
-* **`test_pipeline.py` (24)** — orchestration: parameter validation, YAML/JSON
+* **`test_pipeline.py` (25)** — orchestration: parameter validation, YAML/JSON
   round-trip, CLI precedence over configuration files, run layout and artifact
   round-trip, incremental writing, same-world comparison, reproducibility of a
-  whole campaign, figures rebuilt from the persisted tables alone, CLI exit codes.
-* **`test_ablation.py` (27)** — attributability: each rung flips exactly one flag
+  whole campaign, the published rates recomputable from the counts beside them,
+  figures rebuilt from the persisted tables alone, CLI exit codes.
+* **`test_ablation.py` (28)** — attributability: each rung flips exactly one flag
   and leaves the internal mechanisms untouched, each variant differs from
-  `bramev` by exactly one mechanism, those flags actually reach the agents, the
+  `bramev` by exactly one mechanism, each baseline differs from `multistation`
+  by its choice rule alone and `nearest_available` is separable from `greedy`
+  in the metrics and not only in the flags, those flags actually reach the agents, the
   decomposition matches `summary.csv` with the right direction per metric, a
   duplicated method is refused rather than silently overwritten, the tables are
   rewritten after every case, every shipped config declares its `methods`
