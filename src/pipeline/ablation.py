@@ -23,6 +23,16 @@ The raw sign of a gap is not enough: a drop in the number of no-shows is
 progress, a drop in the satisfaction rate is not. Each metric therefore declares
 its direction (`GOAL_UP` / `GOAL_DOWN`), and `improvement` turns the gap into a
 judgement.
+
+Replicates
+    A world is `(scenario, nb_cars, world_seed)` — the seed included, so a
+    campaign run with `--seeds 42 7 13` decomposes each pair once per
+    replicate, and `mean_rows` aggregates over them: `nb_worlds` counts the
+    worlds, `share_improved` is the share of them where the component helped.
+    **With a single seed that share can only be 0 or 1**: it is then a sign,
+    not a frequency, and says nothing about whether the component helps in
+    general. Reading it as a confidence level is the mistake this column
+    invites — `nb_worlds` is there to make the sample size impossible to miss.
 """
 
 from __future__ import annotations

@@ -82,12 +82,25 @@ def _methods(rows: Rows) -> list[str]:
 
 
 def _series(rows: Rows, scenario: str, method: str, column: str):
-    """(x, y) sorted by fleet size, missing points excluded."""
-    pairs = [(r['nb_cars'], r.get(column)) for r in rows
-             if r['scenario'] == scenario and r['method'] == method
-             and r.get(column) is not None]
-    pairs.sort()
-    return [p[0] for p in pairs], [p[1] for p in pairs]
+    """
+    (x, y) sorted by fleet size, missing points excluded.
+
+    A multi-seed campaign holds one row per replicate at each fleet size, so
+    the points are **averaged over the seeds** rather than plotted one by one:
+    a line joining several y at the same x would zig-zag and read as an effect
+    of the fleet size. `summary.csv` keeps every replicate; only the curve is
+    aggregated.
+    """
+    by_x: dict[int, list[float]] = {}
+    for row in rows:
+        if row['scenario'] != scenario or row['method'] != method:
+            continue
+        value = row.get(column)
+        if value is None:
+            continue
+        by_x.setdefault(row['nb_cars'], []).append(float(value))
+    xs = sorted(by_x)
+    return xs, [sum(by_x[x]) / len(by_x[x]) for x in xs]
 
 
 def _plot_lines(ax, rows: Rows, scenario: str, column: str, ylabel: str,

@@ -4,19 +4,27 @@ runner.py — Execution of one case and of the experiment grid.
 The runner knows neither the command line, nor the file layout (delegated to
 `RunStore`), nor the styling of the figures. It orchestrates:
 
-    once per campaign             -> a single grid (companies, stations)
+    once per seed                 -> a grid (companies, stations)
     once per fleet size           -> a vehicle population
         for each scenario         -> composition: only `theta` changes
             for each method       -> a simulation on a copy of the world
 
-That structure is what makes the comparisons clean, at two levels:
+That structure is what makes the comparisons clean, at three levels:
 
 * **between methods** — the world is materialised as many times as there are
   methods, with no new draw (see `world.build_world`);
 * **between scenarios** — the grid and the initial vehicle positions are drawn
   before any simulation and reused as is, so that the gap measured between
   `optimistic`, `balance` and `pessimistic` can only come from the behaviour
-  probabilities (see `world.compose_world_spec`).
+  probabilities (see `world.compose_world_spec`);
+* **between seeds** — nothing is shared. Each seed redraws the grid, the fleets
+  and every behaviour, so a seed is a **replicate on another world**, not a
+  re-run of the same one. That is what a decomposition aggregated over seeds
+  measures, and what `share_improved` counts in `src/pipeline/ablation.py`.
+
+There is deliberately no way to hold the grid fixed while varying only the
+behaviour draws: a single root seed feeds both. A gap that survives several
+seeds survives a change of world too, which is the stronger claim.
 
 The grid and the fleets are persisted (JSON + CSV) as soon as they are drawn:
 they are available even if the campaign is interrupted at the first case.
@@ -65,7 +73,7 @@ def run_case(case: CaseParams, params: ExperimentParams, spec,
         The simulation is returned so that the detailed tables can be extracted
         from it; the caller decides what to persist.
     """
-    config = params.build_config(case.scenario, case.nb_cars)
+    config = params.build_config(case.scenario, case.nb_cars, case.seed)
     cars, stations, societies = build_world(spec, config)
 
     # A single class for every method: `mode` selects the flag set (see
@@ -103,37 +111,40 @@ def run_case(case: CaseParams, params: ExperimentParams, spec,
     return simulation, outcome
 
 
-def prepare_shared_world(params: ExperimentParams, store: RunStore):
+def prepare_shared_world(params: ExperimentParams, store: RunStore,
+                         seed: int | None = None):
     """
-    Draw and persist what every case shares: the grid and the fleets.
+    Draw and persist what every case of one replicate shares: grid and fleets.
 
-    Called only once, before any simulation. The configuration used sets no
-    scenario: what is drawn here therefore cannot depend on one.
+    Called once per seed, before any simulation of that replicate. The
+    configuration used sets no scenario: what is drawn here therefore cannot
+    depend on one.
 
     Returns
     -------
     (grid, fleets)
-        `grid`: the single `GridSpec`; `fleets`: `{nb_cars: FleetSpec}`.
+        `grid`: the `GridSpec` of the replicate; `fleets`: `{nb_cars: FleetSpec}`.
     """
-    shared_config = params.build_shared_config()
+    seed = params.seed if seed is None else int(seed)
+    shared_config = params.build_shared_config(seed=seed)
 
-    grid = generate_grid_spec(shared_config, params.seed)
-    store.save_grid(grid)
-    store.write_shared_table('grid_stations', tables.grid_station_table(grid))
-    store.write_shared_table('grid_societies', tables.grid_society_table(grid))
+    grid = generate_grid_spec(shared_config, seed)
+    store.save_grid(grid, seed)
+    store.write_shared_table('grid_stations', tables.grid_station_table(grid), seed)
+    store.write_shared_table('grid_societies', tables.grid_society_table(grid), seed)
     logger.info(
-        f'Shared grid: {grid.nb_stations} stations / {grid.nb_societies} '
+        f'[seed {seed}] grid: {grid.nb_stations} stations / {grid.nb_societies} '
         f'companies, {sum(s["nb_charg_spot"] for s in grid.stations)} chargers '
-        f'-> {store.grid_path.name}'
+        f'-> {store.grid_path(seed).name}'
     )
 
     fleets: dict[int, object] = {}
     for nb_cars in params.fleet_sizes:
-        fleet = generate_fleet_spec(shared_config, params.seed, nb_cars)
-        store.save_fleet(fleet)
-        store.write_shared_table(f'fleet_{nb_cars}cars', tables.fleet_table(fleet))
+        fleet = generate_fleet_spec(shared_config, seed, nb_cars)
+        store.save_fleet(fleet, seed)
+        store.write_shared_table(f'fleet_{nb_cars}cars', tables.fleet_table(fleet), seed)
         fleets[nb_cars] = fleet
-    logger.info(f'Shared fleets: {list(fleets)} vehicles '
+    logger.info(f'[seed {seed}] fleets: {list(fleets)} vehicles '
                 f'-> {store.fleets_dir.name}/')
 
     return grid, fleets
@@ -152,26 +163,34 @@ def run_grid(params: ExperimentParams, store: RunStore | None = None,
     logger.info(f'Run: {store.root}')
     logger.info(params.describe())
 
-    grid, fleets = prepare_shared_world(params, store)
-
     summary_rows: list[dict] = []
     # Diagnostics are structural: repeating them at every case drowns the output.
     seen_diagnostics: set[str] = set()
     started = time.perf_counter()
     case_no = 0
+    # The grid and the fleets of a replicate are drawn once and reused by all
+    # its worlds; `params.worlds()` yields the seed first, so the cache holds a
+    # single replicate at a time.
+    shared: dict[int, tuple] = {}
 
-    for scenario, nb_cars in params.worlds():
-        # Composition: shared grid and fleet, `theta` of the scenario.
-        config_ref = params.build_config(scenario, nb_cars)
+    for seed, scenario, nb_cars in params.worlds():
+        if seed not in shared:
+            shared.clear()
+            shared[seed] = prepare_shared_world(params, store, seed)
+        grid, fleets = shared[seed]
+
+        # Composition: grid and fleet of the replicate, `theta` of the scenario.
+        config_ref = params.build_config(scenario, nb_cars, seed)
         spec = compose_world_spec(grid, fleets[nb_cars], config_ref)
         world_seed = spec.seed
-        store.save_world(spec, scenario, nb_cars)
+        store.save_world(spec, scenario, nb_cars, seed)
 
         for method in params.methods:
-            case = CaseParams(scenario=scenario, nb_cars=nb_cars, method=method)
+            case = CaseParams(scenario=scenario, nb_cars=nb_cars,
+                              method=method, seed=seed)
             case_no += 1
             logger.info(f'[{case_no}/{params.nb_cases}] {case.tag} '
-                        f'(seed={params.seed}, world_seed={world_seed})')
+                        f'(seed={seed}, world_seed={world_seed})')
 
             log_path = store.log_path(case) if params.keep_logs else None
             simulation, outcome = run_case(case, params, spec, log_path)
@@ -192,6 +211,7 @@ def run_grid(params: ExperimentParams, store: RunStore | None = None,
             ablation.write_tables(store, summary_rows)
             store.record_case({
                 'tag': case.tag,
+                'seed': seed,
                 'scenario': scenario,
                 'nb_cars': nb_cars,
                 'method': method,

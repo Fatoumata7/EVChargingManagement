@@ -99,7 +99,13 @@ def _add_run(subparsers) -> None:
 
     plan = p.add_argument_group("experiment plan")
     plan.add_argument('--seed', type=int, default=None,
-                      help=f'Root seed (default: {DEFAULT_SEED}).')
+                      help=f'Single replicate seed (default: {DEFAULT_SEED}). '
+                           'Shorthand for --seeds with one value.')
+    plan.add_argument('--seeds', nargs='+', type=int, default=None, metavar='N',
+                      help='Replicate seeds. The whole plan is run once per '
+                           'seed, each one redrawing the grid and the fleets. '
+                           'The ablation then aggregates over them: with a '
+                           'single seed share_improved is only 0 or 1.')
     plan.add_argument('--scenarios', nargs='+', choices=SCENARIOS, default=None,
                       metavar='NAME', help=f'Scenarios to run {list(SCENARIOS)}.')
     plan.add_argument('--cars', dest='fleet_sizes', nargs='+', type=int, default=None,
@@ -234,7 +240,7 @@ def _add_run_selector(p: argparse.ArgumentParser) -> None:
 # Commands
 # ----------------------------------------------------------------------
 
-PARAM_OPTIONS = ('seed', 'scenarios', 'fleet_sizes', 'methods',
+PARAM_OPTIONS = ('seed', 'seeds', 'scenarios', 'fleet_sizes', 'methods',
                  'total_time', 'nb_stations', 'nb_societies', 'nb_charg_spot_low',
                  'nb_charg_spot_high', 'strategy_noise', 'offer_ttl_slots',
                  'late_cancel_fraction', 'reservation_lead_low',
@@ -259,12 +265,16 @@ def cmd_run(args: argparse.Namespace) -> int:
         nb_scenarios = len(params.scenarios)
         shared_with = ('common to ' + ', '.join(params.scenarios)
                        if nb_scenarios > 1 else f'scenario {params.scenarios[0]}')
-        print(f'\nShared environment (seed={params.seed}):')
-        print(f'  single grid: {params.nb_stations} stations / '
+        print(f'\nShared environment, per replicate '
+              f'({params.nb_seeds} seed(s): {list(params.seeds)}):')
+        print(f'  one grid per seed: {params.nb_stations} stations / '
               f'{params.nb_societies} companies — {shared_with}')
         print(f'  {len(params.fleet_sizes)} fleet(s): '
               f'{list(params.fleet_sizes)} vehicles — initial positions fixed '
               f'before any simulation, common to the scenarios')
+        if params.nb_seeds > 1:
+            print('  nothing is shared across seeds: each one redraws the grid '
+                  'and the fleets, so a seed is a replicate on another world')
         print('\nPlanned cases:')
         for case in params.cases():
             print(f'  {case.tag}')
@@ -298,13 +308,19 @@ def _shared_tables(store: RunStore) -> dict:
     Tables describing the shared environment, as `figures.render_all` expects
     them. When absent (run predating the shared grid), the corresponding
     figures are simply omitted.
+
+    A multi-seed campaign has one grid and one fleet **per replicate**: what is
+    drawn here is the reference replicate, `params.seeds[0]`. These figures
+    document the environment, they carry no result — the aggregated results are
+    in `summary.csv` and `ablation_mean.csv`, which cover every seed.
     """
     params = store.read_params()
-    fleet_rows = {n: store.read_shared_table(f'fleet_{n}cars')
+    seed = params.seed
+    fleet_rows = {n: store.read_shared_table(f'fleet_{n}cars', seed)
                   for n in params.fleet_sizes}
     return {
-        'grid_rows':    store.read_shared_table('grid_stations'),
-        'society_rows': store.read_shared_table('grid_societies'),
+        'grid_rows':    store.read_shared_table('grid_stations', seed),
+        'society_rows': store.read_shared_table('grid_societies', seed),
         'fleet_rows':   {n: rows for n, rows in fleet_rows.items() if rows},
     }
 
@@ -340,7 +356,7 @@ def cmd_show(args: argparse.Namespace) -> int:
     params = store.read_params()
     manifest = store.read_manifest()
     print(f'Run    : {store.root}')
-    print(f'Seed   : {params.seed}   (commit {manifest.get("git_commit")})')
+    print(f'Seeds  : {list(params.seeds)}   (commit {manifest.get("git_commit")})')
     print(f'Plan   : {params.describe()}')
     print(f'Cases  : {manifest["nb_cases_done"]}/{manifest["nb_cases_planned"]}')
     print()

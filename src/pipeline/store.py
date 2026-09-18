@@ -6,24 +6,30 @@ results, the tables and the figures live together in it, so that a run can be
 archived, shared or re-analysed without depending on the command that created
 it.
 
-    <output_root>/<timestamp>_seed<seed>[_<label>]/
+    <output_root>/<timestamp>_<seed tag>[_<label>]/
         params.json                      parameters of the campaign
         manifest.json                    environment, progress, timings
         summary.csv                      one row per case (pivot table)
-        grid.json                        infrastructure shared by ALL the cases
-        fleets/fleet_<n>cars.json        vehicle population, per fleet
-        worlds/<scenario>_<n>cars.json   composed world (grid + fleet + scenario)
+        grids/seed<s>.json               infrastructure, one per replicate
+        fleets/seed<s>_fleet_<n>cars.json    vehicle population, per fleet
+        worlds/<world tag>.json          composed world (grid + fleet + scenario)
         results/<tag>.json               complete metrics of one case
-        tables/grid_stations.csv         the grid, flat: positions, companies, alpha
-        tables/grid_societies.csv        companies: position and point strategy
-        tables/fleet_<n>cars.csv         the fleet, flat: initial positions…
+        tables/seed<s>_grid_stations.csv the grid, flat: positions, companies, alpha
+        tables/seed<s>_grid_societies.csv    companies: position and point strategy
+        tables/seed<s>_fleet_<n>cars.csv the fleet, flat: initial positions…
         tables/<tag>_<table>.csv         tidy tables of a case (latency, stations…)
         logs/<tag>.txt                   detailed log (--keep-logs option)
         figures/*.png                    figures regenerable without re-simulating
 
-`grid.json` and `fleets/` are the *primitives*: the worlds in `worlds/` are
-entirely derived from them (see `src/experiments/world.compose_world_spec`) and
-are persisted for traceability only.
+`<seed tag>` is `seed42` for one replicate, `seeds42-7-13` for several.
+`<world tag>` is `seed<s>_<scenario>_<n>cars` and `<tag>` appends the method —
+both come from `CaseParams`, which is the only definition of a case identity.
+
+A campaign runs its whole plan once per seed, and **each seed redraws the grid
+and the fleets**: they are primitives of a replicate, not of the campaign. The
+worlds in `worlds/` are entirely derived from them (see
+`src/experiments/world.compose_world_spec`) and are persisted for traceability
+only.
 
 `RunStore` is the only place that knows this layout: no other module builds a
 path by hand.
@@ -40,12 +46,27 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterator, Mapping, Sequence
 
-from src.pipeline.params import ExperimentParams, CaseParams
+from src.pipeline.params import ExperimentParams, CaseParams, world_tag
 
 MANIFEST = 'manifest.json'
 PARAMS = 'params.json'
 SUMMARY = 'summary.csv'
-GRID = 'grid.json'
+GRIDS = 'grids'
+
+
+def seed_tag(seeds: Sequence[int]) -> str:
+    """
+    Name a set of replicates for a directory.
+
+    One seed keeps the historical `seed42`. Several are joined, and a long list
+    is truncated so that the run directory stays a readable name rather than a
+    manifest: `params.json` remains the authority on what actually ran.
+    """
+    seeds = list(seeds)
+    if len(seeds) == 1:
+        return f'seed{seeds[0]}'
+    head = '-'.join(str(s) for s in seeds[:4])
+    return f'seeds{head}' if len(seeds) <= 4 else f'seeds{head}+{len(seeds) - 4}'
 
 
 def _utc_stamp() -> str:
@@ -84,7 +105,7 @@ class RunStore:
     @classmethod
     def create(cls, params: ExperimentParams) -> "RunStore":
         """Create the run directory and write the parameters and manifest in it."""
-        name = f"{_utc_stamp()}_seed{params.seed}"
+        name = f"{_utc_stamp()}_{seed_tag(params.seeds)}"
         if params.label:
             name = f"{name}_{_slug(params.label)}"
         store = cls(Path(params.output_root) / name)
@@ -95,6 +116,7 @@ class RunStore:
             'started_utc': _utc_stamp(),
             'finished_utc': None,
             'seed': params.seed,
+            'seeds': list(params.seeds),
             'nb_cases_planned': params.nb_cases,
             'nb_cases_done': 0,
             'params_source': params._source,
@@ -172,7 +194,7 @@ class RunStore:
                       if (p / PARAMS).is_file())
 
     def _mkdirs(self) -> None:
-        for path in (self.root, self.fleets_dir, self.worlds_dir,
+        for path in (self.root, self.grids_dir, self.fleets_dir, self.worlds_dir,
                      self.results_dir, self.tables_dir, self.figures_dir,
                      self.logs_dir):
             path.mkdir(parents=True, exist_ok=True)
@@ -194,8 +216,11 @@ class RunStore:
         return self.root / SUMMARY
 
     @property
-    def grid_path(self) -> Path:
-        return self.root / GRID
+    def grids_dir(self) -> Path:
+        return self.root / GRIDS
+
+    def grid_path(self, seed: int) -> Path:
+        return self.grids_dir / f'seed{seed}.json'
 
     @property
     def fleets_dir(self) -> Path:
@@ -221,15 +246,21 @@ class RunStore:
     def logs_dir(self) -> Path:
         return self.root / 'logs'
 
-    def fleet_path(self, nb_cars: int) -> Path:
-        return self.fleets_dir / f'fleet_{nb_cars}cars.json'
+    def fleet_path(self, nb_cars: int, seed: int) -> Path:
+        return self.fleets_dir / f'seed{seed}_fleet_{nb_cars}cars.json'
 
-    def world_path(self, scenario: str, nb_cars: int) -> Path:
-        return self.worlds_dir / f'{scenario}_{nb_cars}cars.json'
+    def world_path(self, scenario: str, nb_cars: int, seed: int) -> Path:
+        return self.worlds_dir / f'{world_tag(scenario, nb_cars, seed)}.json'
 
-    def shared_table_path(self, name: str) -> Path:
-        """Campaign table (grid, fleet), as opposed to the table of a case."""
-        return self.tables_dir / f'{name}.csv'
+    def shared_table_path(self, name: str, seed: int | None = None) -> Path:
+        """
+        Replicate table (grid, fleet), as opposed to the table of a case.
+
+        `seed` is optional only for reading a table written before the seed
+        became a dimension; everything the runner writes carries it.
+        """
+        stem = name if seed is None else f'seed{seed}_{name}'
+        return self.tables_dir / f'{stem}.csv'
 
     def result_path(self, case: CaseParams) -> Path:
         return self.results_dir / f'{case.tag}.json'
@@ -278,32 +309,33 @@ class RunStore:
     # Grid, fleets, worlds & results
     # ------------------------------------------------------------------
 
-    def save_grid(self, spec) -> Path:
-        """Persist the infrastructure shared by the whole campaign."""
-        spec.save(str(self.grid_path))
-        return self.grid_path
+    def save_grid(self, spec, seed: int) -> Path:
+        """Persist the infrastructure shared by every case of one replicate."""
+        path = self.grid_path(seed)
+        spec.save(str(path))
+        return path
 
-    def load_grid(self):
+    def load_grid(self, seed: int):
         from src.experiments.world import GridSpec
-        return GridSpec.load(str(self.grid_path))
+        return GridSpec.load(str(self.grid_path(seed)))
 
-    def save_fleet(self, spec) -> Path:
-        path = self.fleet_path(spec.nb_cars)
+    def save_fleet(self, spec, seed: int) -> Path:
+        path = self.fleet_path(spec.nb_cars, seed)
         spec.save(str(path))
         return path
 
-    def load_fleet(self, nb_cars: int):
+    def load_fleet(self, nb_cars: int, seed: int):
         from src.experiments.world import FleetSpec
-        return FleetSpec.load(str(self.fleet_path(nb_cars)))
+        return FleetSpec.load(str(self.fleet_path(nb_cars, seed)))
 
-    def save_world(self, spec, scenario: str, nb_cars: int) -> Path:
-        path = self.world_path(scenario, nb_cars)
+    def save_world(self, spec, scenario: str, nb_cars: int, seed: int) -> Path:
+        path = self.world_path(scenario, nb_cars, seed)
         spec.save(str(path))
         return path
 
-    def load_world(self, scenario: str, nb_cars: int):
+    def load_world(self, scenario: str, nb_cars: int, seed: int):
         from src.experiments.world import WorldSpec
-        return WorldSpec.load(str(self.world_path(scenario, nb_cars)))
+        return WorldSpec.load(str(self.world_path(scenario, nb_cars, seed)))
 
     def save_result(self, case: CaseParams, result: Mapping[str, Any]) -> Path:
         path = self.result_path(case)
@@ -333,17 +365,18 @@ class RunStore:
         return path
 
     def write_shared_table(self, name: str,
-                           rows: Sequence[Mapping[str, Any]]) -> Path | None:
-        """Write a campaign table (grid, fleet). `None` if empty."""
+                           rows: Sequence[Mapping[str, Any]],
+                           seed: int | None = None) -> Path | None:
+        """Write a replicate table (grid, fleet). `None` if empty."""
         if not rows:
             return None
-        path = self.shared_table_path(name)
+        path = self.shared_table_path(name, seed)
         _write_csv(path, rows)
         return path
 
-    def read_shared_table(self, name: str) -> list[dict]:
-        """Read back a campaign table; empty list if it does not exist."""
-        path = self.shared_table_path(name)
+    def read_shared_table(self, name: str, seed: int | None = None) -> list[dict]:
+        """Read back a replicate table; empty list if it does not exist."""
+        path = self.shared_table_path(name, seed)
         if not path.is_file():
             return []
         with path.open(encoding='utf-8', newline='') as fh:

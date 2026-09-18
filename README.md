@@ -67,7 +67,7 @@ component.
 │   ├── ablation.ipynb
 │   └── ablation_variants.ipynb
 │
-├── tests                          # uv run python -m tests  (116 tests)
+├── tests                          # uv run python -m tests  (124 tests)
 ├── results_grid/                  # Run outputs (gitignored)
 ├── outputs/                       # Visualizer logs (gitignored)
 └── pyproject.toml, uv.lock
@@ -109,7 +109,10 @@ A campaign is fully described by its configuration file; any CLI option
 overrides it:
 
 ```bash
-# same grid, another seed — is the conclusion an artefact of one draw?
+# several replicates in one campaign — the whole plan is run once per seed
+uv run main.py run --config experiments/full_grid.yaml --seeds 42 7 13
+
+# one other draw only — is the conclusion an artefact of one world?
 uv run main.py run --config experiments/full_grid.yaml --seed 7 --label seed-7
 
 # a custom campaign, without a configuration file
@@ -120,7 +123,8 @@ uv run main.py run --seed 42 --scenarios pessimistic --cars 50 100 150 \
 uv run main.py run --scenarios balance --cars 50 --methods bramev --total-time 288
 ```
 
-Output goes to `results_grid/<timestamp>_seed<seed>[_<label>]/`.
+Output goes to `results_grid/<timestamp>_<seed tag>[_<label>]/`, where the
+seed tag is `seed42` for one replicate and `seeds42-7-13` for several.
 
 ### Reading a finished run
 
@@ -150,7 +154,7 @@ replayed with `define_agents_from_spec`.
 ### Tests and self-checks
 
 ```bash
-uv run python -m tests                  # all suites, 116 tests, no test dependency
+uv run python -m tests                  # all suites, 124 tests, no test dependency
 
 uv run python -m src.experiments.world  # shared grid & nested fleets
 uv run python -m src.experiments.seeding
@@ -665,7 +669,7 @@ first one.
 
 | Group | Options |
 | --- | --- |
-| Experiment plan | `--seed`, `--scenarios`, `--cars`, `--methods` |
+| Experiment plan | `--seeds` (or `--seed`), `--scenarios`, `--cars`, `--methods` |
 | Simulated world | `--total-time`, `--nb-stations`, `--nb-societies`, `--charg-spot-low/high`, `--strategy-noise` |
 | Protocol | `--offer-ttl-slots`, `--late-cancel-fraction`, `--reservation-lead-low`, `--reservation-lead-high`, `--society-update-interval`, `--alpha-fixed` |
 | Outputs | `--output-root`, `--label`, `--keep-logs`, `--save-latency`, `--save-tables`, `--figures`, `--log-every` |
@@ -673,19 +677,19 @@ first one.
 ### What a run produces
 
 ```text
-results_grid/<timestamp>_seed<seed>[_<label>]/
+results_grid/<timestamp>_<seed tag>[_<label>]/
     params.json                       campaign parameters (replayable as is)
-    manifest.json                     seed, git commit, platform, progress, timings
+    manifest.json                     seeds, git commit, platform, progress, timings
     summary.csv                       one line per case, ready for plotting
     ablation.csv                      one line per (world, component, metric)
     ablation_mean.csv                 contribution of each component, averaged
-    grid.json                         THE grid: societies, stations, alpha, strategies
-    fleets/fleet_<n>cars.json         one fleet per size, shared by every scenario
-    worlds/<scenario>_<n>cars.json    composed world (grid + fleet + scenario)
+    grids/seed<s>.json                the grid of one replicate: societies, stations…
+    fleets/seed<s>_fleet_<n>cars.json one fleet per size, shared by every scenario
+    worlds/<world tag>.json           composed world (grid + fleet + scenario)
     results/<tag>.json                full metrics of one case
-    tables/grid_stations.csv          position, company, spots, alpha
-    tables/grid_societies.csv         position, strategy points, holdings
-    tables/fleet_<n>cars.csv          initial position, autonomy, preferences…
+    tables/seed<s>_grid_stations.csv  position, company, spots, alpha
+    tables/seed<s>_grid_societies.csv position, strategy points, holdings
+    tables/seed<s>_fleet_<n>cars.csv  initial position, autonomy, preferences…
     tables/<tag>_<table>.csv          stations, behaviors, acceptances, alpha, latency
     figures/grid.png, fleet_<n>cars.png, *.png
     logs/<tag>.txt                    detailed log (--keep-logs)
@@ -703,7 +707,7 @@ scenario satisfaction, travel and waiting time, latency breakdown, demand funnel
 reservation outcomes, offer-protocol health, station load; and across scenarios
 satisfaction overview, scalability, and intent-vs-observed behaviour.
 
-### Single seed, independent streams
+### Seeds: one root per replicate, independent streams
 
 `src/experiments/seeding.py` derives every random source from one root seed
 through `numpy.random.SeedSequence` (`random.seed` and `numpy.random.seed` are
@@ -724,13 +728,33 @@ histories.
 
 | Layer | Drawn | Depends on | Shared by |
 | --- | --- | --- | --- |
-| `GridSpec` | once per campaign | the seed only | every scenario, fleet size and method |
-| `FleetSpec` | once per fleet size | the seed only | every scenario and method |
+| `GridSpec` | once per seed | the seed only | every scenario, fleet size and method of that replicate |
+| `FleetSpec` | once per seed and fleet size | the seed only | every scenario and method of that replicate |
 | `WorldSpec` | composed, no draw | grid + fleet + scenario | every method of that case |
 
 **The grid** — companies (position, strategy points) and stations (position,
-owner, chargers, initial `alpha`) — is drawn before the first simulation and
-reused verbatim, so the three scenarios run on the same map.
+owner, chargers, initial `alpha`) — is drawn before the first simulation of its
+replicate and reused verbatim, so the three scenarios run on the same map.
+
+**Across seeds, nothing is shared.** `--seeds 42 7 13` runs the whole
+(scenario x fleet x method) plan three times, and each seed redraws the grid,
+the fleets and every behaviour: a seed is a **replicate on another world**, not
+a re-run of the same one. That is what makes the decomposition aggregate into
+something readable — `_world_key` in `src/pipeline/ablation.py` is
+`(scenario, nb_cars, world_seed)`, so `nb_worlds` counts the replicates and
+`share_improved` becomes a real frequency.
+
+> **With a single seed, `share_improved` can only be 0 or 1.** It is then a
+> sign, not a frequency: it says which way the component moved on one world,
+> and nothing about whether it moves that way in general. Every number of the
+> kind "+0.6% (58%)" quoted below needs several seeds to mean anything.
+
+There is deliberately no knob to hold the grid fixed while varying only the
+behaviour draws: one root seed feeds both. The variance measured across seeds
+therefore mixes world variance and stochastic variance — a gap that survives it
+survives a change of map too, which is the stronger claim but not the finer
+decomposition. Separating the two would take a second, independent seed for the
+shared world.
 
 **The fleet** — initial position and SoC, autonomy, threshold, preferences,
 charging power — is drawn once per size. Each vehicle uses its own
@@ -787,7 +811,7 @@ as a zero.
 ## Tests
 
 ```bash
-uv run python -m tests                     # all suites, 116 tests
+uv run python -m tests                     # all suites, 124 tests
 uv run python -m tests.test_priority1      # model
 uv run python -m tests.test_shared_world   # shared grid and fleets
 uv run python -m tests.test_pipeline       # pipeline
@@ -804,14 +828,18 @@ No external test dependency: each suite is a module exposing `main() -> int`.
   with the threshold, and the horizon actually opening the `early` branch that
   is unreachable without it).
 * **`test_shared_world.py` (17)** — comparability of the scenarios: one grid per
-  campaign, fleets independent of the scenario and nested across sizes, `theta`
+  replicate, fleets independent of the scenario and nested across sizes, `theta`
   as a pure function of the fixed noise and the scenario base, verified
   end-to-end on a real campaign.
-* **`test_pipeline.py` (25)** — orchestration: parameter validation, YAML/JSON
+* **`test_pipeline.py` (29)** — orchestration: parameter validation, YAML/JSON
   round-trip, CLI precedence over configuration files, run layout and artifact
   round-trip, incremental writing, same-world comparison, reproducibility of a
   whole campaign, the published rates recomputable from the counts beside them,
-  figures rebuilt from the persisted tables alone, CLI exit codes.
+  seeds as replicates on genuinely different worlds with artifacts that never
+  collide, `share_improved` counting those replicates, `seed` still accepted
+  where `seeds` is expected, curves averaging the replicates instead of
+  zig-zagging through them, figures rebuilt from the persisted tables alone,
+  CLI exit codes.
 * **`test_ablation.py` (28)** — attributability: each rung flips exactly one flag
   and leaves the internal mechanisms untouched, each variant differs from
   `bramev` by exactly one mechanism, each baseline differs from `multistation`

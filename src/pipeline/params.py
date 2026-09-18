@@ -38,18 +38,84 @@ class ParamsError(ValueError):
     """Invalid experiment parameters."""
 
 
+def _as_seed_tuple(value: Any) -> tuple:
+    """
+    Normalise `seeds` into a tuple, a bare integer included.
+
+    A non-integer is left as is: `validate()` reports it with a situated
+    message rather than raising a `TypeError` from the constructor.
+    """
+    if isinstance(value, (str, bytes)) or not isinstance(value, Sequence):
+        value = (value,)
+    out = []
+    for item in value:
+        out.append(int(item) if isinstance(item, int) and not isinstance(item, bool)
+                   else item)
+    return tuple(out)
+
+
+def _normalise_seed_key(data: Mapping[str, Any]) -> dict:
+    """
+    Accept `seed: 42` wherever `seeds: [42]` is expected.
+
+    Every shipped config and every `params.json` written before the seed became
+    a dimension uses the singular key; reading them must keep working, and
+    `--seed 42` stays the natural way to ask for one replicate.
+    """
+    data = dict(data)
+    if 'seed' not in data:
+        return data
+    single = data.pop('seed')
+    if 'seeds' in data:
+        raise ParamsError(
+            "`seed` and `seeds` are both supplied: keep only `seeds` "
+            f"(got seed={single!r}, seeds={data['seeds']!r})"
+        )
+    data['seeds'] = _as_seed_tuple(single)
+    return data
+
+
+def world_tag(scenario: str, nb_cars: int, seed: int) -> str:
+    """
+    Identifier of an initial world: the replicate, the scenario, the fleet.
+
+    Single definition, shared by `CaseParams` and by the file layout — a world
+    named differently in two places is a world silently written twice.
+    """
+    return f"seed{seed}_{scenario}_{nb_cars}cars"
+
+
 @dataclass(frozen=True)
 class CaseParams:
-    """One elementary case of the grid: a scenario, a fleet, a method."""
+    """One elementary case of the grid: a seed, a scenario, a fleet, a method."""
 
     scenario: str
     nb_cars: int
     method: str
+    #: Seed of the replicate. It defines the grid, the fleet and every draw of
+    #: the run, so two cases that differ only by it are two *different worlds*
+    #: — which is exactly what makes them replicates.
+    #:
+    #: Deliberately without a default: the seed is part of every artifact path,
+    #: so a forgotten one would not raise, it would silently read or write the
+    #: wrong file.
+    seed: int
+
+    @property
+    def seed_tag(self) -> str:
+        return f"seed{self.seed}"
 
     @property
     def world_tag(self) -> str:
-        """Identifier of the initial world, shared by every method."""
-        return f"{self.scenario}_{self.nb_cars}cars"
+        """
+        Identifier of the initial world, shared by every method.
+
+        The seed is part of it, always — including in a single-seed campaign.
+        A tag whose shape depended on the number of seeds would make every
+        artifact path a function of a global, and two replicates of the same
+        (scenario, fleet) would silently overwrite each other.
+        """
+        return world_tag(self.scenario, self.nb_cars, self.seed)
 
     @property
     def tag(self) -> str:
@@ -72,7 +138,12 @@ class ExperimentParams:
     """
 
     # ---- experiment plan
-    seed: int = DEFAULT_SEED
+    #: Replicate seeds. Each one redraws the grid, the fleets and every
+    #: behaviour, so the campaign runs the whole (scenario x fleet x method)
+    #: plan once per seed. The ablation then aggregates over them: with a
+    #: single seed `share_improved` can only be 0 or 1 and carries no
+    #: statistical content (see `src/pipeline/ablation.py`).
+    seeds: tuple[int, ...] = (DEFAULT_SEED,)
     scenarios: tuple[str, ...] = SCENARIOS
     fleet_sizes: tuple[int, ...] = (50, 100, 150, 200, 250)
     methods: tuple[str, ...] = methods_module.LADDER
@@ -120,6 +191,7 @@ class ExperimentParams:
         # Normalise the sequences into tuples: a configuration dataclass must
         # not expose a shared mutable container.
         object.__setattr__(self, 'scenarios', tuple(self.scenarios))
+        object.__setattr__(self, 'seeds', _as_seed_tuple(self.seeds))
         object.__setattr__(self, 'fleet_sizes', tuple(int(n) for n in self.fleet_sizes))
         # Groups (`ablation`, `variants`, `all`) and aliases (`nearest`) are
         # expanded into canonical names here: the rest of the pipeline — case
@@ -129,20 +201,40 @@ class ExperimentParams:
         object.__setattr__(self, 'methods', methods_module.expand(self.methods))
         self.validate()
 
+    @property
+    def seed(self) -> int:
+        """
+        Reference seed of the campaign: the first replicate.
+
+        Kept so that the run name, the manifest and the displays stay stable,
+        and so that a single-seed campaign reads exactly as before. It is *not*
+        the seed of a case: `CaseParams.seed` is.
+        """
+        return self.seeds[0]
+
+    @property
+    def nb_seeds(self) -> int:
+        return len(self.seeds)
+
     @classmethod
     def field_names(cls) -> tuple[str, ...]:
         return tuple(f.name for f in fields(cls) if not f.name.startswith('_'))
 
     @classmethod
+    def input_keys(cls) -> tuple[str, ...]:
+        """Keys accepted in a config file or as an override, `seed` included."""
+        return cls.field_names() + ('seed',)
+
+    @classmethod
     def from_mapping(cls, data: Mapping[str, Any], source: str | None = None) -> "ExperimentParams":
-        known = set(cls.field_names())
+        known = set(cls.input_keys())
         unknown = sorted(set(data) - known)
         if unknown:
             raise ParamsError(
                 f"Unknown keys in the parameters: {unknown}. "
                 f"Expected one of {sorted(known)}"
             )
-        return cls(**dict(data), _source=source)
+        return cls(**_normalise_seed_key(data), _source=source)
 
     @classmethod
     def from_file(cls, path: str | os.PathLike) -> "ExperimentParams":
@@ -180,10 +272,10 @@ class ExperimentParams:
     def merged_with(self, overrides: Mapping[str, Any]) -> "ExperimentParams":
         """Apply overrides (typically the CLI options)."""
         clean = {k: v for k, v in overrides.items() if v is not None}
-        unknown = sorted(set(clean) - set(self.field_names()))
+        unknown = sorted(set(clean) - set(self.input_keys()))
         if unknown:
             raise ParamsError(f"Unknown overrides: {unknown}")
-        return replace(self, **clean)
+        return replace(self, **_normalise_seed_key(clean))
 
     # ------------------------------------------------------------------
     # Validation
@@ -192,8 +284,17 @@ class ExperimentParams:
     def validate(self) -> None:
         errors: list[str] = []
 
-        if not isinstance(self.seed, int) or self.seed < 0:
-            errors.append(f"seed must be an integer >= 0, got {self.seed!r}")
+        if not self.seeds:
+            errors.append("seeds cannot be empty")
+        for value in self.seeds:
+            if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+                errors.append(f"seed must be an integer >= 0, got {value!r}")
+        if len(set(self.seeds)) != len(self.seeds):
+            errors.append(
+                f"duplicated seeds: {list(self.seeds)}. Two identical seeds "
+                "produce the same world twice: the replicate would be counted "
+                "twice in the ablation without adding any information"
+            )
 
         if not self.scenarios:
             errors.append("scenarios cannot be empty")
@@ -287,28 +388,33 @@ class ExperimentParams:
     # ------------------------------------------------------------------
 
     def cases(self) -> Iterator[CaseParams]:
-        """Enumerate the cases in execution order (worlds grouped)."""
-        for scenario in self.scenarios:
-            for nb_cars in self.fleet_sizes:
-                for method in self.methods:
-                    yield CaseParams(scenario=scenario, nb_cars=nb_cars, method=method)
+        """Enumerate the cases in execution order (seed, then worlds grouped)."""
+        for seed in self.seeds:
+            for scenario in self.scenarios:
+                for nb_cars in self.fleet_sizes:
+                    for method in self.methods:
+                        yield CaseParams(scenario=scenario, nb_cars=nb_cars,
+                                         method=method, seed=seed)
 
-    def worlds(self) -> Iterator[tuple[str, int]]:
+    def worlds(self) -> Iterator[tuple[int, str, int]]:
         """
-        Enumerate the (scenario, fleet) pairs.
+        Enumerate the (seed, scenario, fleet) triples.
 
-        Each pair gives a world, but all those worlds share the same grid and,
-        at equal fleet size, the same vehicle population: only the behaviour
-        probabilities change from one scenario to the next (see
-        `src/experiments/world.py`).
+        Within one seed, every world shares the same grid and, at equal fleet
+        size, the same vehicle population: only the behaviour probabilities
+        change from one scenario to the next (see `src/experiments/world.py`).
+        Across seeds nothing is shared — the grid and the fleets are redrawn,
+        which is what makes a seed a replicate rather than a re-run.
         """
-        for scenario in self.scenarios:
-            for nb_cars in self.fleet_sizes:
-                yield scenario, nb_cars
+        for seed in self.seeds:
+            for scenario in self.scenarios:
+                for nb_cars in self.fleet_sizes:
+                    yield seed, scenario, nb_cars
 
     @property
     def nb_cases(self) -> int:
-        return len(self.scenarios) * len(self.fleet_sizes) * len(self.methods)
+        return (len(self.seeds) * len(self.scenarios)
+                * len(self.fleet_sizes) * len(self.methods))
 
     @property
     def max_fleet_size(self) -> int:
@@ -318,13 +424,15 @@ class ExperimentParams:
     # Translation into a simulation configuration
     # ------------------------------------------------------------------
 
-    def build_config(self, scenario: str, nb_cars: int) -> cfg_module.SimulationConfig:
+    def build_config(self, scenario: str, nb_cars: int,
+                     seed: int | None = None) -> cfg_module.SimulationConfig:
         """Build the `SimulationConfig` of a case. No side effect."""
-        config = self._build_common_config(nb_cars)
+        config = self._build_common_config(nb_cars, seed)
         config.set_scenario(scenario)
         return config
 
-    def build_shared_config(self, nb_cars: int | None = None) -> cfg_module.SimulationConfig:
+    def build_shared_config(self, nb_cars: int | None = None,
+                            seed: int | None = None) -> cfg_module.SimulationConfig:
         """
         Configuration of the shared draws: the grid and the fleets.
 
@@ -333,12 +441,16 @@ class ExperimentParams:
         a scenario: the omission is the guard, and `tests/test_shared_world.py`
         verifies the resulting invariance.
         """
-        return self._build_common_config(nb_cars or self.max_fleet_size)
+        return self._build_common_config(nb_cars or self.max_fleet_size, seed)
 
-    def _build_common_config(self, nb_cars: int) -> cfg_module.SimulationConfig:
+    def _build_common_config(self, nb_cars: int,
+                             seed: int | None = None) -> cfg_module.SimulationConfig:
         config = cfg_module.SimulationConfig()
         config.set_VISUALIZE(False)
-        config.set_seed(self.seed)
+        # `seed` is the seed of the replicate being built; it lands in
+        # `result['seed']`, hence in the `seed` column of summary.csv, which is
+        # what lets the ablation tell two replicates apart.
+        config.set_seed(self.seed if seed is None else int(seed))
         config.set_TOTAL_TIME(self.total_time)
         config.set_NB_CARS(nb_cars)
         config.set_NB_STATIONS(self.nb_stations)
@@ -359,6 +471,7 @@ class ExperimentParams:
     # ------------------------------------------------------------------
     def to_dict(self) -> dict:
         data = {k: v for k, v in asdict(self).items() if not k.startswith('_')}
+        data['seeds'] = list(self.seeds)
         data['scenarios'] = list(self.scenarios)
         data['fleet_sizes'] = list(self.fleet_sizes)
         data['methods'] = list(self.methods)
@@ -366,7 +479,7 @@ class ExperimentParams:
 
     def describe(self) -> str:
         return (
-            f"seed={self.seed} | scenarios={list(self.scenarios)} | "
+            f"seeds={list(self.seeds)} | scenarios={list(self.scenarios)} | "
             f"fleets={list(self.fleet_sizes)} | methods={list(self.methods)} | "
             f"{self.total_time} slots ({self.total_time / SLOTS_PER_DAY:.1f} d) | "
             f"{self.nb_stations} stations / {self.nb_societies} companies | "

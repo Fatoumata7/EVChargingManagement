@@ -21,7 +21,8 @@ from pathlib import Path
 import numpy as np
 
 import src.experiments.methods as methods
-from src.pipeline import figures, tables
+from src.experiments.seeding import DEFAULT_SEED
+from src.pipeline import ablation, figures, tables
 from src.pipeline.cli import EXIT_ERROR, EXIT_OK, main as cli_main
 from src.pipeline.params import CaseParams, ExperimentParams, ParamsError
 from src.pipeline.runner import run_grid
@@ -31,7 +32,7 @@ from src.pipeline.store import RunStore
 def tiny_params(**overrides) -> ExperimentParams:
     """Minimal but representative campaign: 2 fleets x 2 methods."""
     base = dict(
-        seed=11,
+        seeds=(11,),
         scenarios=('pessimistic',),
         fleet_sizes=(12, 18),
         methods=('greedy', 'bramev'),
@@ -54,10 +55,12 @@ def test_params_defaults_match_report_grid():
     # The default grid is the ablation ladder: 4 rungs, including the two
     # historical methods (`greedy` and `bramev`).
     assert params.methods == methods.LADDER
-    assert params.nb_cases == 3 * 5 * 4
+    # One seed by default: the plan is the historical one.
+    assert params.seeds == (DEFAULT_SEED,)
+    assert params.nb_cases == 1 * 3 * 5 * 4
     assert params.total_time == 1440
     assert len(list(params.cases())) == params.nb_cases
-    assert len(list(params.worlds())) == 3 * 5
+    assert len(list(params.worlds())) == 1 * 3 * 5
 
 
 def test_params_expand_method_groups_and_aliases():
@@ -77,7 +80,9 @@ def test_params_reject_invalid_values():
         {'fleet_sizes': []},
         {'fleet_sizes': [50, 50]},
         {'total_time': 0},
-        {'seed': -1},
+        {'seeds': (-1,)},
+        {'seeds': ()},
+        {'seeds': (7, 7)},
         {'nb_societies': 99, 'nb_stations': 10},
         {'late_cancel_fraction': 1.5},
         {'nb_charg_spot_low': 8, 'nb_charg_spot_high': 4},
@@ -163,7 +168,7 @@ def _yaml_dump(data: dict) -> str:
 
 
 def test_params_cli_overrides_win_over_config_file():
-    params = tiny_params(seed=1, fleet_sizes=(10,))
+    params = tiny_params(seeds=(1,), fleet_sizes=(10,))
     merged = params.merged_with({'seed': 99, 'fleet_sizes': None})
     assert merged.seed == 99
     assert merged.fleet_sizes == (10,), "None must not overwrite the file"
@@ -211,7 +216,7 @@ def test_store_layout_and_roundtrip():
     with tempfile.TemporaryDirectory() as tmp:
         store = RunStore.create(tiny_params(output_root=tmp))
         assert store.params_path.is_file() and store.manifest_path.is_file()
-        for directory in (store.fleets_dir, store.worlds_dir,
+        for directory in (store.grids_dir, store.fleets_dir, store.worlds_dir,
                           store.results_dir, store.tables_dir,
                           store.figures_dir, store.logs_dir):
             assert directory.is_dir()
@@ -220,7 +225,7 @@ def test_store_layout_and_roundtrip():
         assert reloaded.seed == params.seed
         assert reloaded.fleet_sizes == params.fleet_sizes
 
-        case = CaseParams('pessimistic', 12, 'bramev')
+        case = CaseParams('pessimistic', 12, 'bramev', seed=params.seed)
         store.save_result(case, {'mode': 'bramev', 'value': 1})
         assert store.has_result(case)
         assert store.load_result(case)['value'] == 1
@@ -276,16 +281,18 @@ def test_run_grid_produces_all_artifacts():
             for table in ('stations', 'behaviors', 'latency'):
                 assert store.table_path(case, table).is_file(), f'{case.tag}/{table}'
 
-        for scenario, nb_cars in params.worlds():
-            assert store.world_path(scenario, nb_cars).is_file()
+        for seed, scenario, nb_cars in params.worlds():
+            assert store.world_path(scenario, nb_cars, seed).is_file()
 
-        # The shared environment, persisted before any simulation.
-        assert store.grid_path.is_file()
-        assert store.shared_table_path('grid_stations').is_file()
-        assert store.shared_table_path('grid_societies').is_file()
-        for nb_cars in params.fleet_sizes:
-            assert store.fleet_path(nb_cars).is_file()
-            assert store.shared_table_path(f'fleet_{nb_cars}cars').is_file()
+        # The shared environment of each replicate, persisted before any
+        # simulation of that replicate.
+        for seed in params.seeds:
+            assert store.grid_path(seed).is_file()
+            assert store.shared_table_path('grid_stations', seed).is_file()
+            assert store.shared_table_path('grid_societies', seed).is_file()
+            for nb_cars in params.fleet_sizes:
+                assert store.fleet_path(nb_cars, seed).is_file()
+                assert store.shared_table_path(f'fleet_{nb_cars}cars', seed).is_file()
 
         manifest = store.read_manifest()
         assert manifest['nb_cases_done'] == params.nb_cases
@@ -300,10 +307,11 @@ def test_run_grid_compares_methods_on_the_same_world():
         params = tiny_params(output_root=tmp)
         store = run_grid(params)
 
-        for scenario, nb_cars in params.worlds():
+        for seed, scenario, nb_cars in params.worlds():
             per_method = {}
             for method in params.methods:
-                result = store.load_result(CaseParams(scenario, nb_cars, method))
+                result = store.load_result(
+                    CaseParams(scenario, nb_cars, method, seed=seed))
                 per_method[method] = result
             world_seeds = {r['world_seed'] for r in per_method.values()}
             assert len(world_seeds) == 1, f'{scenario}/{nb_cars}: {world_seeds}'
@@ -364,7 +372,7 @@ def test_tables_carry_case_identity():
     with tempfile.TemporaryDirectory() as tmp:
         params = tiny_params(output_root=tmp, fleet_sizes=(12,), methods=('bramev',))
         store = run_grid(params)
-        case = CaseParams('pessimistic', 12, 'bramev')
+        case = CaseParams('pessimistic', 12, 'bramev', seed=params.seed)
         result = store.load_result(case)
 
         for builder in (tables.station_table, tables.behavior_table):
@@ -392,7 +400,8 @@ def test_rates_are_consistent_with_their_counts():
     with tempfile.TemporaryDirectory() as tmp:
         params = tiny_params(output_root=tmp, fleet_sizes=(12,), methods=('bramev',))
         store = run_grid(params)
-        result = store.load_result(CaseParams('pessimistic', 12, 'bramev'))
+        result = store.load_result(
+            CaseParams('pessimistic', 12, 'bramev', seed=params.seed))
         summary = tables.summary_row(result)
 
         nb_demands = summary['nb_demands']
@@ -425,15 +434,124 @@ def test_rates_are_consistent_with_their_counts():
                 f'{column} computed but absent from summary.csv')
 
 
+def test_seeds_are_replicates_on_different_worlds():
+    """
+    A seed is a replicate: the whole plan runs once per seed, and each one
+    redraws the grid and the fleet. Two seeds must therefore give the same
+    number of cases, distinct worlds, and artifacts that never collide — the
+    point of putting the seed in every tag.
+    """
+    with tempfile.TemporaryDirectory() as tmp:
+        params = tiny_params(output_root=tmp, seeds=(11, 12),
+                             fleet_sizes=(12,), methods=('greedy', 'bramev'))
+        assert params.nb_cases == 2 * 1 * 1 * 2
+        store = run_grid(params)
+
+        summary = store.read_summary()
+        assert len(summary) == params.nb_cases
+
+        # The seed of the case reaches summary.csv, and world_seed follows it:
+        # without that, the ablation could not tell two replicates apart.
+        assert {row['seed'] for row in summary} == {11, 12}
+        by_seed = {}
+        for row in summary:
+            by_seed.setdefault(row['seed'], set()).add(row['world_seed'])
+        assert by_seed[11] != by_seed[12], (
+            'two seeds produced the same world: they are not replicates')
+
+        # Each replicate has its own grid, and the grids actually differ.
+        grids = {seed: store.load_grid(seed) for seed in params.seeds}
+        assert grids[11].seed != grids[12].seed
+        assert ([s['loc'] for s in grids[11].stations]
+                != [s['loc'] for s in grids[12].stations]), (
+            'the grid was not redrawn: the replicate adds no information')
+
+        # No artifact collides between replicates.
+        tags = [case.tag for case in params.cases()]
+        assert len(set(tags)) == len(tags)
+        for case in params.cases():
+            assert store.has_result(case), case.tag
+            assert case.seed_tag in case.tag
+
+
+def test_ablation_aggregates_over_the_seeds():
+    """
+    The reason the seed is a dimension: `share_improved` is a frequency over
+    the replicates. With a single seed it can only be 0 or 1 and carries no
+    statistical content; with N seeds the decomposition must count N worlds.
+    """
+    with tempfile.TemporaryDirectory() as tmp:
+        params = tiny_params(output_root=tmp, seeds=(11, 12, 13),
+                             fleet_sizes=(12,), methods=('greedy', 'multistation'))
+        store = run_grid(params)
+
+        means = ablation.mean_rows(ablation.detail_rows(store.read_summary()))
+        assert means, 'no comparable pair: inconclusive test'
+        for row in means:
+            assert row['nb_worlds'] == 3, (
+                f"{row['metric']}: {row['nb_worlds']} worlds for 3 seeds")
+            assert 0 <= row['nb_improved'] <= 3
+            assert row['share_improved'] == round(row['nb_improved'] / 3, 4)
+
+        # A share strictly between 0 and 1 is only reachable with several
+        # seeds: that is exactly what the dimension buys.
+        assert any(0. < row['share_improved'] < 1. for row in means), (
+            'no metric is split across the replicates: either the seeds do '
+            'not separate anything, or they were aggregated as one world')
+
+
+def test_seed_stays_a_valid_singular_input():
+    """
+    Every shipped config and every params.json written before the seed became
+    a dimension uses `seed: 42`. Reading them must keep working, and `--seed`
+    must stay the natural way to ask for one replicate.
+    """
+    assert ExperimentParams.from_mapping({'seed': 7}).seeds == (7,)
+    assert ExperimentParams().merged_with({'seed': 9}).seeds == (9,)
+    assert ExperimentParams(seeds=(1, 2)).seed == 1, (
+        'the reference seed is the first replicate')
+
+    # Supplying both is ambiguous and must be refused, not silently arbitrated.
+    try:
+        ExperimentParams.from_mapping({'seed': 1, 'seeds': [2, 3]})
+    except ParamsError:
+        pass
+    else:
+        raise AssertionError('seed + seeds should have been refused')
+
+    # Round-trip through params.json keeps the plural form.
+    with tempfile.TemporaryDirectory() as tmp:
+        store = RunStore.create(tiny_params(output_root=tmp, seeds=(4, 5)))
+        assert store.read_params().seeds == (4, 5)
+        assert store.root.name.endswith('_seeds4-5'), store.root.name
+
+
+def test_figures_average_the_replicates():
+    """
+    A curve plots one point per fleet size. With several seeds there are
+    several rows at the same x: they must be averaged, not joined one by one —
+    a zig-zag at a fixed x would read as an effect of the fleet size.
+    """
+    rows = [
+        {'scenario': 'balance', 'method': 'bramev', 'nb_cars': 10, 'v': 1.0},
+        {'scenario': 'balance', 'method': 'bramev', 'nb_cars': 10, 'v': 3.0},
+        {'scenario': 'balance', 'method': 'bramev', 'nb_cars': 20, 'v': 8.0},
+    ]
+    x, y = figures._series(rows, 'balance', 'bramev', 'v')
+    assert x == [10, 20], f'one point per fleet size, got {x}'
+    assert y == [2.0, 8.0], f'the replicates must be averaged, got {y}'
+
+
 def test_figures_are_rebuilt_from_summary_only():
     """`report` must work without the simulation objects."""
     with tempfile.TemporaryDirectory() as tmp:
         store = run_grid(tiny_params(output_root=tmp))
         summary = store.read_summary()
 
-        grid_rows = store.read_shared_table('grid_stations')
-        society_rows = store.read_shared_table('grid_societies')
-        fleet_rows = {n: store.read_shared_table(f'fleet_{n}cars')
+        seed = store.read_params().seed
+        grid_rows = store.read_shared_table('grid_stations', seed)
+        society_rows = store.read_shared_table('grid_societies', seed)
+        fleet_rows = {n: store.read_shared_table(f'fleet_{n}cars', seed)
                       for n in store.read_params().fleet_sizes}
 
         written = figures.render_all(summary, store.figures_dir,
@@ -510,7 +628,7 @@ def test_cli_run_report_show_roundtrip():
         assert runs[0].name.endswith('_test-cli'), runs[0].name
 
         store = RunStore.open(runs[0])
-        case = CaseParams('balance', 12, 'greedy')
+        case = CaseParams('balance', 12, 'greedy', seed=5)
         assert not store.table_path(case, 'latency').is_file(), \
             '--no-save-latency must disable the latency table'
         assert store.table_path(case, 'stations').is_file()

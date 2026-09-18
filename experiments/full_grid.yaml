@@ -4,6 +4,11 @@
 #
 # Every CLI option overrides this file:
 #   python -m src.pipeline.cli run --config experiments/full_grid.yaml --seed 7
+#
+# `seed: 42` is one replicate. Replace it with `seeds: [42, 7, 13]` (or pass
+# --seeds) to run the plan once per seed: the ablation then aggregates over
+# them and `share_improved` becomes a frequency instead of a sign. Cost is
+# linear in the number of seeds.
 label: full-grid
 seed: 42
 scenarios: [optimistic, balance, pessimistic]

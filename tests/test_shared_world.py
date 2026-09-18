@@ -58,7 +58,7 @@ def config_for(scenario: str | None = None, nb_cars: int = 12,
 def tiny_params(**overrides) -> ExperimentParams:
     """Tiny campaign: three scenarios, two fleets, two methods."""
     base = dict(
-        seed=SEED,
+        seeds=(SEED,),
         scenarios=SCENARIOS,
         fleet_sizes=(6, 12),
         methods=('greedy', 'bramev'),
@@ -256,12 +256,12 @@ def test_run_grid_shares_one_grid_across_every_case():
         params = tiny_params(output_root=tmp)
         store = run_grid(params)
 
-        grid = store.load_grid()
+        grid = store.load_grid(params.seed)
         expected = [(s['m'], s['loc'], s['nb_charg_spot'], s['society_id'])
                     for s in grid.stations]
 
-        for scenario, nb_cars in params.worlds():
-            world = store.load_world(scenario, nb_cars)
+        for seed, scenario, nb_cars in params.worlds():
+            world = store.load_world(scenario, nb_cars, seed)
             assert world.grid_seed == grid.seed
             got = [(s['m'], s['loc'], s['nb_charg_spot'], s['society_id'])
                    for s in world.stations]
@@ -279,11 +279,11 @@ def test_run_grid_shares_car_positions_across_scenarios():
         store = run_grid(params)
 
         for nb_cars in params.fleet_sizes:
-            fleet = store.load_fleet(nb_cars)
+            fleet = store.load_fleet(nb_cars, params.seed)
             expected = [c['loc'] for c in fleet.cars]
             thetas = {}
             for scenario in params.scenarios:
-                world = store.load_world(scenario, nb_cars)
+                world = store.load_world(scenario, nb_cars, params.seed)
                 assert [c['loc'] for c in world.cars] == expected, \
                     f'different initial positions for {scenario}/{nb_cars}'
                 thetas[scenario] = [c['theta'] for c in world.cars]
@@ -298,24 +298,24 @@ def test_prepare_shared_world_persists_before_any_simulation():
         store = RunStore.create(params)
         grid, fleets = prepare_shared_world(params, store)
 
-        assert store.grid_path.is_file()
-        assert store.load_grid().to_dict() == grid.to_dict()
+        assert store.grid_path(params.seed).is_file()
+        assert store.load_grid(params.seed).to_dict() == grid.to_dict()
         assert set(fleets) == set(params.fleet_sizes)
         for nb_cars, fleet in fleets.items():
-            assert store.load_fleet(nb_cars).to_dict() == fleet.to_dict()
+            assert store.load_fleet(nb_cars, params.seed).to_dict() == fleet.to_dict()
 
-        stations = store.read_shared_table('grid_stations')
+        stations = store.read_shared_table('grid_stations', params.seed)
         assert len(stations) == params.nb_stations
         assert {row['station_id'] for row in stations} == set(range(params.nb_stations))
         assert all(row['grid_seed'] == grid.seed for row in stations)
         assert any(key.startswith('strategy_') for key in stations[0])
 
-        societies = store.read_shared_table('grid_societies')
+        societies = store.read_shared_table('grid_societies', params.seed)
         assert len(societies) == params.nb_societies
         assert sum(row['nb_stations'] for row in societies) == params.nb_stations
 
         for nb_cars in params.fleet_sizes:
-            cars = store.read_shared_table(f'fleet_{nb_cars}cars')
+            cars = store.read_shared_table(f'fleet_{nb_cars}cars', params.seed)
             assert len(cars) == nb_cars
             assert all(row['nb_cars'] == nb_cars for row in cars)
 
@@ -351,9 +351,10 @@ def test_methods_still_share_the_world_within_a_scenario():
         params = tiny_params(output_root=tmp)
         store = run_grid(params)
 
-        for scenario, nb_cars in params.worlds():
+        for seed, scenario, nb_cars in params.worlds():
             per_method = {
-                method: store.load_result(CaseParams(scenario, nb_cars, method))
+                method: store.load_result(
+                    CaseParams(scenario, nb_cars, method, seed=seed))
                 for method in params.methods
             }
             capacities = {

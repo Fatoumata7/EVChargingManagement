@@ -39,7 +39,7 @@ from src.pipeline.store import RunStore
 
 def tiny_params(**overrides) -> ExperimentParams:
     base = dict(
-        seed=13,
+        seeds=(13,),
         scenarios=('pessimistic',),
         fleet_sizes=(12,),
         methods=('ablation',),
