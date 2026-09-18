@@ -5,9 +5,9 @@
 # Covers the 12 methods: the ablation ladder, the reference baselines and the
 # BRAM-EV variants all go through the execution path before a long campaign.
 label: smoke
-seed: [1,2]
+seed: [1,2,3]
 scenarios: [pessimistic]
-fleet_sizes: [25]
+fleet_sizes: [25, 50]
 methods: [all]
 total_time: 288           # 24 hours
 nb_stations: 12
