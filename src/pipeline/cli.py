@@ -34,7 +34,7 @@ from loguru import logger
 import src.experiments.config as cfg_module
 import src.experiments.methods as methods_module
 from src.experiments.seeding import DEFAULT_SEED
-from src.pipeline import ablation, figures
+from src.pipeline import ablation, aggregate, figures
 from src.pipeline.params import (METHODS, SCENARIOS, ExperimentParams,
                                  ParamsError)
 from src.pipeline.runner import run_grid
@@ -82,6 +82,7 @@ def build_parser() -> argparse.ArgumentParser:
     _add_scenarios(subparsers)
     _add_methods(subparsers)
     _add_ablation(subparsers)
+    _add_aggregate(subparsers)
     return parser
 
 
@@ -223,6 +224,24 @@ def _add_ablation(subparsers) -> None:
     p.add_argument('--metrics', nargs='+', default=None, metavar='COL',
                    help='Metrics printed (default: a readable selection). '
                         'All of them stay written in ablation.csv.')
+    p.add_argument('--no-write', action='store_true',
+                   help="Print without rewriting the tables of the run.")
+
+
+def _add_aggregate(subparsers) -> None:
+    p = subparsers.add_parser(
+        'aggregate', help="Mean, 95% CI and paired comparisons over the seeds.",
+        description="Recompute summary_mean.csv / paired.csv from summary.csv "
+                    "and print the paired comparisons. Re-runs no simulation. "
+                    "A campaign run with a single seed produces means with no "
+                    "interval: the spread needs replicates.")
+    p.set_defaults(func=cmd_aggregate)
+    _add_run_selector(p)
+    p.add_argument('--metric', default='exact_satisfaction', metavar='COL',
+                   help='Metric printed. All of them stay written in paired.csv.')
+    p.add_argument('--kinds', nargs='+', default=None, metavar='KIND',
+                   choices=('ladder', 'baseline', 'variant'),
+                   help='Comparison families printed (default: all three).')
     p.add_argument('--no-write', action='store_true',
                    help="Print without rewriting the tables of the run.")
 
@@ -449,6 +468,50 @@ def cmd_ablation(args: argparse.Namespace) -> int:
           f'{", ".join(sorted({r["method"] for r in rows}))}')
     print()
     print(ablation.render_mean_table(means, metrics))
+    return EXIT_OK
+
+
+def cmd_aggregate(args: argparse.Namespace) -> int:
+    store = _resolve_store(args)
+    rows = store.read_summary()
+    if not rows:
+        logger.error(f'{store.summary_path} is empty or missing')
+        return EXIT_ERROR
+
+    if args.metric not in ablation.METRICS_BY_COLUMN:
+        logger.error(f'Unknown metric: {args.metric!r} '
+                     f'(expected {list(ablation.METRICS_BY_COLUMN)})')
+        return EXIT_ERROR
+
+    try:
+        detail = ablation.detail_rows(rows)
+        paired = aggregate.paired_rows(detail)
+        if not args.no_write:
+            for path in aggregate.write_tables(store, rows):
+                logger.info(f'written: {path}')
+    except ValueError as exc:          # duplicates in summary.csv
+        logger.error(str(exc))
+        return EXIT_ERROR
+
+    seeds = sorted({r.get('world_seed') for r in rows}, key=str)
+    print(f'Run    : {store.root}')
+    print(f'Seeds  : {len(seeds)} replicate(s) — {seeds}')
+    print()
+    if len(seeds) < 2:
+        # Saying it once, plainly, beats printing a table of empty columns and
+        # letting the reader work out why.
+        print('A single replicate: summary_mean.csv holds the means, with no '
+              'interval, and no comparison can be tested.')
+        print('Re-run the campaign with --seeds to obtain a spread.')
+        return EXIT_OK
+
+    if not paired:
+        present = sorted({r['method'] for r in rows})
+        logger.error(f'No comparable pair in this run: methods present {present}.')
+        return EXIT_ERROR
+
+    kinds = tuple(args.kinds) if args.kinds else ('ladder', 'baseline', 'variant')
+    print(aggregate.render_paired_table(paired, args.metric, kinds))
     return EXIT_OK
 
 

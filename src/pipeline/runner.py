@@ -42,7 +42,7 @@ from loguru import logger
 from src.experiments.simulation import Simulation
 from src.experiments.world import (build_world, compose_world_spec,
                                    generate_fleet_spec, generate_grid_spec)
-from src.pipeline import ablation, tables
+from src.pipeline import ablation, aggregate, tables
 from src.pipeline.params import CaseParams, ExperimentParams
 from src.pipeline.store import RunStore
 
@@ -230,6 +230,16 @@ def run_grid(params: ExperimentParams, store: RunStore | None = None,
 
     for path in ablation.write_tables(store, summary_rows):
         logger.info(f'Ablation → {path}')
+
+    # Statistics over the replicates — written once, at the end, unlike the
+    # ablation tables. A mid-campaign aggregate would be computed on the seeds
+    # finished so far and would publish a confidence interval over a sample
+    # that is still growing: a number that looks like a result and is not one.
+    for path in aggregate.write_tables(store, summary_rows):
+        logger.info(f'Replicates → {path}')
+    if params.nb_seeds == 1:
+        logger.info('Single seed: the interval columns stay empty. Run with '
+                    '--seeds to obtain a spread.')
 
     store.close_manifest(time.perf_counter() - started)
     logger.info(f'{len(summary_rows)} cases finished → {store.root}')

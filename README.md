@@ -67,7 +67,7 @@ component.
 │   ├── ablation.ipynb
 │   └── ablation_variants.ipynb
 │
-├── tests                          # uv run python -m tests  (124 tests)
+├── tests                          # uv run python -m tests  (138 tests)
 ├── results_grid/                  # Run outputs (gitignored)
 ├── outputs/                       # Visualizer logs (gitignored)
 └── pyproject.toml, uv.lock
@@ -135,6 +135,7 @@ uv run main.py runs                     # list available runs
 uv run main.py show --latest            # summary table + diagnostics
 uv run main.py report --latest          # rebuild every figure
 uv run main.py ablation --latest        # decompose the gains per component
+uv run main.py aggregate --latest       # mean, 95% CI and paired tests over the seeds
 uv run main.py scenarios                # the behaviour-probability table
 uv run main.py methods                  # the ablation plan, with its notes
 uv run main.py run --help               # every parameter, with its default
@@ -154,7 +155,7 @@ replayed with `define_agents_from_spec`.
 ### Tests and self-checks
 
 ```bash
-uv run python -m tests                  # all suites, 124 tests, no test dependency
+uv run python -m tests                  # all suites, 138 tests, no test dependency
 
 uv run python -m src.experiments.world  # shared grid & nested fleets
 uv run python -m src.experiments.seeding
@@ -590,13 +591,66 @@ contribution, however good its average looks.
 | File | Content |
 | --- | --- |
 | `ablation.csv` | one line per (world, component, metric): both values, delta, relative delta, improvement; the `kind` column separates `ladder`, `baseline` and `variant` |
-| `ablation_mean.csv` | one line per (component, metric): mean delta, `nb_improved`, `share_improved` |
+| `ablation_mean.csv` | one line per (component, metric): mean delta, `nb_improved`, `share_improved`, pooled over every world |
+| `summary_mean.csv` | one line per (scenario, fleet, method, metric): `n` replicates, mean, `sd`, and the 95 % CI of the mean |
+| `paired.csv` | one line per (scenario, fleet, comparison, metric): the gap taken *within* each replicate, its CI, the paired t-test, and a `verdict` |
 
-Both are rewritten after **every case**, like `summary.csv`: a full grid takes
-hours, so an interrupted campaign has to stay analysable. Figures
+The two `ablation_*` tables are rewritten after **every case**, like
+`summary.csv`: a full grid takes hours, so an interrupted campaign has to stay
+analysable. The two replicate tables are written **once, at the end** — an
+aggregate computed mid-campaign would put a confidence interval on a sample
+still growing, which looks like a result and is not one. Figures
 `ablation_components.png`, `ablation_variants.png` and
 `ablation_ladder_<scenario>.png` are produced with the rest; baseline rows appear
 in `ablation.csv` and in the text report, with no dedicated figure yet.
+
+### Is the gap bigger than the noise?
+
+`share_improved` says *how often* a component helps; it does not say whether the
+gap survives the noise. That is what `summary_mean.csv` and `paired.csv` are
+for, and they only mean something on a campaign run with several `--seeds`.
+
+```bash
+uv run main.py aggregate --latest
+uv run main.py aggregate --latest --metric mean_waiting_time_min --kinds baseline
+```
+
+```text
+Exact satisfaction (%) — paired over the replicates
+
+Reference baselines (gap to BRAM-EV)
+comparison                  fleet   n     mean Δ                  95% CI        p  verdict
+Load-Aware                     50   3    -0.0024      [-0.0119, +0.0071]   0.3954  ns
+Minimum Waiting Time           50   3    -0.0016      [-0.0039, +0.0006]   0.0874  ns
+```
+
+**The comparisons are paired.** Two methods of the same replicate run on the
+same grid, the same fleet and the same behaviour draws: the only difference is
+the method. So the gap is taken *inside* each world and only then averaged —
+the world cancels out. Comparing two independent means instead would pay for
+the variance between worlds, which is large here: a change of seed moves the
+satisfaction rate by more than most components do. The test is then a paired
+t-test on those N differences.
+
+**`paired.csv` never pools across fleet sizes**, unlike `ablation_mean.csv`: the
+gap at 50 vehicles and the gap at 250 are not draws from the same distribution,
+and their average describes no regime in particular. One is the descriptive
+overview, the other the inferential table.
+
+> **The interval uses Student's *t*, not 1.96.** With 3 seeds the multiplier is
+> **4.30**, with 2 seeds **12.71**. A handful of replicates therefore produces
+> intervals wide enough to cover almost any claim — which is the honest answer,
+> and the reason `verdict` reads `ns` nearly everywhere on a short campaign. The
+> fix is more seeds, not a narrower formula. With a single seed there is no
+> interval at all: the columns stay **empty rather than zero**, because one
+> measurement has an unknown spread, not a null one.
+
+`significant_95` is read off the interval (0 outside it) rather than off the
+p-value. The two agree, and the interval also settles the degenerate case where
+every replicate returns exactly the same gap — there `scipy` answers `nan`,
+while the interval collapses onto the mean and still says whether it excludes
+zero. `verdict` combines that with the declared direction of the metric:
+`better`, `worse`, or `ns`. A significant rise in `nb_no_show` is a `worse`.
 
 ### Notebooks
 
@@ -683,6 +737,8 @@ results_grid/<timestamp>_<seed tag>[_<label>]/
     summary.csv                       one line per case, ready for plotting
     ablation.csv                      one line per (world, component, metric)
     ablation_mean.csv                 contribution of each component, averaged
+    summary_mean.csv                  per metric: mean and 95 % CI over the seeds
+    paired.csv                        per comparison: paired gap, CI, t-test
     grids/seed<s>.json                the grid of one replicate: societies, stations…
     fleets/seed<s>_fleet_<n>cars.json one fleet per size, shared by every scenario
     worlds/<world tag>.json           composed world (grid + fleet + scenario)
@@ -811,11 +867,12 @@ as a zero.
 ## Tests
 
 ```bash
-uv run python -m tests                     # all suites, 124 tests
+uv run python -m tests                     # all suites, 138 tests
 uv run python -m tests.test_priority1      # model
 uv run python -m tests.test_shared_world   # shared grid and fleets
 uv run python -m tests.test_pipeline       # pipeline
 uv run python -m tests.test_ablation       # ablation study
+uv run python -m tests.test_aggregate      # statistics over the replicates
 ```
 
 No external test dependency: each suite is a module exposing `main() -> int`.
@@ -851,6 +908,14 @@ No external test dependency: each suite is a module exposing `main() -> int`.
   explicitly (omitting the key falls back to the default ladder — a mistake that
   once cost a 21-hour campaign), and broadcasting really does produce more offers
   per demand.
+* **`test_aggregate.py` (14)** — statistics over the replicates: the interval
+  and the paired test checked against `scipy.stats` rather than against
+  hand-written numbers, Student's quantile and not 1.96, one replicate leaving
+  the spread empty instead of zero, zero-variance gaps handled where `scipy`
+  answers `nan`, the pairing detecting an effect that a world-to-world spread
+  twenty times larger hides from an unpaired comparison, no pooling across
+  fleet sizes, `verdict` following the declared direction of the metric rather
+  than the raw sign, and a duplicated replicate refused.
 
 
 ## History

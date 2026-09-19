@@ -103,7 +103,8 @@ BASELINE_LABEL: Mapping[str, str] = {
 }
 
 ROW_FIELDS: tuple[str, ...] = (
-    'kind', 'scenario', 'nb_cars', 'metric', 'metric_label', 'goal', 'unit',
+    'kind', 'scenario', 'nb_cars', 'world_seed',
+    'metric', 'metric_label', 'goal', 'unit',
     'step', 'component', 'from_method', 'to_method',
     'value_from', 'value_to', 'delta', 'delta_pct', 'improvement',
 )
@@ -176,11 +177,15 @@ def _delta_row(kind: str, world: tuple, component: str, step: int,
     base = abs(float(value_from))
     delta_pct = round(100. * delta / base, 4) if base > 1e-12 else None
 
-    scenario, nb_cars, _ = world
+    scenario, nb_cars, world_seed = world
     return {
         'kind':         kind,
         'scenario':     scenario,
         'nb_cars':      nb_cars,
+        # The replicate the pair was read on. Without it a detail row cannot be
+        # traced back to its world, and the paired statistics downstream cannot
+        # check that they are pairing like with like.
+        'world_seed':   world_seed,
         'metric':       metric.column,
         'metric_label': metric.label,
         'goal':         metric.goal,
