@@ -918,17 +918,6 @@ No external test dependency: each suite is a module exposing `main() -> int`.
   than the raw sign, and a duplicated replicate refused.
 
 
-## History
-
-The three per-scenario notebooks that previously held the experiments (about 400
-cells each, duplicated across `results/` and `bram-ev/`) have been replaced by
-this pipeline. They remain in the history:
-
-```bash
-git show 68b16ad:results/Optimistic.ipynb > Optimistic.ipynb
-```
-
-
 ## Author
 
 Fatoumata WADIOU
