@@ -1,0 +1,13 @@
+scenario,nb_cars,method,seed,world_seed,grid_seed,station_id,society_id,nb_charg_spot,alpha,score_index,score_weighting,nb_request,nb_station_level_rejections,nb_offer_issued,nb_offer_expired,nb_confirm_refused,nb_stale_confirm,nb_reservations,nb_pres,nb_no_show,nb_early_canc,nb_late_canc,nb_breakdown_canc,nb_unresolved,nb_slots_reserved,nb_slots_served,occupancy_rate,service_rate,demand_kwh
+pessimistic,150,random_feasible,3,3,3,0,0,5,0.4658,0,duration,55,19,36,29,0,0,7,5,1,0,1,0,0,292,174,0.2028,0.1208,11.275
+pessimistic,150,random_feasible,3,3,3,1,0,4,0.1215,0,duration,70,19,51,33,0,0,18,7,6,1,4,0,0,547,217,0.4748,0.1884,20.983
+pessimistic,150,random_feasible,3,3,3,2,1,5,0.5425,1,duration,80,20,60,24,0,0,36,12,7,6,11,0,0,1140,423,0.7917,0.2938,47.117
+pessimistic,150,random_feasible,3,3,3,3,0,4,0.3435,0,duration,159,61,98,29,0,0,69,36,10,7,15,1,0,1499,776,1.3012,0.6736,57.492
+pessimistic,150,random_feasible,3,3,3,4,2,5,0.8782,2,duration,116,41,75,9,0,0,66,28,10,7,18,3,0,1906,765,1.3236,0.5312,68.408
+pessimistic,150,random_feasible,3,3,3,5,1,5,0.863,1,duration,128,25,103,56,0,0,47,19,8,8,12,0,0,1507,579,1.0465,0.4021,59.217
+pessimistic,150,random_feasible,3,3,3,6,0,5,0.1826,0,duration,84,16,68,43,0,0,25,13,5,3,4,0,0,790,363,0.5486,0.2521,34.533
+pessimistic,150,random_feasible,3,3,3,7,0,6,0.1163,0,duration,96,16,80,51,0,0,29,12,7,4,6,0,0,1054,380,0.61,0.2199,35.975
+pessimistic,150,random_feasible,3,3,3,8,1,5,0.3515,1,duration,65,19,46,40,0,0,6,3,1,0,1,1,0,185,73,0.1285,0.0507,5.433
+pessimistic,150,random_feasible,3,3,3,9,0,5,0.2595,0,duration,73,18,55,36,0,0,19,4,9,1,5,0,0,555,161,0.3854,0.1118,17.867
+pessimistic,150,random_feasible,3,3,3,10,1,5,0.1877,1,duration,133,37,96,8,0,2,88,29,21,19,18,1,0,2196,620,1.525,0.4306,72.642
+pessimistic,150,random_feasible,3,3,3,11,2,5,0.7939,2,duration,153,43,110,46,0,1,64,28,14,7,13,2,0,1658,880,1.1514,0.6111,61.3
