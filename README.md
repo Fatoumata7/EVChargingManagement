@@ -53,7 +53,6 @@ component.
 │       ├── tables.py              # Tidy tables extracted from a simulation
 │       ├── ablation.py            # Decomposition: ladder, baselines, variants
 │       ├── figures.py             # Figures built from tables, never from objects
-│       ├── energy_fix.py          # Migrates pre-split runs (planned/delivered kWh)
 │       └── cli.py                 # run / report / show / runs / scenarios /
 │                                  #   methods / ablation
 │
@@ -68,7 +67,7 @@ component.
 │   ├── ablation.ipynb
 │   └── ablation_variants.ipynb
 │
-├── tests                          # uv run python -m tests  (147 tests)
+├── tests                          # uv run python -m tests  (156 tests)
 ├── results_grid/                  # Run outputs (gitignored)
 ├── outputs/                       # Visualizer logs (gitignored)
 └── pyproject.toml, uv.lock
@@ -127,6 +126,33 @@ uv run main.py run --scenarios balance --cars 50 --methods bramev --total-time 2
 Output goes to `results_grid/<timestamp>_<seed tag>[_<label>]/`, where the
 seed tag is `seed42` for one replicate and `seeds42-7-13` for several.
 
+### Parallel campaigns, saved as they go
+
+```bash
+# 8 cases at a time (one per performance core is a good default)
+caffeinate -i uv run main.py run --config experiments/ablation.yaml --workers 8
+
+# after a crash, a Ctrl-C or a machine gone to sleep: run only what is missing
+uv run main.py run --resume results_grid/<run> --workers 8
+```
+
+Each case runs in its own process from its persisted world (`worlds/`), so a
+parallel campaign produces **the same results** as a sequential one — only the
+wall-clock columns differ, since they then measure a machine shared by
+`--workers` simulations (compare `wall_time_s` across methods on a sequential
+run only). The largest fleets are submitted first, to shorten the tail.
+
+Nothing is lost on an interruption. Only the parent process writes, and it
+persists every case **as soon as it finishes**: its tables, then its result
+JSON — written atomically, the marker of a finished case — then `summary.csv`,
+the ablation tables and the manifest, rebuilt from the results on disk. At most
+the cases still running are lost. `--resume` reads the run's own `params.json`
+(only `--workers` may change), reloads the grid, fleets and worlds already
+drawn, and runs only the cases with no result; it warns if the code changed
+since the run started. A case that raises is recorded in the manifest
+(`failed_cases`) while the others go on, and the command exits with code 1.
+`caffeinate -i` (macOS) keeps the machine awake for a long campaign.
+
 ### Reading a finished run
 
 None of these re-runs a simulation — they read the persisted tables:
@@ -156,7 +182,7 @@ replayed with `define_agents_from_spec`.
 ### Tests and self-checks
 
 ```bash
-uv run python -m tests                  # all suites, 147 tests, no test dependency
+uv run python -m tests                  # all suites, 156 tests, no test dependency
 
 uv run python -m src.experiments.world  # shared grid & nested fleets
 uv run python -m src.experiments.seeding
@@ -250,9 +276,13 @@ drawing `d_n`, `g_n`, `r_n` and `l_n` again at each turn — at a rate depending
 the method under test, which is exactly what the retry protocol is built to avoid.
 
 Only a charging session lifts the flag (`Car.charge_one_slot`), and a vehicle
-that has given up can no longer obtain one: giving up is terminal for the run.
-Measured over a campaign-length horizon (40 vehicles, 1440 slots, pessimistic):
-3 vehicles out of 40 end up out of the market, `abandon_rate` 0.9%.
+that has given up can no longer obtain one: **giving up is terminal for the
+run**. This is a modelling assumption, not a property of the protocol — see
+*Model assumptions* — and its extent is reported in every result
+(`excluded` block, `nb_cars_excluded`, `excluded_car_share`,
+`excluded_time_share` in `summary.csv`). Measured over a campaign-length horizon
+(40 vehicles, 1440 slots, pessimistic): 3 vehicles out of 40 end up out of the
+market, `abandon_rate` 0.9%.
 
 > **`MAX_SEARCH_RETRIES = 0` is no longer a neutral control.** With no budget,
 > the first search that fails closes the need for good: one strike and the
@@ -441,6 +471,22 @@ emitted has no rejection rate, and `0.` there would read as "nothing was ever
 rejected", the opposite of "the question was never asked". The ablation skips a
 `None` instead of averaging it in.
 
+### Charger occupancy
+
+Three counts of charger-slots per station, from the widest to the narrowest:
+
+| Count | Rate (over `nb_charg_spot × T`) | Meaning |
+| --- | --- | --- |
+| `nb_slots_reserved` | `booking_rate` | slots written to the calendar — **bookings**: a slot released by an early cancellation and booked again counts twice, so the rate can exceed 1 (108 % measured on a station) |
+| `nb_slots_held` | `occupancy_rate` | slots still booked when their time came, each counted once: the real occupancy, <= 1 |
+| `nb_slots_served` | `service_rate` | slots actually spent charging |
+
+`served <= held <= capacity` always holds. `slot_waste_rate = 1 − served /
+reserved` is the share of the booked volume never charged; `held_idle_rate = 1
+− served / held` is what the operator actually lost at slot time (no-shows,
+late arrivals), a released-and-rebooked slot not counting. `occupancy_rate` was
+previously `reserved / capacity`, the booking rate under another name.
+
 ### Energy: planned vs delivered
 
 `charging_power` is expressed in **km of range per slot**. Multiplied by the
@@ -462,25 +508,92 @@ reserved slots, and the planned slots of a station equal its
 (`ablation*.csv`, `summary_mean.csv`, `paired.csv`), and `stations_*.png` draws
 delivered (solid) against planned (dashed).
 
-> **Runs written before this split** carried a single `station_demand_kWh`
-> with three defects: **12× too small** (the per-slot energy was multiplied by a
-> duration in hours), **no-shows left out** (it was logged in
-> `record_offer_accepted`, which a no-show never reaches), and computed on the
-> reserved durations rather than on the charging. Such results are refused by
-> `tables.summary_row` until migrated:
->
-> ```bash
-> uv run python -m src.pipeline.energy_fix results_grid/<run> --resimulate  # exact
-> uv run python -m src.pipeline.energy_fix results_grid/<run>               # estimated
-> ```
->
-> `--resimulate` replays every case — the simulation is deterministic, and the
-> replay is checked field by field against the stored run before anything is
-> written — so both energies are exact. Without it, both are estimated per
-> station from `nb_slots_reserved` / `nb_slots_served`, priced at the mean
-> kWh/slot of the vehicles the station accepted and calibrated on the exact
-> replay of the smoke run (held-out error ≤ 1.6 % delivered, ≤ 4 % planned per
-> case; see `energy_fix.py`). `energy_exact` is then `False` in `summary.csv`.
+Results written before this split (a single `station_demand_kWh`, 12× too
+small and without the no-shows) are refused by `tables.summary_row`: the
+campaign has to be run again.
+
+### Service rendered vs planning coverage
+
+Two different questions, answered by two families of columns.
+
+**Did the users get a charge?** Every demand — one charging need, retries
+included — ends in exactly one outcome (`metrics.DEMAND_OUTCOMES`), recorded
+when it happens:
+
+| Group | Outcomes | Meaning |
+| --- | --- | --- |
+| satisfied | `satisfied` | a session took place, at least one slot charged |
+| abandoned | `abandoned` | retry budget spent without any reservation |
+| cancelled | `cancelled_early`, `cancelled_late`, `no_show`, `breakdown`, `missed` | a reservation was obtained, then closed with no energy delivered (`missed`: the vehicle reached the station after its window) |
+| in progress | `in_progress` | still searching, or holding an unresolved reservation, at the end of the horizon |
+
+```
+nb_demands == satisfied + abandoned + cancelled + in_progress
+```
+
+is checked at the end of every run, with the reservation invariant (a violation
+is exit code 3). `summary.csv` carries the four counts and rates
+(`satisfied_rate`, `cancelled_rate`, `abandon_rate`, `in_progress_rate`), the
+detail of the cancellations (`demands_cancelled_early`, `…_late`,
+`demands_no_show`, `demands_breakdown`, `demands_missed`) and the energy side:
+`service_ratio_mean`, the energy delivered over the energy requested, averaged
+over **all** demands (an unserved one counts 0), and
+`service_ratio_mean_satisfied`, the same over the satisfied ones. The energy
+requested is the range the driver wants back (`request['need_km']` × 0.1
+kWh/km), not `d_n` × power, which rounds it up to a whole slot.
+
+**Did the plan cover the requested windows?** `plan_coverage_exact` (share of
+the requested slots booked at the requested time) and `plan_coverage_volume`
+(booked slots / requested slots, clipped to 1), averaged over the vehicles.
+They were published as `exact_satisfaction` and `needs_satisfaction` — renamed,
+because they compare two calendars and say nothing about the charge: a no-show
+or a cancelled reservation still counts as covered. On a pessimistic day,
+coverage is ~99 % while ~40 % of the demands are satisfied. Two corrections
+came with the renaming: no-show reservations now count as booked (they were
+left out), and a retried demand keeps one requested window instead of adding a
+shifted copy at each retry.
+
+
+## Model assumptions
+
+Choices of the model that shape the results. They are deliberate, but a reader
+of the numbers needs to know them.
+
+* **An exhausted retry budget excludes the vehicle for the rest of the run.**
+  After `MAX_SEARCH_RETRIES` unsuccessful searches the demand is `abandoned` and
+  the vehicle never asks again (it keeps driving until it breaks down or the
+  horizon ends). The alternative — asking again later — would re-open a loop
+  the retry budget is meant to bound (see *Search retries*). Its extent is
+  reported per case: `nb_cars_excluded`, `excluded_car_share` (share of the
+  fleet) and `excluded_time_share` (share of the vehicle-slots spent out of the
+  market). A method that pushes more vehicles out is serving a smaller fleet:
+  compare its rates with that in mind.
+* **A cancellation re-opens the need.** After an early or late cancellation the
+  vehicle is back in `DRIVING` with its battery still low, and emits a *new*
+  demand at the same slot. A cancelled demand and the next one are therefore
+  the same need seen twice: rates are per demand, not per need.
+* **A no-show keeps driving**, holding its slots until `t_dep`, and may break
+  down meanwhile (then recorded as `breakdown`). A breakdown before the session
+  is scored like a no-show in the reputation.
+* **Travel time is estimated optimistically.** `nominal_arrival` assumes the
+  maximal speed in straight line, while a vehicle moves along one axis per slot
+  by a step drawn in `[0, CAR_SPEED]`. With the default horizon `[0, 12]` most
+  vehicles arrive early and wait; measured on a balance day (100 vehicles),
+  6 % of the sessions start late and lose 0.2 % of the reserved slots. A vehicle
+  arriving after its whole window would be counted `missed`.
+* **The search radius is in practice constant.** `r_n` is drawn up to half the
+  remaining range (a hundred km or more) and capped at `MAX_RAY_SEARCH`
+  (1 km): 99 % of the demands get exactly 1 km. Widening happens only through
+  retries.
+* **The allocation MILP has many equivalent optima.** Which one SCIP returns
+  depends on the model structure, so two formulations with the same optimum can
+  lead to different trajectories. Results are exactly reproducible for a given
+  code version (seeded, deterministic solver); a solve that hits the time limit
+  (5 min) would not be, and is counted in `nb_ilp_not_optimal`.
+* **Collective learning ranks stations by their current calendar**
+  (`total_nb_allocated_slot`, slots booked right now, in absolute terms): a
+  station with more chargers is favoured, and the ranking is a snapshot, not a
+  cumulative performance.
 
 
 ## Ablation study
@@ -595,19 +708,22 @@ Enforced by `tests/test_ablation.py`:
   per campaign and reused for every method (see *One world* below). Per-vehicle
   RNG streams are independent, so a decision that diverges under one method does
   not shift the draws of another.
-* **A stated direction per metric.** Fewer no-shows is a gain; less satisfaction
-  is not. Each metric declares its direction, and the reported `improvement` is
+* **A stated direction per metric.** Fewer no-shows is a gain; fewer satisfied
+  demands is not. Each metric declares its direction, and the reported `improvement` is
   a judgement, not a sign.
 
 ### Reading the decomposition
 
 ```bash
 uv run main.py ablation --latest
-uv run main.py ablation --latest --metrics exact_satisfaction rate_abs nb_reservations
+uv run main.py ablation --latest --metrics satisfied_rate rate_abs nb_reservations
 ```
 
+Layout of the output (the values come from a run predating the service metrics,
+when the first column was the planning coverage):
+
 ```text
-Component                 Exact satisfaction      No-show rate      Service rate
+Component                 Plan coverage (ex.)     No-show rate      Service rate
 ------------------------  ------------------  ----------------  ----------------
 
 Ablation ladder (contribution of the added component)
@@ -658,7 +774,7 @@ uv run main.py aggregate --latest --metric mean_waiting_time_min --kinds baselin
 ```
 
 ```text
-Exact satisfaction (%) — paired over the replicates
+Demands satisfied (%) — paired over the replicates
 
 Reference baselines (gap to BRAM-EV)
 comparison                  fleet   n     mean Δ                  95% CI        p  verdict
@@ -671,7 +787,7 @@ same grid, the same fleet and the same behaviour draws: the only difference is
 the method. So the gap is taken *inside* each world and only then averaged —
 the world cancels out. Comparing two independent means instead would pay for
 the variance between worlds, which is large here: a change of seed moves the
-satisfaction rate by more than most components do. The test is then a paired
+satisfied rate by more than most components do. The test is then a paired
 t-test on those N differences.
 
 **`paired.csv` never pools across fleet sizes**, unlike `ablation_mean.csv`: the
@@ -775,7 +891,8 @@ first one.
 ```text
 results_grid/<timestamp>_<seed tag>[_<label>]/
     params.json                       campaign parameters (replayable as is)
-    manifest.json                     seeds, git commit, platform, progress, timings
+    manifest.json                     seeds, git commit, platform, progress, timings,
+                                      failed_cases / resumed_utc when relevant
     summary.csv                       one line per case, ready for plotting
     ablation.csv                      one line per (world, component, metric)
     ablation_mean.csv                 contribution of each component, averaged
@@ -801,9 +918,11 @@ written case by case, atomically: an interrupted campaign leaves a valid
 
 Figures are built from the persisted tables, never from live simulation objects:
 the shared environment (`grid.png`, one `fleet_<n>cars.png` per size); per
-scenario satisfaction, travel and waiting time, latency breakdown, demand funnel,
-reservation outcomes, offer-protocol health, station load; and across scenarios
-satisfaction overview, scalability, and intent-vs-observed behaviour.
+scenario service rendered (demands satisfied, energy served / requested),
+planning coverage, travel and waiting time, latency breakdown, demand funnel,
+reservation outcomes, offer-protocol health, station load and energy; and
+across scenarios the demands-satisfied overview, scalability, and
+intent-vs-observed behaviour.
 
 ### Seeds: one root per replicate, independent streams
 
@@ -909,13 +1028,14 @@ as a zero.
 ## Tests
 
 ```bash
-uv run python -m tests                     # all suites, 147 tests
+uv run python -m tests                     # all suites, 156 tests
 uv run python -m tests.test_priority1      # model
 uv run python -m tests.test_shared_world   # shared grid and fleets
 uv run python -m tests.test_pipeline       # pipeline
 uv run python -m tests.test_ablation       # ablation study
 uv run python -m tests.test_aggregate      # statistics over the replicates
 uv run python -m tests.test_energy         # planned vs delivered energy
+uv run python -m tests.test_service        # service per demand, parallel & resume
 ```
 
 No external test dependency: each suite is a module exposing `main() -> int`.
@@ -959,12 +1079,21 @@ No external test dependency: each suite is a module exposing `main() -> int`.
   twenty times larger hides from an unpaired comparison, no pooling across
   fleet sizes, `verdict` following the declared direction of the metric rather
   than the raw sign, and a duplicated replicate refused.
-* **`test_energy.py` (9)** — energy: `kwh_per_slot` is an energy per slot (one
+* **`test_energy.py` (6)** — energy: `kwh_per_slot` is an energy per slot (one
   hour at 6 km/slot is 7.2 kWh, not 0.6), `charge_one_slot` returns the range
   actually added (capped by the battery), the planned energy prices every
-  reservation at its duration, the delivered energy never exceeds it nor the
-  served slots, a legacy result is refused until migrated, and the migration
-  (estimated or replayed, a divergent replay being detected) restores both.
+  reservation — no-shows included — at its duration, the delivered energy never
+  exceeds it nor the served slots, and a result from an older pipeline is
+  refused.
+* **`test_service.py` (12)** — service per demand: every demand ends in exactly
+  one outcome and the four groups partition the demands, the outcomes match the
+  reservation outcomes of the stations, `satisfied` means energy was delivered,
+  a demand cannot be closed twice; the planning coverage counts a no-show as
+  covered and not served, and a retry replaces its own window; occupancy
+  counts each charger-slot once (`served <= held <= capacity`) while bookings
+  may exceed it; excluded vehicles are counted; a campaign on 2 workers gives the sequential results,
+  and a campaign interrupted after two cases resumes without running them again
+  and ends with the results of an uninterrupted one.
 
 
 ## Author

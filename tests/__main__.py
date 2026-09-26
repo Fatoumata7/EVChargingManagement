@@ -10,7 +10,7 @@ exposing `main() -> int`.
 import sys
 
 from tests import (test_ablation, test_aggregate, test_energy, test_pipeline,
-                   test_priority1, test_shared_world)
+                   test_priority1, test_service, test_shared_world)
 
 SUITES = (
     ('model (priority-1 fixes)', test_priority1),
@@ -18,7 +18,9 @@ SUITES = (
     ('pipeline (parameters, storage, CLI)', test_pipeline),
     ("ablation (components, variants, decomposition)", test_ablation),
     ("replicates (mean, 95% CI, paired comparisons)", test_aggregate),
-    ("energy (planned vs delivered, legacy migration)", test_energy),
+    ("energy (planned vs delivered)", test_energy),
+    ("service per demand, planning coverage, parallel & resumable runs",
+     test_service),
 )
 
 

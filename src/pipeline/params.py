@@ -180,6 +180,11 @@ class ExperimentParams:
     figures: bool = True
     log_every: int = 12 * SLOTS_PER_HOUR
 
+    # ---- execution
+    #: Worker processes running the cases in parallel. Changes nothing in the
+    #: results (a case depends only on its persisted world), only the wall time.
+    workers: int = 1
+
     # ---- internal fields (not expected in a config file)
     _source: str | None = field(default=None, repr=False, compare=False)
 
@@ -324,7 +329,8 @@ class ExperimentParams:
                             ('nb_stations', self.nb_stations),
                             ('nb_societies', self.nb_societies),
                             ('offer_ttl_slots', self.offer_ttl_slots),
-                            ('log_every', self.log_every)):
+                            ('log_every', self.log_every),
+                            ('workers', self.workers)):
             if not isinstance(value, int) or value <= 0:
                 errors.append(f"{name} must be an integer > 0, got {value!r}")
 

@@ -32,6 +32,41 @@ def kwh_per_slot(charging_power_km_per_slot: float, config) -> float:
 
 
 # ------------------------------------------------------------------
+# Service rendered, demand by demand
+# ------------------------------------------------------------------
+
+#: Final outcome of a demand (one charging need). Exactly one per demand:
+#: `sum(counts) == nb_demands` is checked at the end of every run.
+#:
+#:   satisfied        a charging session took place (>= 1 slot delivered)
+#:   abandoned        retry budget spent without any reservation
+#:   cancelled_early  reservation cancelled early by the driver
+#:   cancelled_late   reservation cancelled late by the driver
+#:   no_show          reservation never honoured, slots held until t_dep
+#:   breakdown        vehicle stranded before its session
+#:   missed           vehicle arrived after its reserved window: no slot charged
+#:   in_progress      still open at the end of the horizon (searching, or
+#:                    holding a reservation not yet resolved)
+DEMAND_OUTCOMES = ('satisfied', 'abandoned', 'cancelled_early',
+                   'cancelled_late', 'no_show', 'breakdown', 'missed',
+                   'in_progress')
+
+#: Outcomes grouped as "cancelled": the reservation was obtained and then
+#: closed without any energy delivered.
+CANCELLED_OUTCOMES = ('cancelled_early', 'cancelled_late', 'no_show',
+                      'breakdown', 'missed')
+
+#: Reservation outcome (station / BehaviorTracker vocabulary) -> demand outcome.
+RESERVATION_TO_DEMAND = {
+    'early': 'cancelled_early',
+    'late': 'cancelled_late',
+    'abs': 'no_show',
+    'breakdown': 'breakdown',
+    'unresolved': 'in_progress',
+}
+
+
+# ------------------------------------------------------------------
 # Data structures for the collection
 # ------------------------------------------------------------------
 
@@ -79,6 +114,15 @@ class DemandLatencyRecord:
     #: the vehicle stops asking. Distinct from `confirmed = False`, which also
     #: covers a demand still open at the end of the horizon.
     abandoned: bool = False
+    #: Final outcome, one of `DEMAND_OUTCOMES`. Stays `in_progress` until the
+    #: demand is closed.
+    outcome: str = 'in_progress'
+    #: Energy the demand asked for: the range the driver wants back x the
+    #: consumption (`request['need_km']`, not `d_n`, which rounds it up).
+    energy_requested_kwh: float = 0.0
+    #: Energy actually put into the battery for this demand.
+    energy_delivered_kwh: float = 0.0
+    slots_charged: int = 0
 
     # ---- derived
     @property
@@ -151,6 +195,10 @@ class DemandLatencyRecord:
             'nb_offers':       self.nb_offers_received,
             'confirmed':       self.confirmed,
             'abandoned':       self.abandoned,
+            'outcome':         self.outcome,
+            'energy_requested_kwh': round(self.energy_requested_kwh, 4),
+            'energy_delivered_kwh': round(self.energy_delivered_kwh, 4),
+            'slots_charged':   self.slots_charged,
             'confirm_attempts': self.nb_confirm_attempts,
             'first_offer_ms':  self.first_offer_ms,
             'last_offer_ms':   self.last_offer_ms,
@@ -199,9 +247,13 @@ class MetricsCollector:
         self.stations = stations
         self.config   = config
 
-        # For User Request Satisfaction
-        # schedule_demand[car_id] = binary np.array (TOTAL_TIME,)  already in car.schedule_requested
-        # schedule_offer[car_id]  = binary np.array (TOTAL_TIME,)
+        # Planning coverage (see `planning_coverage`)
+        # requested_windows[demand_id] = (car_id, t_start, t_end): the window
+        # targeted by the *last* emission of the demand. Keyed by demand so that
+        # a retry replaces the window of its demand instead of adding one more.
+        self.requested_windows: Dict[str, Tuple[int, int, int]] = {}
+        # schedule_offer[car_id] = binary np.array (TOTAL_TIME,): slots booked
+        # by the confirmed reservations of the vehicle (no-shows included)
         self.schedule_offer: Dict[int, np.ndarray] = {
             c.idx: np.zeros(config.TOTAL_TIME, dtype=int)
             for c in cars
@@ -231,14 +283,10 @@ class MetricsCollector:
 
     def record_offer_accepted(self, car, offer, waiting_time_slots: float):
         """
-        Called when a vehicle accepts an offer.
+        Called when a vehicle that intends to show up accepts an offer (a
+        no-show never drives to the station: it has no distance nor waiting).
         waiting_time_slots : offer.t_arr - t_hat_arr (in slots)
         """
-        # Offer schedule
-        t_s = min(offer.t_arr, self.config.TOTAL_TIME)
-        t_e = min(offer.t_dep, self.config.TOTAL_TIME)
-        self.schedule_offer[car.idx][t_s:t_e] = 1
-
         # Distance in km (grid in meters)
         dist_km = offer.distance / 1000.0
 
@@ -256,7 +304,8 @@ class MetricsCollector:
     # ---- Latency ------------------------------------------------------
 
     def record_demand_emitted(self, demand_id, car_id: int = -1, slot: int = -1,
-                              nb_stations_contacted: int = 0):
+                              nb_stations_contacted: int = 0,
+                              energy_requested_kwh: float = 0.0):
         if demand_id in self.demand_timings:
             raise ValueError(
                 f"Demand identifier already used: {demand_id!r}. "
@@ -268,9 +317,37 @@ class MetricsCollector:
             car_id=car_id,
             slot=slot,
             t_emission=time.perf_counter(),
-            nb_stations_contacted=nb_stations_contacted
+            nb_stations_contacted=nb_stations_contacted,
+            energy_requested_kwh=float(energy_requested_kwh),
         )
         return self.demand_timings[demand_id]
+
+    def record_requested_window(self, demand_id, car_id: int,
+                                t_start: int, t_end: int) -> None:
+        """Window targeted by the demand; a retry overwrites its own window."""
+        T = self.config.TOTAL_TIME
+        t_start = max(0, min(int(t_start), T))
+        t_end = max(t_start, min(int(t_end), T))
+        self.requested_windows[demand_id] = (car_id, t_start, t_end)
+
+    def record_demand_outcome(self, demand_id, outcome: str) -> None:
+        """
+        Close a demand with its final outcome (one of `DEMAND_OUTCOMES`).
+
+        A demand is closed exactly once; closing it twice means two code paths
+        disagree on what happened to it, which is refused rather than
+        overwritten. `in_progress` is the open state, never a closing one.
+        """
+        if outcome not in DEMAND_OUTCOMES or outcome == 'in_progress':
+            raise ValueError(f"Unknown closing outcome: {outcome!r}")
+        rec = self.demand_timings.get(demand_id)
+        if rec is None:
+            raise ValueError(f"Outcome for an unknown demand: {demand_id!r}")
+        if rec.outcome != 'in_progress':
+            raise ValueError(
+                f"Demand {demand_id!r} already closed as {rec.outcome!r}, "
+                f"cannot close it again as {outcome!r}")
+        rec.outcome = outcome
 
     def record_demand_responded(self, demand_id, station_id: int):
         """Reception of an offer. Called once per offer, not per demand."""
@@ -324,6 +401,7 @@ class MetricsCollector:
         rec = self.demand_timings.get(demand_id)
         if rec is not None:
             rec.abandoned = True
+            self.record_demand_outcome(demand_id, 'abandoned')
 
     def record_station_processing_start(self, station_id: int, demand_id,
                                         nb_demands: int = 0) -> StationTimingRecord:
@@ -350,11 +428,21 @@ class MetricsCollector:
         self.station_charging_log[offer.station_id].append(
             (car.idx, offer.t_arr, t_end, int(t_end - offer.t_arr))
         )
+        self.schedule_offer[car.idx][min(offer.t_arr, t_end):t_end] = 1
 
-    def record_energy_delivered(self, station_id: int, delta_m: float) -> None:
-        """Called for every slot actually spent charging; `delta_m` in metres of range."""
-        self.station_energy_delivered_kwh[station_id] += \
-            delta_m * 1e-3 * kwh_per_km(self.config)
+    def record_energy_delivered(self, station_id: int, delta_m: float,
+                                demand_id=None) -> None:
+        """
+        Called for every slot actually spent charging; `delta_m` in metres of
+        range. The energy is credited to the station and, when given, to the
+        demand being served.
+        """
+        kwh = delta_m * 1e-3 * kwh_per_km(self.config)
+        self.station_energy_delivered_kwh[station_id] += kwh
+        rec = self.demand_timings.get(demand_id) if demand_id is not None else None
+        if rec is not None:
+            rec.energy_delivered_kwh += kwh
+            rec.slots_charged += 1
 
     # ------------------------------------------------------------------
     # 1. Station energy: planned vs delivered
@@ -393,37 +481,100 @@ class MetricsCollector:
                 for sid, e in self.station_energy_delivered_kwh.items()}
 
     # ------------------------------------------------------------------
-    # 2. User Request Satisfaction
+    # 2. Planning coverage (formerly "user request satisfaction")
     # ------------------------------------------------------------------
 
-    def user_request_satisfaction(self) -> Dict[str, float]:
+    def planning_coverage(self) -> Dict[str, float]:
         """
-        Return the mean exact satisfaction and the mean needs satisfaction.
+        How well the calendar covered the windows the vehicles asked for.
+
+        It compares two schedules, per vehicle, and says nothing about whether
+        a charge actually took place — that is `service_report`:
+
+        * requested: the window `[nominal arrival, + d_n)` of each demand, at
+          its last emission (a retry replaces the window of its demand);
+        * booked: the slots of every confirmed reservation, no-shows included.
+
+        `plan_coverage_exact`  share of the requested slots booked *at the
+                               requested time* (temporal overlap);
+        `plan_coverage_volume` booked slots / requested slots, clipped to 1
+                               (volume, wherever it falls).
+
+        Both are averaged over the vehicles that emitted at least one demand.
+        These two indicators were published as `exact_satisfaction` and
+        `needs_satisfaction`: renamed, because a no-show or a cancellation still
+        counts as covered — they measure the plan, not the service.
         """
-        exact_list, needs_list = [], []
+        T = self.config.TOTAL_TIME
+        requested = defaultdict(lambda: np.zeros(T, dtype=int))
+        for car_id, t_start, t_end in self.requested_windows.values():
+            requested[car_id][t_start:t_end] = 1
 
-        for car in self.cars:
-            s_demand = car.schedule_requested          # np.array (T,)
-            s_offer  = self.schedule_offer[car.idx]    # np.array (T,)
-
+        exact_list, volume_list = [], []
+        for car_id, s_demand in requested.items():
             demand_slots = int(np.sum(s_demand))
             if demand_slots == 0:
-                continue  # the vehicle never emitted a demand
-
+                continue
+            s_offer = self.schedule_offer[car_id]
             offer_slots = int(np.sum(s_offer))
             inter_slots = int(np.sum((s_demand == 1) & (s_offer == 1)))
-
-            exact = inter_slots / demand_slots
-            needs = 1.0 - (demand_slots - offer_slots) / demand_slots
-            needs = max(0., min(1., needs))  # clip [0,1]
-
-            exact_list.append(exact)
-            needs_list.append(needs)
+            exact_list.append(inter_slots / demand_slots)
+            volume_list.append(min(1., offer_slots / demand_slots))
 
         return {
-            'exact_satisfaction':  round(np.mean(exact_list),  4) if exact_list  else 0.,
-            'needs_satisfaction':  round(np.mean(needs_list),  4) if needs_list  else 0.,
-            'nb_cars_evaluated':   len(exact_list)
+            'plan_coverage_exact':  round(float(np.mean(exact_list)), 4) if exact_list else 0.,
+            'plan_coverage_volume': round(float(np.mean(volume_list)), 4) if volume_list else 0.,
+            'nb_cars_evaluated':    len(exact_list),
+        }
+
+    # ------------------------------------------------------------------
+    # 2bis. Service actually rendered, demand by demand
+    # ------------------------------------------------------------------
+
+    def service_report(self) -> dict:
+        """
+        What happened to each demand, and how much of its energy it received.
+
+        Every demand ends in exactly one of `DEMAND_OUTCOMES`; the four headline
+        groups partition them:
+
+            satisfied + abandoned + cancelled + in_progress == nb_demands
+
+        `service_ratio_mean` is the energy delivered over the energy requested,
+        averaged over **all** demands (an unserved demand counts 0): the share
+        of the expressed need the system actually met. `_satisfied` restricts
+        it to the served demands (partial offers, sessions cut short).
+        """
+        recs = list(self.demand_timings.values())
+        n = len(recs)
+        counts = Counter(r.outcome for r in recs)
+        cancelled = sum(counts.get(o, 0) for o in CANCELLED_OUTCOMES)
+
+        def rate(k):
+            return round(k / n, 4) if n else None
+
+        def ratio(r):
+            if r.energy_requested_kwh <= 0:
+                return None
+            return min(1., r.energy_delivered_kwh / r.energy_requested_kwh)
+
+        ratios_all = [ratio(r) for r in recs]
+        ratios_sat = [ratio(r) for r in recs if r.outcome == 'satisfied']
+        return {
+            'nb_demands':             n,
+            'nb_demands_satisfied':   counts.get('satisfied', 0),
+            'nb_demands_abandoned':   counts.get('abandoned', 0),
+            'nb_demands_cancelled':   cancelled,
+            'nb_demands_in_progress': counts.get('in_progress', 0),
+            'satisfied_rate':         rate(counts.get('satisfied', 0)),
+            'abandon_rate':           rate(counts.get('abandoned', 0)),
+            'cancelled_rate':         rate(cancelled),
+            'in_progress_rate':       rate(counts.get('in_progress', 0)),
+            'outcome_counts':         {o: counts.get(o, 0) for o in DEMAND_OUTCOMES},
+            'energy_requested_kwh':   round(sum(r.energy_requested_kwh for r in recs), 3),
+            'energy_delivered_kwh':   round(sum(r.energy_delivered_kwh for r in recs), 3),
+            'service_ratio_mean':     _mean(ratios_all),
+            'service_ratio_mean_satisfied': _mean(ratios_sat),
         }
 
     # ------------------------------------------------------------------
@@ -531,13 +682,13 @@ class MetricsCollector:
     # ------------------------------------------------------------------
 
     def report(self) -> dict:
-        sat   = self.user_request_satisfaction()
         proc  = self.mean_processing_time_per_station()
 
         return {
             'station_energy_planned_kWh':   self.station_energy_planned(),
             'station_energy_delivered_kWh': self.station_energy_delivered(),
-            'user_request_satisfaction':    sat,
+            'planning_coverage':            self.planning_coverage(),
+            'service':                      self.service_report(),
             'mean_travel_distance_km':      self.mean_relative_travel_distance(),
             'mean_waiting_time_h':          self.mean_relative_waiting_time(),
             'mean_response_time_ms':        self.mean_response_time_ms(),
@@ -557,11 +708,20 @@ class MetricsCollector:
         print(f"  Total    : {sum(planned.values()):.2f} / "
               f"{sum(delivered.values()):.2f} kWh")
 
-        print("\n--- User Request Satisfaction ---")
-        sat = r['user_request_satisfaction']
-        print(f"  Exact satisfaction : {sat['exact_satisfaction']*100:.1f}%")
-        print(f"  Needs satisfaction : {sat['needs_satisfaction']*100:.1f}%")
-        print(f"  Vehicles evaluated : {sat['nb_cars_evaluated']}")
+        print("\n--- Service rendered (per demand) ---")
+        srv = r['service']
+        print(f"  Demands     : {srv['nb_demands']}")
+        for key in ('satisfied', 'abandoned', 'cancelled', 'in_progress'):
+            print(f"  {key:<12}: {srv[f'nb_demands_{key}']}")
+        print(f"  Detail      : {srv['outcome_counts']}")
+        print(f"  Energy delivered / requested (mean per demand): "
+              f"{_pct_fmt(srv['service_ratio_mean'])}")
+
+        print("\n--- Planning coverage (plan, not service) ---")
+        cov = r['planning_coverage']
+        print(f"  Exact (temporal overlap) : {cov['plan_coverage_exact']*100:.1f}%")
+        print(f"  Volume                   : {cov['plan_coverage_volume']*100:.1f}%")
+        print(f"  Vehicles evaluated       : {cov['nb_cars_evaluated']}")
 
         print("\n--- Travel & Waiting ---")
         print(f"  Mean distance : {r['mean_travel_distance_km']:.3f} km")
@@ -588,6 +748,10 @@ class MetricsCollector:
 
 def _fmt(value):
     return "n/a" if value is None else f"{value:.2f} ms"
+
+
+def _pct_fmt(value):
+    return "n/a" if value is None else f"{100 * value:.1f}%"
 
 
 # ------------------------------------------------------------------

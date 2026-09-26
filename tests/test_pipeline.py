@@ -242,14 +242,14 @@ def test_store_summary_roundtrip_preserves_types():
     with tempfile.TemporaryDirectory() as tmp:
         store = RunStore.create(tiny_params(output_root=tmp))
         rows = [{'scenario': 'pessimistic', 'nb_cars': 12, 'method': 'bramev',
-                 'exact_satisfaction': 0.5, 'invariant_ok': True,
+                 'satisfied_rate': 0.5, 'invariant_ok': True,
                  'mean_lead_slots': None}]
         store.write_summary(rows, ('scenario', 'nb_cars', 'method',
-                                   'exact_satisfaction', 'invariant_ok',
+                                   'satisfied_rate', 'invariant_ok',
                                    'mean_lead_slots'))
         back = store.read_summary()[0]
         assert back['nb_cars'] == 12 and isinstance(back['nb_cars'], int)
-        assert back['exact_satisfaction'] == 0.5
+        assert back['satisfied_rate'] == 0.5
         assert back['invariant_ok'] is True
         assert back['mean_lead_slots'] is None
 
@@ -581,7 +581,7 @@ def test_figures_are_rebuilt_from_summary_only():
 def test_figures_tolerate_partial_campaign():
     """A single-method campaign must not make the rendering fail."""
     rows = [{'scenario': 'balance', 'nb_cars': 50, 'method': 'greedy',
-             'exact_satisfaction': 0.9, 'needs_satisfaction': 0.92,
+             'satisfied_rate': 0.9, 'service_ratio_mean': 0.92,
              'mean_travel_distance_km': 0.5, 'mean_waiting_time_min': 0.,
              'nb_reservations': 10, 'nb_pres': 8, 'nb_no_show': 1,
              'nb_early_canc': 0, 'nb_late_canc': 1,

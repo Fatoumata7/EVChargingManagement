@@ -38,7 +38,9 @@ from loguru import logger
 import src.env.utils as utils
 import src.experiments.config as cfg
 import src.experiments.methods as methods
-from src.metrics.metrics import MetricsCollector, BreakdownTracker, BehaviorTracker
+from src.metrics.metrics import (MetricsCollector, BreakdownTracker,
+                                  BehaviorTracker, RESERVATION_TO_DEMAND,
+                                  kwh_per_km)
 
 
 class Simulation:
@@ -108,6 +110,10 @@ class Simulation:
         self.breakdowns = BreakdownTracker()
         self.behaviors  = BehaviorTracker(config)
         self._broken_cars = set()   # car.idx of the cars currently broken down
+        # Model assumption: a vehicle whose retry budget is exhausted leaves the
+        # charging market for the rest of the run (see `Car.give_up_search`).
+        # car.idx -> slot of its (first) exclusion, reported in the results.
+        self._excluded_at = {}
 
     # ------------------------------------------------------------------
     def run(self, file, print_metrics=True):
@@ -140,7 +146,7 @@ class Simulation:
         for car_idx, target_station in list(self._driving_to_station.items()):
             car = self._get_car(car_idx)
             dist = self._get_distance(car, target_station)
-            print(f'\ncar_{car.idx} (soc: {car.soc_m:.2f} -> {(car.soc_m / car.autonomy) * 100:.2f}km) '
+            print(f'\ncar_{car.idx} (soc: {car.soc_m * 1e-3:.2f}km -> {(car.soc_m / car.autonomy) * 100:.2f}%) '
                   f'{car.state} station_{target_station.m} REMAINING DISTANCE {dist * 1e-3:.2f}km', file=file)
             if car.update_state(target_station.loc):
                 arrived.append(car_idx)
@@ -194,7 +200,7 @@ class Simulation:
                   f'-> {req['d_n'] // self.config.NB_SLOTS_IN_ONE_HOUR}H '
                   f'{(req['d_n'] % self.config.NB_SLOTS_IN_ONE_HOUR) * self.config.SLOT_DURATION}min'
                   f' | RAY: {req['r_n']*1e-3:.2f}km'
-                  f' | PATIENCE: {req['g_n']*5:.2f}min'
+                  f' | PATIENCE: {req['g_n'] * self.config.SLOT_DURATION}min'
                   f' | LEAD: {req['l_n']} slots', file=file)
             car.set_state('REQUESTING')
 
@@ -216,7 +222,8 @@ class Simulation:
             else:
                 self.metrics.record_demand_emitted(
                     id_demand, car_id=car.idx, slot=t_c,
-                    nb_stations_contacted=len(targets)
+                    nb_stations_contacted=len(targets),
+                    energy_requested_kwh=req['need_km'] * kwh_per_km(self.config),
                 )
                 self.nb_demands += 1
 
@@ -227,7 +234,10 @@ class Simulation:
                                        t_c, file)
                 continue
 
-            car.update_schedule_requested(min_d)
+            t_req = utils.nominal_arrival(req['t_n'], req.get('l_n', 0),
+                                          min_d, self.config)
+            self.metrics.record_requested_window(id_demand, car.idx, t_req,
+                                                 t_req + req['d_n'])
             for s in targets:
                 demands[s.m].append((car, req))
 
@@ -256,7 +266,9 @@ class Simulation:
                                      eligibles.get(car.idx) or [],
                                      min_dists.get(car.idx, 0.), t_c, file)
 
-        # 7. Active charging
+        # 7. Active charging — first, what each station holds at this slot
+        for s in self.stations:
+            s.record_held_slots(t_c)
         for car in self.cars:
 
             if car.state not in ('AT_STATION', 'CHARGING', 'WAITING') or car.reservation is None:
@@ -268,7 +280,8 @@ class Simulation:
                 car.set_state('CHARGING')
                 delta_m = car.charge_one_slot()
                 target_station.record_served_slot()
-                self.metrics.record_energy_delivered(target_station.m, delta_m)
+                self.metrics.record_energy_delivered(target_station.m, delta_m,
+                                                     car.request['n'])
 
             elif car.state == 'AT_STATION':
                 car.set_state('WAITING')
@@ -278,6 +291,12 @@ class Simulation:
                 if self.use_reputation:
                     target_station.update_car_score(car, 'pres', car.reservation.d_prop)
                 self.behaviors.record_outcome(car.cancel_intent, 'pres')
+                # Present, but a vehicle that reached the station after its
+                # window charged nothing: its need was not served.
+                demand = self.metrics.demand_timings[car.request['n']]
+                self.metrics.record_demand_outcome(
+                    demand.demand_id,
+                    'satisfied' if demand.slots_charged > 0 else 'missed')
                 target_station.release_reservation(car.idx, car.reservation)
                 car.set_state('DRIVING')
                 car.clear_reservation()
@@ -328,6 +347,7 @@ class Simulation:
             print(f'\ncar_{car.idx} SEARCH ABANDONED ({reason}) after '
                   f'{car.search_retries} retry(ies)', file=file)
         car.give_up_search()
+        self._excluded_at.setdefault(car.idx, t_c)
         return False
 
     # ------------------------------------------------------------------
@@ -477,6 +497,7 @@ class Simulation:
             if self.use_reputation:
                 s.update_car_score(car, 'abs', car.reservation.d_prop)
             self.behaviors.record_outcome(car.cancel_intent, 'abs')
+            self._close_demand(car, 'abs')
 
             self._driving_to_station.pop(car.idx, None)
             car.clear_reservation()
@@ -516,6 +537,7 @@ class Simulation:
             if self.use_reputation:
                 s.update_car_score(car, observed, offer.d_prop)
             self.behaviors.record_outcome(car.cancel_intent, observed)
+            self._close_demand(car, observed)
 
             if file is not None:
                 print(f'\ncar_{car.idx} CANCEL {observed} (intent={car.cancel_intent}, '
@@ -545,18 +567,83 @@ class Simulation:
             if car.cancel_intent == 'abs':
                 s.nb_no_show += 1
                 self.behaviors.record_outcome('abs', 'abs')
+                self._close_demand(car, 'abs')
             else:
+                # Left open: the demand stays `in_progress`.
                 s.nb_unresolved += 1
                 self.behaviors.record_outcome(car.cancel_intent, 'unresolved')
             s.release_reservation(car.idx, car.reservation)
             self._driving_to_station.pop(car.idx, None)
             car.clear_reservation()
 
-        ok, errors = self.check_reservation_invariant()
+        ok, errors = self.check_invariants()
         if not ok and file is not None:
             for err in errors:
                 print(f'\n[INVARIANT] {err}', file=file)
         return ok
+
+    def _close_demand(self, car, reservation_outcome: str) -> None:
+        """Close the demand behind `car.reservation` from a reservation outcome."""
+        self.metrics.record_demand_outcome(
+            car.request['n'], RESERVATION_TO_DEMAND[reservation_outcome])
+
+    def check_invariants(self):
+        """
+        Every accounting identity of a run, checked at the end:
+
+        * each confirmed reservation received exactly one outcome (per station);
+        * each demand ended in exactly one outcome, and the demands counted by
+          the simulation are the ones the metrics followed;
+        * the energy credited to the demands is the energy credited to the
+          stations, and never exceeds the planned energy.
+        """
+        ok, errors = self.check_reservation_invariant()
+        errors = list(errors)
+
+        service = self.metrics.service_report()
+        total = sum(service['outcome_counts'].values())
+        if not (total == service['nb_demands'] == self.nb_demands):
+            errors.append(
+                f"Demands: {self.nb_demands} emitted, {service['nb_demands']} "
+                f"tracked, {total} outcomes {service['outcome_counts']}")
+
+        by_demand = sum(r.energy_delivered_kwh
+                        for r in self.metrics.demand_timings.values())
+        by_station = sum(self.metrics.station_energy_delivered_kwh.values())
+        if abs(by_demand - by_station) > 1e-6 * max(1., by_station):
+            errors.append(f"Energy: {by_demand:.6f} kWh credited to demands "
+                          f"!= {by_station:.6f} kWh credited to stations")
+        planned = self.metrics.station_energy_planned()
+        delivered = self.metrics.station_energy_delivered()
+        for sid, e in delivered.items():
+            if e > planned.get(sid, 0.) + 1e-3:
+                errors.append(f"Station {sid}: {e} kWh delivered > "
+                              f"{planned.get(sid, 0.)} kWh planned")
+        return (not errors), errors
+
+    def excluded_report(self) -> dict:
+        """
+        Vehicles excluded from the charging market by the retry budget.
+
+        **Model assumption**: exhausting `MAX_SEARCH_RETRIES` is terminal for
+        the run — the vehicle keeps driving but never asks again (only a
+        charging session would lift the flag, and it can no longer obtain one).
+        Reported so that a method or a scenario that pushes more vehicles out
+        of the market is visible, rather than silently shrinking the fleet the
+        other rates are computed on.
+        """
+        n = len(self.cars)
+        T = self.t_max
+        lost = sum(T - t for t in self._excluded_at.values())
+        still = sum(1 for c in self.cars if c.gave_up_charging)
+        return {
+            'nb_cars_excluded':        len(self._excluded_at),
+            'nb_cars_excluded_at_end': still,
+            'excluded_car_share':      round(len(self._excluded_at) / n, 4) if n else None,
+            # share of the fleet-time (vehicles x slots) spent out of the market
+            'excluded_time_share':     round(lost / (n * T), 4) if n and T else None,
+            'first_exclusion_slot':    min(self._excluded_at.values(), default=None),
+        }
 
     def check_reservation_invariant(self):
         """
@@ -582,7 +669,7 @@ class Simulation:
 
     def results(self) -> dict:
         """Complete, serialisable result of one execution."""
-        ok, errors = self.check_reservation_invariant()
+        ok, errors = self.check_invariants()
         return {
             'mode':             self.mode,
             'method':           self.mode,
@@ -595,6 +682,7 @@ class Simulation:
             'breakdowns':       {k: v for k, v in self.breakdowns.report().items()
                                  if k != 'records'},
             'behaviors':        self.behaviors.report(),
+            'excluded':         self.excluded_report(),
             'stations':         [s.outcomes_report() for s in self.stations],
             'invariant_ok':     ok,
             'invariant_errors': errors,
@@ -653,6 +741,7 @@ class Simulation:
                     if self.use_reputation:
                         s.update_car_score(car, 'abs', car.reservation.d_prop)
                     self.behaviors.record_outcome(car.cancel_intent, 'breakdown')
+                    self._close_demand(car, 'breakdown')
                     self._driving_to_station.pop(car.idx, None)
                     car.clear_reservation()
 

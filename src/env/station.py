@@ -11,6 +11,9 @@ import src.env.utils as utils
 import src.env.offer as off
 import src.experiments.config as config
 
+#: Wall-clock limit of one allocation solve, in milliseconds (5 min).
+ILP_TIME_LIMIT_MS = 5 * 60 * 1000
+
 
 class Station:
 
@@ -73,8 +76,16 @@ class Station:
         # resets its slots to -1. Reading it at the end of a run therefore
         # yielded a zero occupancy rate for every method. These two counters are
         # cumulative and survive releases.
-        self.nb_slots_reserved = 0   # charger-slots written to the calendar
+        #
+        # `nb_slots_reserved` counts *bookings*: a slot released by an early
+        # cancellation and booked again by another vehicle is counted twice,
+        # so it can exceed the capacity (`booking_rate` > 1 was measured). The
+        # occupancy is `nb_slots_held`: charger-slots still booked when their
+        # time came, counted once each, hence <= capacity.
+        self.nb_slots_reserved = 0   # charger-slots written to the calendar (bookings)
+        self.nb_slots_held = 0       # charger-slots still booked at their own slot
         self.nb_slots_served = 0     # charger-slots actually spent charging
+        self.slots_held_by_charger = np.zeros(self.nb_charg_spot, dtype=int)
 
         # --- reservations closed by an exogenous event
         self.nb_breakdown_canc = 0   # vehicle broke down before its session
@@ -85,6 +96,10 @@ class Station:
         self.nb_offer_expired = 0    # offers not retained by the vehicle / TTL exceeded
         self.nb_confirm_refused = 0  # confirmations refused at revalidation
         self.nb_stale_confirm = 0    # confirmations accepted despite a stale version
+
+        # --- solver health
+        self.nb_ilp_not_optimal = 0  # solves not proven optimal (time limit)
+        self.nb_ilp_failed = 0       # solves with no solution at all
 
     # ------------------------------------------------------------------
     # Method
@@ -178,7 +193,10 @@ class Station:
             return []
 
         solver = pywraplp.Solver.CreateSolver("SCIP")
-        solver.SetTimeLimit(60000 * 5) # 60000 -> 1 min
+        # Wall-clock limit (ms): 5 min. A solve that hits it returns FEASIBLE,
+        # whose incumbent depends on the machine load — counted in
+        # `nb_ilp_not_optimal` so that a timing-dependent result is visible.
+        solver.SetTimeLimit(ILP_TIME_LIMIT_MS)
 
         T = self.T
         n_list, cars = [], []
@@ -283,7 +301,12 @@ class Station:
         status = solver.Solve()
 
         offers = []
+        if status != pywraplp.Solver.OPTIMAL:
+            self.nb_ilp_not_optimal += 1
         if status not in (pywraplp.Solver.OPTIMAL, pywraplp.Solver.FEASIBLE):
+            # No solution at all: every demand of the batch goes unanswered.
+            self.nb_ilp_failed += 1
+            self.nb_station_level_rejections += len(n_list)
             return offers
 
         for idx, n in enumerate(n_list):
@@ -415,6 +438,19 @@ class Station:
         self.nb_slots_reserved += int(t_end - t_start)
         return True
 
+    def record_held_slots(self, t_c: int) -> None:
+        """
+        Count the charger-slots of `t_c` still booked when `t_c` comes.
+
+        Called once per slot, after the cancellations and before the charging
+        (`Simulation.step`): what is held then is what the station actually
+        blocked for someone — used, or lost to a no-show or a late arrival.
+        """
+        if 0 <= t_c < self.T:
+            held = self.schedule[:, t_c] != -1
+            self.slots_held_by_charger += held
+            self.nb_slots_held += int(held.sum())
+
     def record_served_slot(self) -> None:
         """Count one charger-slot actually spent charging.
 
@@ -471,6 +507,10 @@ class Station:
             return 1.
         return float(np.count_nonzero(remaining != -1) / remaining.size)
 
+    def cumulative_occupancy_by_charger(self) -> np.ndarray:
+        """Share of the horizon each charger was held, over the whole run (<= 1)."""
+        return self.slots_held_by_charger / max(1, self.T)
+
     def total_nb_allocated_slot(self):
         return int(np.sum(self.schedule != -1))
 
@@ -494,6 +534,8 @@ class Station:
             'nb_offer_expired':            self.nb_offer_expired,
             'nb_confirm_refused':          self.nb_confirm_refused,
             'nb_stale_confirm':            self.nb_stale_confirm,
+            'nb_ilp_not_optimal':          self.nb_ilp_not_optimal,
+            'nb_ilp_failed':               self.nb_ilp_failed,
             'nb_reservations':             self.nb_reservations,
             'nb_pres':                     self.nb_pres,
             'nb_no_show':                  self.nb_no_show,
@@ -502,10 +544,14 @@ class Station:
             'nb_breakdown_canc':           self.nb_breakdown_canc,
             'nb_unresolved':               self.nb_unresolved,
             'nb_slots_reserved':           self.nb_slots_reserved,
+            'nb_slots_held':               self.nb_slots_held,
             'nb_slots_served':             self.nb_slots_served,
             # Share of the horizon capacity booked / actually used.
             # Their gap quantifies the slots blocked and then wasted.
-            'occupancy_rate':      round(self.nb_slots_reserved / capacity, 4),
+            # Bookings over capacity: > 1 when released slots are booked again.
+            'booking_rate':        round(self.nb_slots_reserved / capacity, 4),
+            # Charger-slots held at their own time over capacity: <= 1.
+            'occupancy_rate':      round(self.nb_slots_held / capacity, 4),
             'service_rate':        round(self.nb_slots_served / capacity, 4),
         }
 

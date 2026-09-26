@@ -67,7 +67,7 @@ def synthetic_rows(effect: float, world_spread: float, seeds=(1, 2, 3, 4, 5)):
             rows.append({
                 'scenario': 'pessimistic', 'nb_cars': 12, 'method': method,
                 'seed': seed, 'world_seed': seed,
-                'exact_satisfaction': value,
+                'satisfied_rate': value,
             })
     return rows
 
@@ -195,7 +195,7 @@ def test_pairing_survives_a_world_effect_that_swamps_it():
     """
     rows = synthetic_rows(effect=0.01, world_spread=0.2)
     paired = aggregate.paired_rows(ablation.detail_rows(rows))
-    row = [r for r in paired if r['metric'] == 'exact_satisfaction'][0]
+    row = [r for r in paired if r['metric'] == 'satisfied_rate'][0]
 
     assert row['nb_pairs'] == 5
     assert np.isclose(row['mean_delta'], 0.01)
@@ -205,7 +205,7 @@ def test_pairing_survives_a_world_effect_that_swamps_it():
     # The unpaired comparison on the same numbers sees nothing at all.
     by_method = {'greedy': [], 'multistation': []}
     for r in rows:
-        by_method[r['method']].append(r['exact_satisfaction'])
+        by_method[r['method']].append(r['satisfied_rate'])
     unpaired = stats.ttest_ind(by_method['multistation'], by_method['greedy'])
     assert unpaired.pvalue > 0.5, (
         'inconclusive test: the world effect must swamp the unpaired comparison'
@@ -222,12 +222,12 @@ def test_verdict_follows_the_direction_of_the_metric():
         for method, sat, noshow in (('greedy', 0.70, 10.), ('multistation', 0.75, 14.)):
             rows.append({'scenario': 'pessimistic', 'nb_cars': 12,
                          'method': method, 'seed': seed, 'world_seed': seed,
-                         'exact_satisfaction': sat + 0.001 * seed,
+                         'satisfied_rate': sat + 0.001 * seed,
                          'nb_no_show': noshow + seed})
     paired = {r['metric']: r for r in
               aggregate.paired_rows(ablation.detail_rows(rows))}
 
-    up = paired['exact_satisfaction']
+    up = paired['satisfied_rate']
     assert up['mean_delta'] > 0 and up['verdict'] == BETTER
 
     down = paired['nb_no_show']
@@ -268,7 +268,7 @@ def test_paired_rows_never_pool_across_fleet_sizes():
     rows += [dict(r, nb_cars=24) for r in synthetic_rows(effect=0.10,
                                                          world_spread=0.05)]
     paired = [r for r in aggregate.paired_rows(ablation.detail_rows(rows))
-              if r['metric'] == 'exact_satisfaction']
+              if r['metric'] == 'satisfied_rate']
 
     assert len(paired) == 2, f'one row per fleet size, got {len(paired)}'
     by_fleet = {r['nb_cars']: r for r in paired}
@@ -281,7 +281,7 @@ def test_metric_rows_describe_the_distribution_over_the_seeds():
     """`summary_mean.csv`: one row per (world, method, metric), n = the seeds."""
     rows = synthetic_rows(effect=0.01, world_spread=0.2)
     out = [r for r in aggregate.metric_rows(rows)
-           if r['metric'] == 'exact_satisfaction']
+           if r['metric'] == 'satisfied_rate']
 
     assert {r['method'] for r in out} == {'greedy', 'multistation'}
     for row in out:
@@ -360,9 +360,9 @@ def test_a_single_seed_still_produces_means_without_intervals():
 def test_render_paired_table_reads_as_a_table():
     rows = synthetic_rows(effect=0.01, world_spread=0.2)
     paired = aggregate.paired_rows(ablation.detail_rows(rows))
-    text = aggregate.render_paired_table(paired, 'exact_satisfaction')
+    text = aggregate.render_paired_table(paired, 'satisfied_rate')
 
-    assert 'Exact satisfaction' in text and '95% CI' in text
+    assert 'Demands satisfied' in text and '95% CI' in text
     assert 'Multi-station search' in text
     assert aggregate.render_paired_table(paired, 'wall_time_s').startswith('No ')
 

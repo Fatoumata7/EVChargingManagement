@@ -295,6 +295,9 @@ class RunStore:
         """Append a finished case to the manifest (written at every case: an
         interrupted run stays usable)."""
         manifest = self.read_manifest()
+        # A resumed case replaces its entry rather than being counted twice.
+        manifest['cases'] = [c for c in manifest['cases']
+                             if c.get('tag') != entry.get('tag')]
         manifest['cases'].append(dict(entry))
         manifest['nb_cases_done'] = len(manifest['cases'])
         self.write_manifest(manifest)

@@ -256,11 +256,11 @@ def _summary(method: str, **values) -> dict:
 
 
 def test_ladder_rows_measure_consecutive_steps_only():
-    rows = [_summary(m, exact_satisfaction=v) for m, v in
+    rows = [_summary(m, satisfied_rate=v) for m, v in
             (('greedy', 0.50), ('multistation', 0.60),
              ('multistation_rep', 0.66), ('bramev', 0.72))]
     detail = [r for r in ablation.ladder_rows(rows)
-              if r['metric'] == 'exact_satisfaction']
+              if r['metric'] == 'satisfied_rate']
     assert len(detail) == 3
     by_component = {r['component']: r for r in detail}
     assert round(by_component['Multi-station search']['delta'], 6) == 0.10
@@ -272,20 +272,20 @@ def test_ladder_rows_measure_consecutive_steps_only():
 
 
 def test_improvement_follows_the_metric_direction():
-    rows = [_summary('greedy', rate_abs=0.30, exact_satisfaction=0.50),
-            _summary('multistation', rate_abs=0.20, exact_satisfaction=0.40)]
+    rows = [_summary('greedy', rate_abs=0.30, satisfied_rate=0.50),
+            _summary('multistation', rate_abs=0.20, satisfied_rate=0.40)]
     detail = {r['metric']: r for r in ablation.ladder_rows(rows)}
     assert detail['rate_abs']['delta'] < 0 and detail['rate_abs']['improvement'], \
         'fewer no-shows is a gain'
-    assert not detail['exact_satisfaction']['improvement'], \
+    assert not detail['satisfied_rate']['improvement'], \
         'less satisfaction is not a gain'
 
 
 def test_variant_rows_compare_to_the_full_method():
-    rows = [_summary('bramev', exact_satisfaction=0.70),
-            _summary('bramev_global_rep', exact_satisfaction=0.60)]
+    rows = [_summary('bramev', satisfied_rate=0.70),
+            _summary('bramev_global_rep', satisfied_rate=0.60)]
     detail = [r for r in ablation.variant_rows(rows)
-              if r['metric'] == 'exact_satisfaction']
+              if r['metric'] == 'satisfied_rate']
     assert len(detail) == 1
     row = detail[0]
     assert row['from_method'] == 'bramev' and row['to_method'] == 'bramev_global_rep'
@@ -297,10 +297,10 @@ def test_variant_rows_compare_to_the_full_method():
 def test_mean_rows_report_robustness_not_only_the_average():
     rows = []
     for world, (before, after) in enumerate([(0.50, 0.60), (0.50, 0.45)]):
-        rows.append(_summary('greedy', exact_satisfaction=before) | {'nb_cars': world})
-        rows.append(_summary('multistation', exact_satisfaction=after) | {'nb_cars': world})
+        rows.append(_summary('greedy', satisfied_rate=before) | {'nb_cars': world})
+        rows.append(_summary('multistation', satisfied_rate=after) | {'nb_cars': world})
     means = [r for r in ablation.mean_rows(ablation.ladder_rows(rows))
-             if r['metric'] == 'exact_satisfaction']
+             if r['metric'] == 'satisfied_rate']
     assert len(means) == 1
     assert means[0]['nb_worlds'] == 2
     assert means[0]['share_improved'] == 0.5, \
@@ -308,8 +308,8 @@ def test_mean_rows_report_robustness_not_only_the_average():
 
 
 def test_duplicate_methods_in_summary_are_rejected():
-    rows = [_summary('greedy', exact_satisfaction=0.5),
-            _summary('greedy', exact_satisfaction=0.6)]
+    rows = [_summary('greedy', satisfied_rate=0.5),
+            _summary('greedy', satisfied_rate=0.6)]
     try:
         ablation.ladder_rows(rows)
     except ValueError as exc:
@@ -319,7 +319,7 @@ def test_duplicate_methods_in_summary_are_rejected():
 
 
 def test_incomparable_run_produces_no_table():
-    rows = [_summary('bramev', exact_satisfaction=0.7)]
+    rows = [_summary('bramev', satisfied_rate=0.7)]
     assert ablation.detail_rows(rows) == []
 
 
@@ -573,13 +573,13 @@ def test_baseline_rows_compare_bramev_to_each_baseline():
     """
     world = {'scenario': 'balance', 'nb_cars': 50, 'seed': 1,
              'world_seed': 1, 'grid_seed': 1}
-    rows = [dict(world, method='bramev', exact_satisfaction=0.90),
-            dict(world, method='nearest_available', exact_satisfaction=0.80),
-            dict(world, method='min_waiting', exact_satisfaction=0.70),
-            dict(world, method='load_aware', exact_satisfaction=0.95),
-            dict(world, method='random_feasible', exact_satisfaction=0.60)]
+    rows = [dict(world, method='bramev', satisfied_rate=0.90),
+            dict(world, method='nearest_available', satisfied_rate=0.80),
+            dict(world, method='min_waiting', satisfied_rate=0.70),
+            dict(world, method='load_aware', satisfied_rate=0.95),
+            dict(world, method='random_feasible', satisfied_rate=0.60)]
 
-    metric = ablation.METRICS_BY_COLUMN['exact_satisfaction']
+    metric = ablation.METRICS_BY_COLUMN['satisfied_rate']
     produites = ablation.baseline_rows(rows, [metric])
     par_methode = {r['from_method']: r for r in produites}
 

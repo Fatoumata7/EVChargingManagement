@@ -83,7 +83,7 @@ def plot_metric_comparison(
 
 
 # =========================================================
-# 1. Exact Satisfaction
+# 1. Planning coverage, exact window (formerly "exact satisfaction")
 # =========================================================
 
 def plot_exact_satisfaction(
@@ -98,15 +98,15 @@ def plot_exact_satisfaction(
         exact_satif_greedy_list,
         exact_satif_bramev_list,
         nb_car_list,
-        ylabel='Satisfaction (%)',
-        title='Exact Satisfaction (%)',
+        ylabel='Coverage (%)',
+        title='Planning coverage — exact window (%)',
         colors=colors,
         scenario_name=scenario_name
     )
 
 
 # =========================================================
-# 2. Needs Satisfaction
+# 2. Planning coverage, volume (formerly "needs satisfaction")
 # =========================================================
 
 def plot_needs_satisfaction(
@@ -121,8 +121,8 @@ def plot_needs_satisfaction(
         needs_satif_greedy_list,
         needs_satif_bramev_list,
         nb_car_list,
-        ylabel='Satisfaction (%)',
-        title='Needs Satisfaction (%)',
+        ylabel='Coverage (%)',
+        title='Planning coverage — volume (%)',
         colors=colors,
         scenario_name=scenario_name
     )

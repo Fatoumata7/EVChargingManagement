@@ -12,9 +12,10 @@ def nominal_arrival(t_n, lead, distance, config) -> int:
     """
     Nominal arrival slot of a demand: emission + planning horizon + travel time.
 
-    Single source of truth. The formula used to be recomputed in four places
-    (`Station.process_demands`, `Car.compute_utility`,
-    `Car.update_schedule_requested`, `Simulation._handle_offers`) — with an
+    Single source of truth, read by the station ILP (`Station.process_demands`),
+    the utility (`Car.compute_utility`), the requested window of the planning
+    coverage and the waiting-time measure (`Simulation`). It used to be
+    recomputed in four places — with an
     `int()` on the station side and a `math.ceil()` everywhere else. On this
     grid the trip takes less than one slot, so the two views diverged
     systematically by one slot: the station offered `t_n` where the vehicle

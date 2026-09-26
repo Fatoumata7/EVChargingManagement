@@ -56,10 +56,8 @@ def create_station_occupancy_dataframe(societies):
         for station in society.stations:
 
             # occupancy rate of each charger
-            occupancy_rates = np.mean(
-                station.schedule != -1,
-                axis=1
-            )
+            # Cumulative per charger: `schedule` is emptied by every release.
+            occupancy_rates = station.cumulative_occupancy_by_charger()
 
             row = {
                 "id_society": society.f_id,

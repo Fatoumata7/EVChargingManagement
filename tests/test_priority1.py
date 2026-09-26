@@ -57,7 +57,8 @@ def comparable(results):
     """Metrics independent from machine time (latencies vary)."""
     met = results['metrics']
     return {
-        'satisfaction': met['user_request_satisfaction'],
+        'coverage':     met['planning_coverage'],
+        'service':      {k: v for k, v in met['service'].items()},
         'travel':       met['mean_travel_distance_km'],
         'waiting':      met['mean_waiting_time_h'],
         'station_kwh':  (met['station_energy_planned_kWh'],
@@ -1312,8 +1313,8 @@ def test_10_reputation_no_longer_collapses_service():
     disabled = run('multistation')
     enabled = run('multistation_rep')
 
-    s_disabled = disabled.metrics.report()['user_request_satisfaction']['exact_satisfaction']
-    s_enabled = enabled.metrics.report()['user_request_satisfaction']['exact_satisfaction']
+    s_disabled = disabled.metrics.report()['service']['satisfied_rate']
+    s_enabled = enabled.metrics.report()['service']['satisfied_rate']
     assert s_enabled >= 0.95 * s_disabled, (
         f"reputation collapses the service: {s_enabled:.3f} vs {s_disabled:.3f}"
     )

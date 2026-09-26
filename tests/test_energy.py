@@ -1,11 +1,11 @@
 """
-test_energy.py — Planned vs delivered energy, and the migration of old runs.
+test_energy.py — Planned vs delivered energy.
 
     python -m tests.test_energy
 
 Covers the slot/hour unit fix (`kwh_per_slot`), the split between the energy
 booked by the reservations and the energy the charging slots actually added,
-and `src.pipeline.energy_fix` for results written before that split.
+and the refusal of results written before that split.
 """
 
 import copy
@@ -15,7 +15,7 @@ import traceback
 
 from src.experiments.config import SimulationConfig
 from src.metrics.metrics import kwh_per_km, kwh_per_slot
-from src.pipeline import energy_fix, tables
+from src.pipeline import tables
 from tests.test_priority1 import run_sim, small_config
 
 
@@ -90,82 +90,29 @@ def test_summary_carries_both_energies():
     row = tables.summary_row(result)
     assert row['energy_planned_kwh'] >= row['energy_delivered_kwh'] > 0
     assert 0 < row['energy_delivery_rate'] <= 1
-    assert row['energy_exact'] is True
     stations = tables.station_table(result)
     assert abs(sum(r['energy_delivered_kwh'] for r in stations)
                - row['energy_delivered_kwh']) < 1e-2
 
 
 # ----------------------------------------------------------------------
-# Migration of a legacy result
+# Results written by an older pipeline
 # ----------------------------------------------------------------------
 
-def _legacy_result(sim):
-    """A current result, rewritten the way the old code stored its energy."""
-    result = json.loads(json.dumps(sim.results(), default=str))
+def test_legacy_result_is_refused():
+    """The old `station_demand_kWh` (12x too small, no-shows left out) is not read."""
+    result = json.loads(json.dumps(_run().results(), default=str))
     met = result['metrics']
     planned = met.pop('station_energy_planned_kWh')
     met.pop('station_energy_delivered_kWh')
-    met['station_demand_kWh'] = {sid: round(e / 12, 3)
-                                 for sid, e in planned.items()}
-    return result
-
-
-def test_legacy_result_is_refused_until_migrated():
-    legacy = _legacy_result(_run())
-    try:
-        tables.summary_row(legacy)
-    except KeyError as exc:
-        assert 'energy_fix' in str(exc)
-    else:
-        raise AssertionError('a legacy result must not be read silently')
-
-
-def test_estimate_prices_slot_counts_at_the_accepted_cars_mean():
-    sim = _run()
-    legacy = _legacy_result(sim)
-    acceptances = [{'car_id': str(r.car_id), 'station_id': str(r.station_id)}
-                   for r in sim.metrics.acceptance_records]
-    car_kwh = {c.idx: kwh_per_slot(c.charging_power, sim.config)
-               for c in sim.cars}
-    migrated = energy_fix.migrate_result(copy.deepcopy(legacy), None,
-                                         acceptances, car_kwh)
-    met = migrated['metrics']
-    assert 'station_demand_kWh' not in met
-    for station in migrated['stations']:
-        sid = str(station['station_id'])
-        accepted = [car_kwh[int(r['car_id'])] for r in acceptances
-                    if r['station_id'] == sid]
-        if not accepted:
-            continue
-        e_m = sum(accepted) / len(accepted)
-        assert abs(met['station_energy_planned_kWh'][sid]
-                   - station['nb_slots_reserved'] * e_m
-                   * energy_fix.PLANNED_FACTOR) < 1e-3
-        assert abs(met['station_energy_delivered_kWh'][sid]
-                   - station['nb_slots_served'] * e_m
-                   * energy_fix.DELIVERED_FACTOR) < 1e-3
-    assert met['energy_exact'] is False
-    assert migrated['energy_fix']['method'].startswith('estimated')
-    assert tables.summary_row(migrated)['energy_exact'] is False
-
-
-def test_migration_with_replay_is_exact():
-    sim = _run()
-    legacy = _legacy_result(sim)
-    fresh = json.loads(json.dumps(_run().results(), default=str))
-    assert energy_fix.check_replay(legacy, fresh) == []
-    migrated = energy_fix.migrate_result(copy.deepcopy(legacy), fresh)
-    for key in ('station_energy_planned_kWh', 'station_energy_delivered_kWh'):
-        assert migrated['metrics'][key] == fresh['metrics'][key]
-    assert migrated['metrics']['energy_exact'] is True
-
-
-def test_replay_divergence_is_detected():
-    legacy = _legacy_result(_run())
-    fresh = json.loads(json.dumps(_run().results(), default=str))
-    fresh['stations'][0]['nb_slots_served'] += 1
-    assert 'stations' in energy_fix.check_replay(legacy, fresh)
+    met['station_demand_kWh'] = {sid: round(e / 12, 3) for sid, e in planned.items()}
+    for reader in (tables.summary_row, tables.station_table):
+        try:
+            reader(result)
+        except KeyError as exc:
+            assert 'older version' in str(exc)
+        else:
+            raise AssertionError(f'{reader.__name__} read a legacy result')
 
 
 # ----------------------------------------------------------------------

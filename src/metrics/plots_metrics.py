@@ -321,31 +321,40 @@ def plot_station_demand(metrics, societies, scenario_name, \
 # ============================================================
 
 def plot_user_satisfaction(metrics, scenario_name, approach_name, nb_car,\
-                           figsize=(6, 5)):
+                           figsize=(8, 5)):
     """
-    Display the user satisfaction metrics.
+    Display the service rendered next to the planning coverage.
+
+    The first two bars say what the users got (demands satisfied, energy
+    received / requested); the last two how well the plan covered their windows,
+    which counts a no-show or a cancellation as covered.
     """
 
-    sat = metrics.user_request_satisfaction()
+    srv = metrics.service_report()
+    cov = metrics.planning_coverage()
 
     labels = [
-        "Exact Satisfaction",
-        "Needs Satisfaction"
+        "Demands\nsatisfied",
+        "Energy\nserved",
+        "Plan coverage\n(exact)",
+        "Plan coverage\n(volume)",
     ]
 
     values = [
-        sat["exact_satisfaction"] * 100,
-        sat["needs_satisfaction"] * 100
+        (srv["satisfied_rate"] or 0.) * 100,
+        (srv["service_ratio_mean"] or 0.) * 100,
+        cov["plan_coverage_exact"] * 100,
+        cov["plan_coverage_volume"] * 100,
     ]
 
     fig, ax = plt.subplots(figsize=figsize)
 
-    bars = ax.bar(labels, values, color=['blue', 'green'], alpha=0.7)
+    bars = ax.bar(labels, values, color=['blue', 'green', 'gray', 'silver'], alpha=0.7)
     scenario_tag = f"[{scenario_name[:3].upper()}-{approach_name.upper()}@{nb_car}]"
 
     ax.set_ylim(0, 100)
-    ax.set_ylabel("Satisfaction (%)", fontweight='bold')
-    ax.set_title(f"{scenario_tag} User Request Satisfaction", fontweight='bold')
+    ax.set_ylabel("%", fontweight='bold')
+    ax.set_title(f"{scenario_tag} Service rendered vs planning coverage", fontweight='bold')
 
     for bar, val in zip(bars, values):
         ax.text(
@@ -599,20 +608,24 @@ def plot_station_strategies(societies, sim_config, scenario_name, approach_name,
 # 7. Dashboard complet
 # ============================================================
 
-def plot_all_metrics(metrics, breakdown_tracker=None):
+def plot_all_metrics(metrics, societies, scenario_name, approach_name, nb_car,
+                     breakdown_tracker=None):
     """
     Lance toutes les visualisations.
+
+    Every plot takes the case identity for its title: the former signature
+    `(metrics, breakdown_tracker)` called them without it and failed.
     """
 
-    plot_station_demand(metrics)
+    plot_station_demand(metrics, societies, scenario_name, approach_name, nb_car)
 
-    plot_user_satisfaction(metrics)
+    plot_user_satisfaction(metrics, scenario_name, approach_name, nb_car)
 
-    plot_travel_waiting(metrics)
+    plot_travel_waiting(metrics, scenario_name, approach_name, nb_car)
 
-    plot_response_times(metrics)
+    plot_response_times(metrics, scenario_name, approach_name, nb_car)
 
-    plot_processing_times(metrics)
+    plot_processing_times(metrics, scenario_name, approach_name, nb_car)
 
     if breakdown_tracker is not None:
         plot_breakdowns(breakdown_tracker)
@@ -662,9 +675,9 @@ def plot_society_station_occupancy(societies, scenario_name,
 
         for station in society.stations:
 
-            occ_rate = np.mean(
-                station.schedule != -1
-            )
+            # Cumulative: `schedule` is emptied by every release, so reading
+            # it at the end of a run gave (almost) zero for every station.
+            occ_rate = float(np.mean(station.cumulative_occupancy_by_charger()))
 
             station_ids.append(station.m)
             station_occ.append(occ_rate)
@@ -915,161 +928,6 @@ def plot_station_no_show(
     ax.legend(
         handles=legend_elements,
         title="Companies"
-    )
-
-    plt.tight_layout()
-    plt.show()
-    plt.close()
-
-
-def plot_society_station_occupancy(societies, scenario_name,
-                 approach_name, nb_car):
-    """
-    Display, for each company, the mean occupancy rate of each of its
-    stations.
-
-    - 4 subplots (2x2)
-    - one bar = one station
-    - red line = mean over the stations of the company
-    - same visual bar width on every subplot
-    - y axis between 0 and 1.1
-    """
-
-    # Largest number of stations across the companies
-    max_nb_stations = max(
-        len(society.stations)
-        for society in societies
-    )
-
-    fig, axs = plt.subplots(
-        2,
-        2,
-        figsize=(12, 10)
-    )
-
-    axs = axs.flatten()
-
-    for idx, society in enumerate(societies):
-
-        ax = axs[idx]
-
-        station_ids = []
-        station_occ = []
-
-        # --------------------------------------------
-        # Taux moyen d'occupation par station
-        # --------------------------------------------
-
-        for station in society.stations:
-
-            occ_rate = np.mean(
-                station.schedule != -1
-            )
-
-            station_ids.append(station.m)
-            station_occ.append(occ_rate)
-
-        if len(station_occ) == 0:
-            continue
-
-        mean_society_occ = np.mean(station_occ)
-
-        # --------------------------------------------
-        # Barres
-        # --------------------------------------------
-
-        x_pos = np.arange(len(station_ids))
-
-        bars = ax.bar(
-            x_pos,
-            station_occ,
-            width=0.6,
-            alpha=0.8
-        )
-
-        # Same horizontal scale for all
-        ax.set_xlim(
-            -0.5,
-            max_nb_stations - 0.5
-        )
-
-        # Station IDs as tick labels
-        ax.set_xticks(x_pos)
-
-        ax.set_xticklabels(
-            [f"S{sid}" for sid in station_ids],
-            rotation=45
-        )
-
-        # --------------------------------------------
-        # Ligne moyenne
-        # --------------------------------------------
-
-        ax.axhline(
-            mean_society_occ,
-            color="red",
-            linestyle="--",
-            linewidth=2,
-            label=f"Mean = {mean_society_occ:.2f}"
-        )
-
-        # --------------------------------------------
-        # Valeurs sur les barres
-        # --------------------------------------------
-
-        for bar in bars:
-
-            height = bar.get_height()
-
-            if height > 0:
-
-                ax.text(
-                    bar.get_x() + bar.get_width() / 2,
-                    height + 0.02,
-                    f"{height:.2f}",
-                    ha="center",
-                    va="bottom",
-                    fontsize=9,
-                    fontweight="bold"
-                )
-
-        # --------------------------------------------
-        # Mise en forme
-        # --------------------------------------------
-
-        society_id = getattr(
-            society,
-            "society_id",
-            getattr(society, "f_id", idx)
-        )
-
-        ax.set_title(
-            f"Company {society_id}",
-            fontweight="bold"
-        )
-
-        ax.set_xlabel("Station")
-        ax.set_ylabel("Mean Occupancy Rate")
-
-        ax.set_ylim(0, 1.1)
-
-        ax.grid(
-            axis="y",
-            linestyle="--",
-            alpha=0.3
-        )
-
-        ax.legend()
-
-    # Hide the unused subplots
-    for idx in range(len(societies), len(axs)):
-        axs[idx].set_visible(False)
-
-    scenario_tag = f"[{scenario_name[:3].upper()}-{approach_name.upper()}@{nb_car}]"
-    fig.suptitle(
-        f"{scenario_tag} Average Charger Occupancy Rate per Station",
-        fontsize=14,
-        fontweight="bold"
     )
 
     plt.tight_layout()

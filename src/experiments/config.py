@@ -12,7 +12,10 @@ class SimulationConfig:
 
     # ------------------------------------------------------------------ TIME
     SLOT_DURATION = 5               # 5 minutes, must divide 60
-    NB_SLOTS_IN_ONE_HOUR = 12       # 60 / SLOT_DURATION
+    # Derived, never set by hand: a slot duration changed without it would
+    # silently keep 12 slots per hour in every hour <-> slot conversion.
+    NB_SLOTS_IN_ONE_HOUR = 60 // SLOT_DURATION
+    assert 60 % SLOT_DURATION == 0, "SLOT_DURATION must divide 60"
 
     # ------------------------------------------------------------------ VISUALIZATION
     VIS_DELAY = 1
@@ -21,11 +24,11 @@ class SimulationConfig:
     GAMMA = 0.1
 
     # ------------------------------------------------------------------ CAR
-    # Initial SoC: between 0.3 and 1.0 (no nearly empty car at the start)
+    # Initial SoC: uniform between 30% and 80% (no nearly empty car at the start)
     CAR_INIT_SOC = {'low': 0.30, 'high': 0.80}
 
-    # Charging trigger threshold: mean 20%, max 35%
-    # → a car never looks for a charge above 35% of battery
+    # Charging trigger threshold: truncated normal, mean 35%, sd 6%, in
+    # [25%, 70%] of the autonomy — a car never asks for a charge above 70%
     CAR_SOC_THRESHOLD_PARAMS = {
         'mean': 0.35,
         'sd':   0.06,
@@ -43,15 +46,17 @@ class SimulationConfig:
 
     LATE_CANCEL_REF = 12    # late cancellation if < 1h = 12 slots
 
-    # Energy consumption: 10 kWh / 100 km
+    # Energy consumption: 10 kWh / 100 km, i.e. 0.1 kWh/km. Every energy of
+    # the model derives from it (see `metrics.kwh_per_km` / `kwh_per_slot`);
+    # 'quantity_kW' is an energy in kWh despite its historical name.
     ENERGY_CONSUMPTION = {
-        'quantity_kW':     10,          # kWh (5)
-        'distance_unit_m': 100 * 1e3    # 100 km in meters (1000e3)
+        'quantity_kW':     10,          # kWh
+        'distance_unit_m': 100 * 1e3    # per 100 km, in metres
     }
 
     # ------------------------------------------------------------------ BREAKDOWN
     # Threshold below which the car counts as broken down (soc ≈ 0)
-    SOC_BREAKDOWN_THRESHOLD = 3 * 1e3   # 1% → ~3 km left
+    SOC_BREAKDOWN_THRESHOLD = 3 * 1e3   # 3 km left (~0.6-1% of 300-500 km)
 
     # ------------------------------------------------------------------ SCENARIOS
     # Single source of truth for the behaviour probabilities.
@@ -62,8 +67,11 @@ class SimulationConfig:
     # Convention:
     #   pres  : shows up and honours the reservation
     #   abs   : complete no-show (slot never released before t_dep)
-    #   early : early cancellation  (> LATE_CANCEL_REF slots before arrival)
-    #   late  : late cancellation   (<= LATE_CANCEL_REF slots before arrival)
+    #   early : cancellation intent realised as soon as possible
+    #   late  : cancellation intent realised at the last moment
+    # Whether a cancellation is *observed* early or late depends on the time
+    # left, against `late_cancel_threshold(lead)` = min(LATE_CANCEL_REF,
+    # LATE_CANCEL_FRACTION x lead), not against LATE_CANCEL_REF alone.
     #
     # Severity grows from `optimistic` to `pessimistic` on the two dimensions
     # that cost the operator (`abs` and `late`), and `noise` is identical
@@ -77,7 +85,7 @@ class SimulationConfig:
 
     def __init__(self):
 
-        self.TOTAL_TIME = 12 * 4 # 12 * 24 * 5        # 12 slots of 5 min in one hour, 4 hours
+        self.TOTAL_TIME = 12 * 4        # 4 hours of 5-minute slots (the pipeline sets 5 days)
 
         # ------------------------------------------------------------------ REPRODUCIBILITY
         # Single seed of the experiment. Set through set_seed(); recorded with
@@ -136,14 +144,21 @@ class SimulationConfig:
         self.NB_CHARG_SPOT = {'low': 4, 'high': 6}      # number of chargers per station
         self.SOCIETY_UPDATE_INTERVAL = 12 * 2          # strategy update every <nb_slot>, 2 hours
 
-        # Reduced speed: 50 km/h in a dense urban area
-        # 50 km/h × (5/60) h/slot = 4.167 km/slot = 4.167 m/slot
+        # Maximal speed: 50 km/h in a dense urban area
+        # 50 km/h x (5/60) h/slot = 4.167 km/slot = 4 167 m/slot.
+        # A vehicle moves on one axis per slot, by a step drawn in
+        # [0, CAR_SPEED]: its mean speed is about half of it, while
+        # `utils.nominal_arrival` assumes CAR_SPEED in straight line — see the
+        # README, "Model assumptions".
         self.CAR_SPEED = 4.167e3             # m / slot
 
-        # Search radius for the emission of a demand
-        self.MIN_RAY_SEARCH = 0        # minimal search radius for a station (5km)
-        self.MAX_RAY_SEARCH = 1 * 1e3
-        self.COEFF_MAX_DIST = 0.5            # coefficient of the max distance defined as max_ray_search
+        # Search radius of a demand: r_n ~ U(MIN, COEFF_MAX_DIST x range left),
+        # capped at MAX_RAY_SEARCH. With a range of a hundred km or more the
+        # cap binds almost always (measured: 99 % of the demands get exactly
+        # MAX_RAY_SEARCH), so r_n is in practice a constant 1 km.
+        self.MIN_RAY_SEARCH = 0              # m
+        self.MAX_RAY_SEARCH = 1 * 1e3        # m
+        self.COEFF_MAX_DIST = 0.5
 
         # ------------------------------------------------------------------ SEARCH RETRY
         # A vehicle that finds neither an eligible station, nor an offer, nor a
@@ -169,8 +184,8 @@ class SimulationConfig:
         self.BASE_CANCEL_PROB = {
             'pres':  75,    # present and honours the reservation
             'abs':   10,    # complete no-show
-            'early':  9,    # early cancellation (> 2h before)
-            'late':   6,    # late cancellation (< 2h before)
+            'early':  9,    # cancels as soon as possible
+            'late':   6,    # cancels at the last moment
             'noise':  0.15  # noise ±15%
         }
         assert (self.BASE_CANCEL_PROB['pres'] + self.BASE_CANCEL_PROB['abs'] +

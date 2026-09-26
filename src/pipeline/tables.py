@@ -26,7 +26,18 @@ SUMMARY_FIELDS: tuple[str, ...] = (
     'method_label', 'method_family', 'broadcast', 'reputation', 'adaptation',
     'offer_choice', 'alpha_mode', 'reputation_scope', 'score_weighting',
     # satisfaction
-    'exact_satisfaction', 'needs_satisfaction', 'nb_cars_evaluated',
+    # service actually rendered, demand by demand: the four groups partition
+    # the demands (satisfied + abandoned + cancelled + in_progress)
+    'nb_demands_satisfied', 'nb_demands_cancelled', 'nb_demands_in_progress',
+    'satisfied_rate', 'cancelled_rate', 'in_progress_rate',
+    'demands_cancelled_early', 'demands_cancelled_late', 'demands_no_show',
+    'demands_breakdown', 'demands_missed',
+    'service_ratio_mean', 'service_ratio_mean_satisfied',
+    # planning coverage: how well the calendar covered the requested windows
+    # (formerly exact_satisfaction / needs_satisfaction — a plan, not a service)
+    'plan_coverage_exact', 'plan_coverage_volume', 'nb_cars_evaluated',
+    # model assumption: an exhausted retry budget excludes the vehicle
+    'nb_cars_excluded', 'excluded_car_share', 'excluded_time_share',
     'mean_travel_distance_km', 'mean_waiting_time_min',
     # demands & latency
     'nb_demands', 'nb_demands_answered', 'nb_demands_confirmed',
@@ -46,13 +57,14 @@ SUMMARY_FIELDS: tuple[str, ...] = (
     'nb_offer_issued', 'nb_offer_expired', 'nb_confirm_refused',
     'nb_stale_confirm', 'nb_station_level_rejections', 'nb_station_requests',
     'station_rejection_rate',
-    'mean_occupancy_rate', 'mean_service_rate', 'nb_slots_reserved',
-    'nb_slots_served', 'slot_waste_rate',
+    'mean_booking_rate', 'mean_occupancy_rate', 'mean_service_rate',
+    'nb_slots_reserved', 'nb_slots_held', 'nb_slots_served',
+    'slot_waste_rate', 'held_idle_rate',
     # energy: booked by the reservations vs actually put into the batteries
     'energy_planned_kwh', 'energy_delivered_kwh', 'energy_delivery_rate',
-    'energy_exact',
     # health of the run
-    'nb_breakdowns', 'nb_diagnostics', 'invariant_ok',
+    'nb_breakdowns', 'nb_ilp_not_optimal', 'nb_ilp_failed',
+    'nb_diagnostics', 'invariant_ok',
 )
 
 
@@ -70,8 +82,22 @@ def _rate(numerator: float | None, denominator: float | None) -> float | None:
     return round(float(numerator) / float(denominator), 4)
 
 
+def _held_idle_rate(stations: Sequence[Mapping[str, Any]]) -> float | None:
+    """
+    Share of the charger-slots held at their own time and yet not charged:
+    what the operator actually lost to no-shows and late arrivals. Unlike
+    `slot_waste_rate`, a slot released in time and booked again is not counted.
+    """
+    held = sum(s.get('nb_slots_held', 0) for s in stations)
+    served = sum(s.get('nb_slots_served', 0) for s in stations)
+    if held <= 0:
+        return None
+    return round(1. - served / held, 4)
+
+
 def _waste_rate(stations: Sequence[Mapping[str, Any]]) -> float | None:
-    """Share of the reserved charger-slots that were never used. `None` if none."""
+    """Share of the booked charger-slots never charged (bookings, so a slot
+    released and booked again counts twice). `None` if none."""
     reserved = sum(s.get('nb_slots_reserved', 0) for s in stations)
     served = sum(s.get('nb_slots_served', 0) for s in stations)
     if reserved <= 0:
@@ -79,20 +105,35 @@ def _waste_rate(stations: Sequence[Mapping[str, Any]]) -> float | None:
     return round(1. - served / reserved, 4)
 
 
-def _station_energy(result: Mapping[str, Any]) -> tuple[dict, dict]:
-    """
-    `(planned, delivered)` kWh per station, as stored in a result.
+#: Keys a result must carry to be read by this version of the tables.
+REQUIRED_METRICS = ('station_energy_planned_kWh', 'station_energy_delivered_kWh',
+                    'planning_coverage', 'service')
 
-    A result written before the two were separated only carries
-    `station_demand_kWh`, which is off by the slot/hour factor and mixes the
-    two notions: it is refused rather than silently mapped onto either.
+
+def check_result_schema(result: Mapping[str, Any]) -> None:
     """
-    met = result['metrics']
-    if 'station_energy_planned_kWh' not in met:
+    Refuse a result written by an older version of the pipeline.
+
+    Such results carry a `station_demand_kWh` 12 times too small that left the
+    no-shows out, and `exact_satisfaction` / `needs_satisfaction`, which measure
+    the planning coverage rather than the service. Mapping them silently onto
+    the current columns would mix two definitions in one table: the campaign
+    has to be run again.
+    """
+    missing = [k for k in REQUIRED_METRICS if k not in result.get('metrics', {})]
+    if 'excluded' not in result:
+        missing.append('excluded')
+    if missing:
         raise KeyError(
-            "result has no 'station_energy_planned_kWh' (written before the "
-            "planned/delivered energy split): run "
-            "`python -m src.pipeline.energy_fix <run dir>` on its run first")
+            f"result written by an older version of the pipeline (missing "
+            f"{missing}): its energy and satisfaction columns do not share the "
+            f"current definitions — run the campaign again")
+
+
+def _station_energy(result: Mapping[str, Any]) -> tuple[dict, dict]:
+    """`(planned, delivered)` kWh per station, as stored in a result."""
+    check_result_schema(result)
+    met = result['metrics']
     return met['station_energy_planned_kWh'], met['station_energy_delivered_kWh']
 
 
@@ -127,9 +168,12 @@ def method_flags(result: Mapping[str, Any]) -> dict:
 
 def summary_row(result: Mapping[str, Any]) -> dict:
     """Aggregate the result of a case into one row of `summary.csv`."""
+    check_result_schema(result)
     cfg = result['config']
     met = result['metrics']
-    sat = met['user_request_satisfaction']
+    cov = met['planning_coverage']
+    srv = met['service']
+    excl = result['excluded']
     lat = met['latency']
     beh = result['behaviors']
     stations = result['stations']
@@ -149,9 +193,25 @@ def summary_row(result: Mapping[str, Any]) -> dict:
         'total_time':   cfg['total_time'],
         'wall_time_s':  result.get('wall_time_s'),
 
-        'exact_satisfaction':      sat['exact_satisfaction'],
-        'needs_satisfaction':      sat['needs_satisfaction'],
-        'nb_cars_evaluated':       sat['nb_cars_evaluated'],
+        'nb_demands_satisfied':    srv['nb_demands_satisfied'],
+        'nb_demands_cancelled':    srv['nb_demands_cancelled'],
+        'nb_demands_in_progress':  srv['nb_demands_in_progress'],
+        'satisfied_rate':          srv['satisfied_rate'],
+        'cancelled_rate':          srv['cancelled_rate'],
+        'in_progress_rate':        srv['in_progress_rate'],
+        'demands_cancelled_early': srv['outcome_counts']['cancelled_early'],
+        'demands_cancelled_late':  srv['outcome_counts']['cancelled_late'],
+        'demands_no_show':         srv['outcome_counts']['no_show'],
+        'demands_breakdown':       srv['outcome_counts']['breakdown'],
+        'demands_missed':          srv['outcome_counts']['missed'],
+        'service_ratio_mean':      srv['service_ratio_mean'],
+        'service_ratio_mean_satisfied': srv['service_ratio_mean_satisfied'],
+        'plan_coverage_exact':     cov['plan_coverage_exact'],
+        'plan_coverage_volume':    cov['plan_coverage_volume'],
+        'nb_cars_evaluated':       cov['nb_cars_evaluated'],
+        'nb_cars_excluded':        excl['nb_cars_excluded'],
+        'excluded_car_share':      excl['excluded_car_share'],
+        'excluded_time_share':     excl['excluded_time_share'],
         'mean_travel_distance_km': met['mean_travel_distance_km'],
         'mean_waiting_time_min':   round(met['mean_waiting_time_h'] * 60, 4),
         'mean_processing_ms':      (round(sum(proc.values()) / len(proc), 3)
@@ -168,6 +228,8 @@ def summary_row(result: Mapping[str, Any]) -> dict:
         'nb_offer_expired':            total('nb_offer_expired'),
         'nb_confirm_refused':          total('nb_confirm_refused'),
         'nb_stale_confirm':            total('nb_stale_confirm'),
+        'nb_ilp_not_optimal':          total('nb_ilp_not_optimal'),
+        'nb_ilp_failed':               total('nb_ilp_failed'),
         'nb_station_level_rejections': total('nb_station_level_rejections'),
         'nb_station_requests':         total('nb_request'),
         # Station side: share of the demands *received by a station* that its
@@ -177,15 +239,19 @@ def summary_row(result: Mapping[str, Any]) -> dict:
         # comparable with the demand-side rates below.
         'station_rejection_rate': _rate(total('nb_station_level_rejections'),
                                         total('nb_request')),
+        'mean_booking_rate': round(
+            sum(s['booking_rate'] for s in stations) / nb_stations, 4),
         'mean_occupancy_rate': round(
             sum(s['occupancy_rate'] for s in stations) / nb_stations, 4),
         'mean_service_rate': round(
             sum(s.get('service_rate', 0.) for s in stations) / nb_stations, 4),
         'nb_slots_reserved': total('nb_slots_reserved'),
+        'nb_slots_held':     total('nb_slots_held'),
         'nb_slots_served':   total('nb_slots_served'),
         # Share of the slots booked and then never used: the direct cost of
         # no-shows and late cancellations for the operator.
         'slot_waste_rate':   _waste_rate(stations),
+        'held_idle_rate':    _held_idle_rate(stations),
         # Planned: every confirmed reservation at its reserved duration.
         # Delivered: what the charging slots really added. The gap is the
         # energy lost to no-shows, cancellations and sessions cut short.
@@ -193,9 +259,6 @@ def summary_row(result: Mapping[str, Any]) -> dict:
         'energy_delivered_kwh': round(sum(delivered_kwh.values()), 3),
         'energy_delivery_rate': _rate(sum(delivered_kwh.values()),
                                       sum(planned_kwh.values())),
-        # False only for a run migrated by `energy_fix` without a replay, whose
-        # energies are estimated from the slot counts rather than measured.
-        'energy_exact': met.get('energy_exact', True),
 
         'early_intent_realized_late': beh['reclassified'].get('early->late', 0),
         'mean_lead_slots':            beh.get('mean_lead_slots'),

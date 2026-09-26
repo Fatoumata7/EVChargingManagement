@@ -66,8 +66,11 @@ class Metric:
 #: Metrics decomposed by default: user satisfaction, cost to the users,
 #: reliability of the reservations, use of the infrastructure, compute cost.
 METRICS: tuple[Metric, ...] = (
-    Metric('exact_satisfaction',          'Exact satisfaction',      GOAL_UP,   '%'),
-    Metric('needs_satisfaction',          'Needs satisfied',         GOAL_UP,   '%'),
+    Metric('satisfied_rate',              'Demands satisfied',       GOAL_UP,   '%'),
+    Metric('cancelled_rate',              'Demands cancelled',       GOAL_DOWN, '%'),
+    Metric('service_ratio_mean',          'Energy served / requested', GOAL_UP, '%'),
+    Metric('plan_coverage_exact',         'Planning coverage (exact)', GOAL_UP, '%'),
+    Metric('plan_coverage_volume',        'Planning coverage (volume)', GOAL_UP, '%'),
     Metric('confirm_rate',                'Confirmation rate',       GOAL_UP,   '%'),
     Metric('mean_waiting_time_min',       'Mean waiting time',       GOAL_DOWN, 'min'),
     Metric('mean_travel_distance_km',     'Mean distance',           GOAL_DOWN, 'km'),
@@ -78,11 +81,13 @@ METRICS: tuple[Metric, ...] = (
     Metric('mean_occupancy_rate',         'Occupancy rate',          GOAL_UP,   '%'),
     Metric('mean_service_rate',           'Service rate',            GOAL_UP,   '%'),
     Metric('slot_waste_rate',             'Wasted reserved slots',   GOAL_DOWN, '%'),
+    Metric('held_idle_rate',              'Held slots left idle',    GOAL_DOWN, '%'),
     Metric('energy_planned_kwh',          'Energy planned',          GOAL_UP,   'kWh'),
     Metric('energy_delivered_kwh',        'Energy delivered',        GOAL_UP,   'kWh'),
     Metric('energy_delivery_rate',        'Energy delivered/planned', GOAL_UP,  '%'),
     Metric('no_offer_rate',               'Demands with no offer',   GOAL_DOWN, '%'),
     Metric('abandon_rate',                'Abandoned searches',      GOAL_DOWN, '%'),
+    Metric('excluded_car_share',          'Vehicles excluded',       GOAL_DOWN, '%'),
     Metric('request_rejection_rate',      'Unserved demands',        GOAL_DOWN, '%'),
     Metric('nb_station_level_rejections', 'Rejected demands',        GOAL_DOWN, ''),
     Metric('station_rejection_rate',      'Station rejection rate',  GOAL_DOWN, '%'),
@@ -339,7 +344,7 @@ def write_tables(store, rows: Rows | None = None,
 # ----------------------------------------------------------------------
 
 DEFAULT_REPORT_METRICS: tuple[str, ...] = (
-    'exact_satisfaction', 'rate_abs', 'mean_service_rate',
+    'satisfied_rate', 'rate_abs', 'mean_service_rate',
     'slot_waste_rate', 'nb_reservations',
 )
 

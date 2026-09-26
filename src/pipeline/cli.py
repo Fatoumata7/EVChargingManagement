@@ -167,6 +167,15 @@ def _add_run(subparsers) -> None:
     out.add_argument('--log-every', type=int, default=None,
                      help='Frequency of the progress lines, in slots.')
 
+    execution = p.add_argument_group('execution')
+    execution.add_argument('--workers', type=int, default=None, metavar='N',
+                           help='Run the cases on N processes (default 1). Each '
+                                'finished case is saved at once: an interruption '
+                                'loses only the cases still running.')
+    execution.add_argument('--resume', type=Path, default=None, metavar='RUN_DIR',
+                           help='Continue an interrupted run: only the cases with '
+                                'no result are run, with the parameters of the '
+                                'run (only --workers may be changed).')
     p.add_argument('--dry-run', action='store_true',
                    help='Validate and print the plan without running anything.')
 
@@ -237,7 +246,7 @@ def _add_aggregate(subparsers) -> None:
                     "interval: the spread needs replicates.")
     p.set_defaults(func=cmd_aggregate)
     _add_run_selector(p)
-    p.add_argument('--metric', default='exact_satisfaction', metavar='COL',
+    p.add_argument('--metric', default='satisfied_rate', metavar='COL',
                    help='Metric printed. All of them stay written in paired.csv.')
     p.add_argument('--kinds', nargs='+', default=None, metavar='KIND',
                    choices=('ladder', 'baseline', 'variant'),
@@ -265,7 +274,7 @@ PARAM_OPTIONS = ('seed', 'seeds', 'scenarios', 'fleet_sizes', 'methods',
                  'late_cancel_fraction', 'reservation_lead_low',
                  'reservation_lead_high', 'society_update_interval', 'alpha_fixed',
                  'output_root', 'label', 'keep_logs', 'save_latency',
-                 'save_tables', 'figures', 'log_every')
+                 'save_tables', 'figures', 'log_every', 'workers')
 
 
 def params_from_args(args: argparse.Namespace) -> ExperimentParams:
@@ -277,6 +286,8 @@ def params_from_args(args: argparse.Namespace) -> ExperimentParams:
 
 
 def cmd_run(args: argparse.Namespace) -> int:
+    if args.resume is not None:
+        return _resume(args)
     params = params_from_args(args)
 
     if args.dry_run:
@@ -300,7 +311,26 @@ def cmd_run(args: argparse.Namespace) -> int:
         return EXIT_OK
 
     store = run_grid(params)
+    return _finish_run(store, params)
 
+
+def _resume(args: argparse.Namespace) -> int:
+    """`run --resume RUN_DIR`: the run's own parameters, only `workers` may change."""
+    ignored = [name for name in PARAM_OPTIONS
+               if name != 'workers' and getattr(args, name, None) is not None]
+    if args.config is not None or ignored:
+        logger.error(f'--resume keeps the parameters of the run; only --workers '
+                     f'can be given (got {ignored or ["--config"]})')
+        return EXIT_ERROR
+    store = RunStore.open(args.resume)
+    params = store.read_params()
+    if args.workers is not None:
+        params = params.merged_with({'workers': args.workers})
+    store = run_grid(params, store=store, resume=True)
+    return _finish_run(store, params)
+
+
+def _finish_run(store: RunStore, params: ExperimentParams) -> int:
     if params.figures:
         written = figures.render_all(store.read_summary(), store.figures_dir,
                                      **_shared_tables(store))
@@ -313,9 +343,13 @@ def cmd_run(args: argparse.Namespace) -> int:
         print()
 
     manifest = store.read_manifest()
+    if manifest.get('failed_cases'):
+        logger.error(f"{len(manifest['failed_cases'])} case(s) failed; "
+                     f"continue with: run --resume {store.root}")
+        return EXIT_ERROR
     failed = [c['tag'] for c in manifest['cases'] if not c['invariant_ok']]
     if failed:
-        logger.error(f"Reservation invariant violated for: {failed}")
+        logger.error(f"Invariant violated for: {failed}")
         return EXIT_INVARIANT
 
     print(store.root)
@@ -358,8 +392,9 @@ def cmd_report(args: argparse.Namespace) -> int:
     return EXIT_OK
 
 
-SHOW_COLUMNS = ('scenario', 'nb_cars', 'method', 'exact_satisfaction',
-                'needs_satisfaction', 'mean_travel_distance_km',
+SHOW_COLUMNS = ('scenario', 'nb_cars', 'method', 'satisfied_rate',
+                'cancelled_rate', 'service_ratio_mean', 'plan_coverage_exact',
+                'nb_cars_excluded', 'mean_travel_distance_km',
                 'mean_waiting_time_min', 'total_ms_mean', 'nb_reservations',
                 'nb_pres', 'nb_no_show', 'nb_early_canc', 'nb_late_canc',
                 'energy_planned_kwh', 'energy_delivered_kwh', 'invariant_ok')

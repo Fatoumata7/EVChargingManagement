@@ -386,7 +386,7 @@ def write_tables(store, rows: Rows | None = None,
 # Text rendering
 # ----------------------------------------------------------------------
 
-def render_paired_table(paired: Rows, metric: str = 'exact_satisfaction',
+def render_paired_table(paired: Rows, metric: str = 'satisfied_rate',
                         kinds: Sequence[str] = ('ladder', 'baseline', 'variant'),
                         ) -> str:
     """

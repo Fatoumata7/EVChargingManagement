@@ -138,11 +138,28 @@ def _finish(fig) -> Any:
 # ----------------------------------------------------------------------
 
 def fig_satisfaction(rows: Rows, scenario: str):
+    """Service actually rendered: demands served, and energy received."""
     fig, axes = plt.subplots(1, 2, figsize=FIGSIZE)
-    ok = _plot_lines(axes[0], rows, scenario, 'exact_satisfaction', 'Satisfaction (%)',
-                     f'[{_tag(scenario)}] Exact satisfaction', percent=True)
-    ok |= _plot_lines(axes[1], rows, scenario, 'needs_satisfaction', 'Satisfaction (%)',
-                      f'[{_tag(scenario)}] Needs satisfaction', percent=True)
+    ok = _plot_lines(axes[0], rows, scenario, 'satisfied_rate', 'Demands (%)',
+                     f'[{_tag(scenario)}] Demands satisfied (a session took place)',
+                     percent=True)
+    ok |= _plot_lines(axes[1], rows, scenario, 'service_ratio_mean', 'Energy (%)',
+                      f'[{_tag(scenario)}] Energy delivered / requested, per demand',
+                      percent=True)
+    for ax in axes:
+        ax.set_ylim(0, 105)
+        ax.axhline(100, color='black', linestyle='--', linewidth=0.8, alpha=0.4)
+    return _finish(fig) if ok else None
+
+
+def fig_planning_coverage(rows: Rows, scenario: str):
+    """How well the calendar covered the requested windows (plan, not service)."""
+    fig, axes = plt.subplots(1, 2, figsize=FIGSIZE)
+    ok = _plot_lines(axes[0], rows, scenario, 'plan_coverage_exact', 'Coverage (%)',
+                     f'[{_tag(scenario)}] Planning coverage — exact window',
+                     percent=True)
+    ok |= _plot_lines(axes[1], rows, scenario, 'plan_coverage_volume', 'Coverage (%)',
+                      f'[{_tag(scenario)}] Planning coverage — volume', percent=True)
     for ax in axes:
         ax.set_ylim(0, 105)
         ax.axhline(100, color='black', linestyle='--', linewidth=0.8, alpha=0.4)
@@ -267,15 +284,15 @@ def fig_stations(rows: Rows, scenario: str):
 # ----------------------------------------------------------------------
 
 def fig_scenarios_overview(rows: Rows):
-    """Exact satisfaction, one panel per scenario: the overview."""
+    """Demands satisfied, one panel per scenario: the overview."""
     scenarios = _scenarios(rows)
     if not scenarios:
         return None
     fig, axes = plt.subplots(1, len(scenarios), figsize=(4.6 * len(scenarios), 4.2),
                              squeeze=False, sharey=True)
     for ax, scenario in zip(axes[0], scenarios):
-        _plot_lines(ax, rows, scenario, 'exact_satisfaction', 'Satisfaction (%)',
-                    f'[{_tag(scenario)}] Exact satisfaction', percent=True)
+        _plot_lines(ax, rows, scenario, 'satisfied_rate', 'Demands (%)',
+                    f'[{_tag(scenario)}] Demands satisfied', percent=True)
         ax.set_ylim(0, 105)
     return _finish(fig)
 
@@ -516,7 +533,7 @@ def _mean_of(rows: Rows, column: str) -> float:
 
 #: Metrics plotted by the ablation figures, in panel order.
 ABLATION_METRICS: tuple[str, ...] = (
-    'exact_satisfaction', 'rate_abs', 'mean_service_rate', 'slot_waste_rate',
+    'satisfied_rate', 'rate_abs', 'mean_service_rate', 'slot_waste_rate',
 )
 
 
@@ -619,15 +636,15 @@ def fig_ablation_variants(rows: Rows):
 
 
 def fig_ablation_ladder(rows: Rows, scenario: str):
-    """Satisfaction and no-shows rung by rung, against fleet size."""
+    """Demands satisfied and no-shows rung by rung, against fleet size."""
     ladder = [r for r in rows if r['method'] in methods.LADDER
               and r['scenario'] == scenario]
     if not ladder:
         return None
     fig, axes = plt.subplots(1, 2, figsize=FIGSIZE)
-    ok = _plot_lines(axes[0], ladder, scenario, 'exact_satisfaction',
-                     'Satisfaction (%)',
-                     f'[{_tag(scenario)}] Satisfaction — ablation ladder',
+    ok = _plot_lines(axes[0], ladder, scenario, 'satisfied_rate',
+                     'Demands (%)',
+                     f'[{_tag(scenario)}] Demands satisfied — ablation ladder',
                      percent=True)
     ok |= _plot_lines(axes[1], ladder, scenario, 'rate_abs', 'No-show (%)',
                       f'[{_tag(scenario)}] No-show rate — ablation ladder',
@@ -641,6 +658,7 @@ def fig_ablation_ladder(rows: Rows, scenario: str):
 
 PER_SCENARIO: tuple[tuple[str, Callable], ...] = (
     ('satisfaction',   fig_satisfaction),
+    ('planning_coverage', fig_planning_coverage),
     ('ablation_ladder', fig_ablation_ladder),
     ('travel_waiting', fig_travel_waiting),
     ('latency',        fig_latency),

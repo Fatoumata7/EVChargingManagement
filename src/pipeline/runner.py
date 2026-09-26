@@ -34,6 +34,7 @@ from __future__ import annotations
 
 import io
 import time
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import dataclass
 from typing import Callable, Iterable
 
@@ -44,7 +45,7 @@ from src.experiments.world import (build_world, compose_world_spec,
                                    generate_fleet_spec, generate_grid_spec)
 from src.pipeline import ablation, aggregate, tables
 from src.pipeline.params import CaseParams, ExperimentParams
-from src.pipeline.store import RunStore
+from src.pipeline.store import RunStore, _utc_stamp, git_commit, git_is_dirty
 
 
 @dataclass
@@ -112,7 +113,7 @@ def run_case(case: CaseParams, params: ExperimentParams, spec,
 
 
 def prepare_shared_world(params: ExperimentParams, store: RunStore,
-                         seed: int | None = None):
+                         seed: int | None = None, reuse: bool = False):
     """
     Draw and persist what every case of one replicate shares: grid and fleets.
 
@@ -120,12 +121,23 @@ def prepare_shared_world(params: ExperimentParams, store: RunStore,
     configuration used sets no scenario: what is drawn here therefore cannot
     depend on one.
 
+    `reuse=True` (resuming a run) reads back the grid and the fleets already
+    persisted instead of drawing them again: the cases still to run then see
+    exactly the environment of the cases already done.
+
     Returns
     -------
     (grid, fleets)
         `grid`: the `GridSpec` of the replicate; `fleets`: `{nb_cars: FleetSpec}`.
     """
     seed = params.seed if seed is None else int(seed)
+    if reuse and store.grid_path(seed).is_file() and all(
+            store.fleet_path(n, seed).is_file() for n in params.fleet_sizes):
+        grid = store.load_grid(seed)
+        fleets = {n: store.load_fleet(n, seed) for n in params.fleet_sizes}
+        logger.info(f'[seed {seed}] grid and fleets reloaded from {store.root.name}')
+        return grid, fleets
+
     shared_config = params.build_shared_config(seed=seed)
 
     grid = generate_grid_spec(shared_config, seed)
@@ -150,109 +162,222 @@ def prepare_shared_world(params: ExperimentParams, store: RunStore,
     return grid, fleets
 
 
+def prepare_worlds(params: ExperimentParams, store: RunStore,
+                   reuse: bool = False) -> None:
+    """
+    Persist every world of the campaign before any simulation.
+
+    A case then only needs the run directory and its own identity to run: it
+    reads its world back from `worlds/`, which is what lets it run in another
+    process. On a resume (`reuse=True`) a world already on disk is kept as is.
+    """
+    for seed in params.seeds:
+        grid, fleets = prepare_shared_world(params, store, seed, reuse=reuse)
+        for scenario in params.scenarios:
+            for nb_cars in params.fleet_sizes:
+                if reuse and store.world_path(scenario, nb_cars, seed).is_file():
+                    continue
+                config_ref = params.build_config(scenario, nb_cars, seed)
+                spec = compose_world_spec(grid, fleets[nb_cars], config_ref)
+                store.save_world(spec, scenario, nb_cars, seed)
+
+
+def execute_case(root: str, case: CaseParams) -> tuple[dict, dict]:
+    """
+    Run one case from its persisted world; return `(result, tables)`.
+
+    Self-contained on purpose — it takes a path and a case, reads everything
+    else from disk and writes nothing but its optional log — so that it runs
+    unchanged in a worker process. Persisting the outcome is the parent's job:
+    a single writer means no two processes ever write the same file.
+    """
+    store = RunStore.open(root)
+    params = store.read_params()
+    spec = store.load_world(case.scenario, case.nb_cars, case.seed)
+    log_path = store.log_path(case) if params.keep_logs else None
+    simulation, outcome = run_case(case, params, spec, log_path)
+    case_tables = (tables.case_tables(simulation, outcome.result,
+                                      with_latency=params.save_latency)
+                   if params.save_tables else {})
+    return outcome.result, case_tables
+
+
+def _quiet_worker() -> None:
+    """Worker initialiser: keep warnings, drop the per-slot progress log."""
+    import sys
+    logger.remove()
+    logger.add(sys.stderr, level='WARNING',
+               format='{time:HH:mm:ss} | {level: <7} | [worker] {message}')
+
+
 def run_grid(params: ExperimentParams, store: RunStore | None = None,
-             on_case: Callable[[CaseOutcome], None] | None = None) -> RunStore:
+             on_case: Callable[[CaseOutcome], None] | None = None,
+             workers: int | None = None, resume: bool = False) -> RunStore:
     """
     Run the whole grid defined by `params` and persist the artifacts.
 
-    Results are written as they come (result, tables, summary.csv, manifest): an
-    interrupted campaign stays usable and the partial `summary.csv` is already
-    valid.
+    Saving as it goes
+    -----------------
+    Every case is persisted **as soon as it finishes**, by the parent process
+    only: its tables first, then its result JSON — written atomically, it is the
+    marker of a finished case — then `summary.csv`, the ablation tables and the
+    manifest, all rebuilt from the results on disk. A crash, a `Ctrl-C` or a
+    machine going to sleep therefore loses at most the cases still running;
+    `resume=True` (`run --resume <run dir>`) runs only the cases with no result.
+
+    Parallelism
+    -----------
+    `workers > 1` spreads the cases over that many processes. A case depends on
+    nothing but its world, read from `worlds/`, so the results are the same as
+    in a sequential run (only the wall-clock columns differ: they measure a
+    machine shared by `workers` simulations). The largest fleets are submitted
+    first, which shortens the tail of the campaign.
     """
+    workers = params.workers if workers is None else int(workers)
     store = store or RunStore.create(params)
     logger.info(f'Run: {store.root}')
     logger.info(params.describe())
+    if resume:
+        _check_resume(store)
 
-    summary_rows: list[dict] = []
-    # Diagnostics are structural: repeating them at every case drowns the output.
-    seen_diagnostics: set[str] = set()
     started = time.perf_counter()
-    case_no = 0
-    # The grid and the fleets of a replicate are drawn once and reused by all
-    # its worlds; `params.worlds()` yields the seed first, so the cache holds a
-    # single replicate at a time.
-    shared: dict[int, tuple] = {}
+    prepare_worlds(params, store, reuse=resume)
 
-    for seed, scenario, nb_cars in params.worlds():
-        if seed not in shared:
-            shared.clear()
-            shared[seed] = prepare_shared_world(params, store, seed)
-        grid, fleets = shared[seed]
+    cases = list(params.cases())
+    order = {case.tag: i for i, case in enumerate(cases)}
+    rows: dict[str, dict] = {}
+    for case in cases:
+        if store.has_result(case):
+            rows[case.tag] = tables.summary_row(store.load_result(case))
+    pending = [case for case in cases if case.tag not in rows]
+    if rows:
+        logger.info(f'{len(rows)}/{len(cases)} cases already done, '
+                    f'{len(pending)} to run')
 
-        # Composition: grid and fleet of the replicate, `theta` of the scenario.
-        config_ref = params.build_config(scenario, nb_cars, seed)
-        spec = compose_world_spec(grid, fleets[nb_cars], config_ref)
-        world_seed = spec.seed
-        store.save_world(spec, scenario, nb_cars, seed)
+    seen_diagnostics: set[str] = set()
+    failures: dict[str, str] = {}
 
-        for method in params.methods:
-            case = CaseParams(scenario=scenario, nb_cars=nb_cars,
-                              method=method, seed=seed)
-            case_no += 1
-            logger.info(f'[{case_no}/{params.nb_cases}] {case.tag} '
-                        f'(seed={seed}, world_seed={world_seed})')
+    def persist(case: CaseParams, result: dict, case_tables: dict) -> None:
+        # Tables before the result: the result file marks a finished case,
+        # so a case interrupted between the two is simply run again.
+        for name, table_rows in case_tables.items():
+            store.write_table(case, name, table_rows)
+        store.save_result(case, result)
 
-            log_path = store.log_path(case) if params.keep_logs else None
-            simulation, outcome = run_case(case, params, spec, log_path)
+        summary = tables.summary_row(result)
+        rows[case.tag] = summary
+        ordered = [rows[tag] for tag in sorted(rows, key=order.__getitem__)]
+        store.write_summary(ordered, tables.SUMMARY_FIELDS)
+        # Rewritten at every case, like summary.csv: a long campaign can be
+        # analysed while it runs, and an interrupted one stays usable.
+        ablation.write_tables(store, ordered)
+        store.record_case({
+            'tag': case.tag,
+            'seed': case.seed,
+            'scenario': case.scenario,
+            'nb_cars': case.nb_cars,
+            'method': case.method,
+            'world_seed': result.get('world_seed'),
+            'wall_time_s': result['wall_time_s'],
+            'invariant_ok': bool(result['invariant_ok']),
+            'nb_diagnostics': len(result['behaviors'].get('diagnostics', [])),
+        })
 
-            store.save_result(case, outcome.result)
-            if params.save_tables:
-                for name, rows in tables.case_tables(
-                        simulation, outcome.result,
-                        with_latency=params.save_latency).items():
-                    store.write_table(case, name, rows)
+        outcome = CaseOutcome(
+            case=case, result=result, summary=summary,
+            wall_time_s=float(result['wall_time_s']),
+            diagnostics=list(result['behaviors'].get('diagnostics', [])))
+        logger.info(f'[{len(rows)}/{len(cases)}] {case.tag}')
+        _log_outcome(outcome, seen_diagnostics)
+        if on_case is not None:
+            on_case(outcome)
 
-            summary_rows.append(outcome.summary)
-            store.write_summary(summary_rows, tables.SUMMARY_FIELDS)
-            # The decomposition is rewritten at every case, like summary.csv:
-            # a long campaign can be analysed while it runs, and an interrupted
-            # campaign stays usable. The computation is a mere re-read of the
-            # rows already in memory.
-            ablation.write_tables(store, summary_rows)
-            store.record_case({
-                'tag': case.tag,
-                'seed': seed,
-                'scenario': scenario,
-                'nb_cars': nb_cars,
-                'method': method,
-                'world_seed': world_seed,
-                'wall_time_s': outcome.result['wall_time_s'],
-                'invariant_ok': outcome.invariant_ok,
-                'nb_diagnostics': len(outcome.diagnostics),
-            })
+    root = str(store.root)
+    if workers <= 1:
+        for case in pending:
+            logger.info(f'[{len(rows) + 1}/{len(cases)}] running {case.tag}')
+            try:
+                result, case_tables = execute_case(root, case)
+            except Exception as exc:     # keep the other cases going
+                failures[case.tag] = repr(exc)
+                logger.exception(f'{case.tag} failed')
+                continue
+            persist(case, result, case_tables)
+    elif pending:
+        # Largest fleets first: the longest cases start early, so the last
+        # minutes of the campaign are not spent waiting on a single one.
+        queue = sorted(pending, key=lambda c: (-c.nb_cars, order[c.tag]))
+        logger.info(f'{len(queue)} cases on {workers} worker processes')
+        pool = ProcessPoolExecutor(max_workers=workers, initializer=_quiet_worker)
+        try:
+            futures = {pool.submit(execute_case, root, case): case for case in queue}
+            for future in as_completed(futures):
+                case = futures[future]
+                try:
+                    result, case_tables = future.result()
+                except Exception as exc:
+                    failures[case.tag] = repr(exc)
+                    logger.error(f'{case.tag} failed: {exc!r}')
+                    continue
+                persist(case, result, case_tables)
+        except BaseException:
+            # Ctrl-C or a failure of the parent: the finished cases are on disk.
+            pool.shutdown(wait=False, cancel_futures=True)
+            logger.warning(f'Interrupted: {len(rows)}/{len(cases)} cases saved. '
+                           f'Continue with: run --resume {store.root}')
+            raise
+        pool.shutdown()
 
-            _log_outcome(outcome, seen_diagnostics)
-            if on_case is not None:
-                on_case(outcome)
-
-            # Explicitly release the world of this case before the next one.
-            del simulation
-
-    for path in ablation.write_tables(store, summary_rows):
+    ordered = [rows[tag] for tag in sorted(rows, key=order.__getitem__)]
+    for path in ablation.write_tables(store, ordered):
         logger.info(f'Ablation → {path}')
 
-    # Statistics over the replicates — written once, at the end, unlike the
-    # ablation tables. A mid-campaign aggregate would be computed on the seeds
-    # finished so far and would publish a confidence interval over a sample
-    # that is still growing: a number that looks like a result and is not one.
-    for path in aggregate.write_tables(store, summary_rows):
-        logger.info(f'Replicates → {path}')
-    if params.nb_seeds == 1:
-        logger.info('Single seed: the interval columns stay empty. Run with '
-                    '--seeds to obtain a spread.')
+    if failures:
+        manifest = store.read_manifest()
+        manifest['failed_cases'] = failures
+        store.write_manifest(manifest)
+        logger.error(f'{len(failures)} case(s) failed: {sorted(failures)}. '
+                     f'Fix the cause, then: run --resume {store.root}')
+    elif len(rows) == len(cases):
+        # Statistics over the replicates — written once, at the end, unlike the
+        # ablation tables. A mid-campaign aggregate would be computed on the
+        # seeds finished so far and would publish a confidence interval over a
+        # sample that is still growing: a number that looks like a result and
+        # is not one.
+        for path in aggregate.write_tables(store, ordered):
+            logger.info(f'Replicates → {path}')
+        if params.nb_seeds == 1:
+            logger.info('Single seed: the interval columns stay empty. Run with '
+                        '--seeds to obtain a spread.')
 
     store.close_manifest(time.perf_counter() - started)
-    logger.info(f'{len(summary_rows)} cases finished → {store.root}')
+    logger.info(f'{len(rows)}/{len(cases)} cases finished → {store.root}')
     return store
+
+
+def _check_resume(store: RunStore) -> None:
+    """Warn when the code changed since the run started: results would mix."""
+    manifest = store.read_manifest()
+    before, now = manifest.get('git_commit'), git_commit()
+    if before and now and before != now:
+        logger.warning(f'Resuming a run started at commit {before[:7]} with '
+                       f'commit {now[:7]}: the cases already done and the ones '
+                       'still to run may not share the same code')
+    if git_is_dirty():
+        logger.warning('Uncommitted changes: the resumed cases may not run the '
+                       'code of the cases already done')
+    manifest.setdefault('resumed_utc', []).append(_utc_stamp())
+    manifest.pop('failed_cases', None)
+    store.write_manifest(manifest)
 
 
 def _log_outcome(outcome: CaseOutcome,
                  seen_diagnostics: set[str] | None = None) -> None:
     row = outcome.summary
     logger.info(
-        '    satisf={exact} | no-show={abs} early={early} late={late} | '
+        '    served={served} | no-show={abs} early={early} late={late} | '
         'offers {issued}→{confirmed} | e2e {e2e} ms | {wall}s'.format(
-            exact=row['exact_satisfaction'],
+            served=row['satisfied_rate'],
             abs=row['nb_no_show'], early=row['nb_early_canc'],
             late=row['nb_late_canc'],
             issued=row['nb_offer_issued'], confirmed=row['nb_reservations'],

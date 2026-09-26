@@ -111,8 +111,6 @@ class Car:
         # MAX_SEARCH_RETRIES + 1 slots until the end of the horizon.
         self.gave_up_charging = False
 
-        self.schedule_requested = np.zeros(config.TOTAL_TIME)
-
     def init_soc(self):
         return random.uniform(self.config.CAR_INIT_SOC['low'],
                               self.config.CAR_INIT_SOC['high'])
@@ -194,6 +192,15 @@ class Car:
         return str(self.rng_behavior.choice(keys, p=probs))
 
     def generate_charging_duration_request(self, strategies):
+        """
+        Requested duration `d_n`, in slots; sets `self.last_need_km`, the range
+        the driver actually wants back.
+
+        `d_n = int(need / power) + 1` always rounds up (a whole extra slot when
+        the need is a multiple of the power): `d_n x power` overstates the
+        need, so the service ratio reads the need itself.
+        """
+        self.last_need_km = 0.
         if self.soc_m >= self.autonomy * 0.95 :
             return 0
         weights   = [s[0] for s in strategies]
@@ -204,6 +211,7 @@ class Car:
         if self.soc_m > target_soc:
             target_soc = self.autonomy
         needed_km = (target_soc - self.soc_m) * 1e-3                # in kilometers
+        self.last_need_km = needed_km
         return max(int(needed_km / self.charging_power) + 1, 1)
 
     def update_car_speed(self):
@@ -348,7 +356,9 @@ class Car:
             'loc':     (x_n, y_n),
             'r_n':     r_n,
             'g_n':     max_waiting_time,
-            'l_n':     self.draw_reservation_lead()
+            'l_n':     self.draw_reservation_lead(),
+            # range wanted back, km (d_n is that need rounded up to slots)
+            'need_km': self.last_need_km,
         }
         self.request = request
         self.nb_request += 1
@@ -493,16 +503,6 @@ class Car:
     def clear_gave_up(self):
         """Reopen the right to request (a charging session took place)."""
         self.gave_up_charging = False
-
-    def update_schedule_requested(self, min_dist):
-        """FIX: == → = (assignment)"""
-        t_arr = utils.nominal_arrival(self.request['t_n'],
-                                      self.request.get('l_n', 0),
-                                      min_dist, self.config)
-        t_dep = int(t_arr + self.request['d_n'])
-        t_arr = min(t_arr, self.config.TOTAL_TIME - 1)
-        t_dep = min(t_dep, self.config.TOTAL_TIME)
-        self.schedule_requested[t_arr:t_dep] = 1
 
     def compute_utility(self, offer, request, min_dist):
         """
