@@ -266,8 +266,9 @@ class Simulation:
 
             if charging_now:
                 car.set_state('CHARGING')
-                car.charge_one_slot()
+                delta_m = car.charge_one_slot()
                 target_station.record_served_slot()
+                self.metrics.record_energy_delivered(target_station.m, delta_m)
 
             elif car.state == 'AT_STATION':
                 car.set_state('WAITING')
@@ -384,6 +385,8 @@ class Simulation:
         chosen.display_offer(file=file)
 
         target_station = self._get_station(chosen.station_id)
+        # Before the behaviour draw: a no-show books its slots too.
+        self.metrics.record_reservation_confirmed(car, chosen)
 
         behavior = car.draw_behavior()
         car.set_behavior(behavior)

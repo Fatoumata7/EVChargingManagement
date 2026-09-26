@@ -53,6 +53,7 @@ component.
 │       ├── tables.py              # Tidy tables extracted from a simulation
 │       ├── ablation.py            # Decomposition: ladder, baselines, variants
 │       ├── figures.py             # Figures built from tables, never from objects
+│       ├── energy_fix.py          # Migrates pre-split runs (planned/delivered kWh)
 │       └── cli.py                 # run / report / show / runs / scenarios /
 │                                  #   methods / ablation
 │
@@ -67,7 +68,7 @@ component.
 │   ├── ablation.ipynb
 │   └── ablation_variants.ipynb
 │
-├── tests                          # uv run python -m tests  (138 tests)
+├── tests                          # uv run python -m tests  (147 tests)
 ├── results_grid/                  # Run outputs (gitignored)
 ├── outputs/                       # Visualizer logs (gitignored)
 └── pyproject.toml, uv.lock
@@ -155,7 +156,7 @@ replayed with `define_agents_from_spec`.
 ### Tests and self-checks
 
 ```bash
-uv run python -m tests                  # all suites, 138 tests, no test dependency
+uv run python -m tests                  # all suites, 147 tests, no test dependency
 
 uv run python -m src.experiments.world  # shared grid & nested fleets
 uv run python -m src.experiments.seeding
@@ -439,6 +440,47 @@ An empty denominator yields `None`, not `0.`: a run where no demand was ever
 emitted has no rejection rate, and `0.` there would read as "nothing was ever
 rejected", the opposite of "the question was never asked". The ablation skips a
 `None` instead of averaging it in.
+
+### Energy: planned vs delivered
+
+`charging_power` is expressed in **km of range per slot**. Multiplied by the
+consumption (10 kWh / 100 km = 0.1 kWh/km), it gives an energy **per slot**
+(`metrics.kwh_per_slot`) — 6 km/slot is 0.6 kWh per 5 minutes, i.e. 7.2 kW.
+Two energies are reported, per station and in total:
+
+| Column | Definition | Counted |
+| --- | --- | --- |
+| `energy_planned_kwh` | `Σ kwh_per_slot(P_n) · d_n` over **every** confirmed reservation, no-shows included (`d_n` = slots written to the calendar) | at confirmation, before the behaviour draw |
+| `energy_delivered_kwh` | range actually added by each charging slot × 0.1 kWh/km | slot by slot, capped by the battery |
+| `energy_delivery_rate` | delivered / planned | — |
+
+Their gap is the energy booked and never supplied: no-shows, cancellations,
+breakdowns and sessions that end early because the battery is full.
+`delivered <= planned` always holds, since a vehicle only charges inside its
+reserved slots, and the planned slots of a station equal its
+`nb_slots_reserved`. The three columns are in the ablation and replicate tables
+(`ablation*.csv`, `summary_mean.csv`, `paired.csv`), and `stations_*.png` draws
+delivered (solid) against planned (dashed).
+
+> **Runs written before this split** carried a single `station_demand_kWh`
+> with three defects: **12× too small** (the per-slot energy was multiplied by a
+> duration in hours), **no-shows left out** (it was logged in
+> `record_offer_accepted`, which a no-show never reaches), and computed on the
+> reserved durations rather than on the charging. Such results are refused by
+> `tables.summary_row` until migrated:
+>
+> ```bash
+> uv run python -m src.pipeline.energy_fix results_grid/<run> --resimulate  # exact
+> uv run python -m src.pipeline.energy_fix results_grid/<run>               # estimated
+> ```
+>
+> `--resimulate` replays every case — the simulation is deterministic, and the
+> replay is checked field by field against the stored run before anything is
+> written — so both energies are exact. Without it, both are estimated per
+> station from `nb_slots_reserved` / `nb_slots_served`, priced at the mean
+> kWh/slot of the vehicles the station accepted and calibrated on the exact
+> replay of the smoke run (held-out error ≤ 1.6 % delivered, ≤ 4 % planned per
+> case; see `energy_fix.py`). `energy_exact` is then `False` in `summary.csv`.
 
 
 ## Ablation study
@@ -867,12 +909,13 @@ as a zero.
 ## Tests
 
 ```bash
-uv run python -m tests                     # all suites, 138 tests
+uv run python -m tests                     # all suites, 147 tests
 uv run python -m tests.test_priority1      # model
 uv run python -m tests.test_shared_world   # shared grid and fleets
 uv run python -m tests.test_pipeline       # pipeline
 uv run python -m tests.test_ablation       # ablation study
 uv run python -m tests.test_aggregate      # statistics over the replicates
+uv run python -m tests.test_energy         # planned vs delivered energy
 ```
 
 No external test dependency: each suite is a module exposing `main() -> int`.
@@ -916,6 +959,12 @@ No external test dependency: each suite is a module exposing `main() -> int`.
   twenty times larger hides from an unpaired comparison, no pooling across
   fleet sizes, `verdict` following the declared direction of the metric rather
   than the raw sign, and a duplicated replicate refused.
+* **`test_energy.py` (9)** — energy: `kwh_per_slot` is an energy per slot (one
+  hour at 6 km/slot is 7.2 kWh, not 0.6), `charge_one_slot` returns the range
+  actually added (capped by the battery), the planned energy prices every
+  reservation at its duration, the delivered energy never exceeds it nor the
+  served slots, a legacy result is refused until migrated, and the migration
+  (estimated or replayed, a divergent replay being detected) restores both.
 
 
 ## Author

@@ -10,6 +10,28 @@ from typing import List, Tuple, Dict, Optional
 
 
 # ------------------------------------------------------------------
+# Energy conversion
+# ------------------------------------------------------------------
+
+def kwh_per_km(config) -> float:
+    """Consumption in kWh per km (ENERGY_CONSUMPTION: 10 kWh / 100 km -> 0.1)."""
+    return (config.ENERGY_CONSUMPTION['quantity_kW']
+            / (config.ENERGY_CONSUMPTION['distance_unit_m'] * 1e-3))
+
+
+def kwh_per_slot(charging_power_km_per_slot: float, config) -> float:
+    """
+    Energy one charging slot puts into the battery, in kWh.
+
+    `charging_power` is in km of range per slot, so km/slot x kWh/km is already
+    an energy **per slot** — not a power. Multiplying it by a duration in hours
+    (as the former `station_demand` did) divides the result by the number of
+    slots in one hour: 12 on a 5-minute slot.
+    """
+    return charging_power_km_per_slot * kwh_per_km(config)
+
+
+# ------------------------------------------------------------------
 # Data structures for the collection
 # ------------------------------------------------------------------
 
@@ -185,10 +207,15 @@ class MetricsCollector:
             for c in cars
         }
 
-        # For Station Demand
-        # station_charging_log[station_id] = list of (car_id, t_start, t_end, d_prop)
+        # Planned energy: one entry per confirmed reservation, whatever its outcome
+        # (no-shows included), recorded by `record_reservation_confirmed`
+        # station_charging_log[station_id] = list of (car_id, t_start, t_end, nb_slots)
         self.station_charging_log: Dict[int, List[Tuple]] = {
             s.m: [] for s in stations
+        }
+        # Delivered energy: kWh actually put into batteries, slot by slot
+        self.station_energy_delivered_kwh: Dict[int, float] = {
+            s.m: 0.0 for s in stations
         }
 
         # For Mean Relative Travel Distance & Waiting Time
@@ -225,10 +252,6 @@ class MetricsCollector:
             waiting_time_h=wait_h
         ))
 
-        # Station charging log
-        self.station_charging_log[offer.station_id].append(
-            (car.idx, offer.t_arr, offer.t_dep, offer.d_prop)
-        )
 
     # ---- Latency ------------------------------------------------------
 
@@ -313,33 +336,61 @@ class MetricsCollector:
         self.station_timings.append(rec)
         return rec
 
+    def record_reservation_confirmed(self, car, offer) -> None:
+        """
+        Called for **every** confirmed reservation, before its behaviour is drawn.
+
+        `record_offer_accepted` is skipped for a no-show, so logging the planned
+        energy there left out exactly the reservations whose slots are blocked
+        and never used. The slot count is the one `Station.confirm_reservation`
+        writes to the calendar (capped at the horizon), so the planned slots of
+        a station always equal its `nb_slots_reserved`.
+        """
+        t_end = min(offer.t_dep, self.config.TOTAL_TIME)
+        self.station_charging_log[offer.station_id].append(
+            (car.idx, offer.t_arr, t_end, int(t_end - offer.t_arr))
+        )
+
+    def record_energy_delivered(self, station_id: int, delta_m: float) -> None:
+        """Called for every slot actually spent charging; `delta_m` in metres of range."""
+        self.station_energy_delivered_kwh[station_id] += \
+            delta_m * 1e-3 * kwh_per_km(self.config)
+
     # ------------------------------------------------------------------
-    # 1. Station Demand
+    # 1. Station energy: planned vs delivered
     # ------------------------------------------------------------------
 
-    def station_demand(self) -> Dict[int, float]:
+    def station_energy_planned(self) -> Dict[int, float]:
         """
-        E_m = sum_{n in N_m} P_n * d_n
-        P_n : charging power in kW (charging_power in km/slot → kW via consumption)
-        d_n : allocated duration in hours
-        """
-        car_power = {}  # car_id → power in kW
-        for car in self.cars:
-            # charging_power in km/slot, consumption = 10 kWh/100 km
-            kw = car.charging_power * \
-                (self.config.ENERGY_CONSUMPTION['quantity_kW'] / \
-                 (self.config.ENERGY_CONSUMPTION['distance_unit_m'] * 1e-3))  # kWh per slot → kW (slot = 5 min = 1/12 h)
-            car_power[car.idx] = kw
+        Energy booked by the confirmed reservations, in kWh.
 
+        E_m^planned = sum_{n in N_m} e_n * d_n
+        e_n : kWh per slot of vehicle n (see `kwh_per_slot`)
+        d_n : slots reserved in the calendar (d_prop, capped at the horizon)
+
+        Counted at confirmation, so no-shows, cancellations, breakdowns and
+        sessions cut short all contribute their full reserved duration: this
+        is what the stations committed to, not what they supplied.
+        """
+        car_kwh_slot = {car.idx: kwh_per_slot(car.charging_power, self.config)
+                        for car in self.cars}
         result = {}
         for s in self.stations:
-            e_m = 0.0
-            for (car_id, t_start, t_end, d_prop) in self.station_charging_log[s.m]:
-                p_n = car_power.get(car_id, 0.)
-                d_h = d_prop * self.config.SLOT_DURATION / 60.0  # slots → hours
-                e_m += p_n * d_h
+            e_m = sum(car_kwh_slot.get(car_id, 0.) * nb_slots
+                      for (car_id, _, _, nb_slots) in self.station_charging_log[s.m])
             result[s.m] = round(e_m, 3)
         return result
+
+    def station_energy_delivered(self) -> Dict[int, float]:
+        """
+        Energy actually put into the batteries, in kWh.
+
+        Accumulated slot by slot from the range each charging slot really added
+        (`Car.charge_one_slot`), so it is capped by the battery capacity and
+        only counts the sessions that took place.
+        """
+        return {sid: round(e, 3)
+                for sid, e in self.station_energy_delivered_kwh.items()}
 
     # ------------------------------------------------------------------
     # 2. User Request Satisfaction
@@ -484,7 +535,8 @@ class MetricsCollector:
         proc  = self.mean_processing_time_per_station()
 
         return {
-            'station_demand_kWh':           self.station_demand(),
+            'station_energy_planned_kWh':   self.station_energy_planned(),
+            'station_energy_delivered_kWh': self.station_energy_delivered(),
             'user_request_satisfaction':    sat,
             'mean_travel_distance_km':      self.mean_relative_travel_distance(),
             'mean_waiting_time_h':          self.mean_relative_waiting_time(),
@@ -497,9 +549,13 @@ class MetricsCollector:
         r = self.report()
         print("\n========== METRICS ==========")
 
-        print("\n--- Station Demand (kWh) ---")
-        for sid, e in r['station_demand_kWh'].items():
-            print(f"  Station {sid}: {e:.2f} kWh")
+        print("\n--- Station energy (kWh): planned / delivered ---")
+        planned = r['station_energy_planned_kWh']
+        delivered = r['station_energy_delivered_kWh']
+        for sid, e in planned.items():
+            print(f"  Station {sid}: {e:.2f} / {delivered.get(sid, 0.):.2f} kWh")
+        print(f"  Total    : {sum(planned.values()):.2f} / "
+              f"{sum(delivered.values()):.2f} kWh")
 
         print("\n--- User Request Satisfaction ---")
         sat = r['user_request_satisfaction']

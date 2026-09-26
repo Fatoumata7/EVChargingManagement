@@ -200,7 +200,7 @@ def plot_stations_2d(
 def plot_station_demand(metrics, societies, scenario_name, \
                         approach_name, nb_car, figsize=(10, 5)):
     """
-    Display the energy demand (kWh) per station.
+    Display the energy per station (kWh): planned (hatched) next to delivered.
 
     The stations belonging to the same company
     appear in the same color.
@@ -211,7 +211,8 @@ def plot_station_demand(metrics, societies, scenario_name, \
     societies : List[Society]
     """
 
-    demand = metrics.station_demand()
+    planned = metrics.station_energy_planned()
+    delivered = metrics.station_energy_delivered()
 
     # --------------------------------------------------------
     # Mapping station -> society
@@ -242,8 +243,9 @@ def plot_station_demand(metrics, societies, scenario_name, \
     # Plotting data
     # --------------------------------------------------------
 
-    station_ids = list(demand.keys())
-    energies = list(demand.values())
+    station_ids = list(planned.keys())
+    energies_planned = [planned[sid] for sid in station_ids]
+    energies = [delivered.get(sid, 0.) for sid in station_ids]
 
     colors = [
         society_colors.get(
@@ -259,18 +261,25 @@ def plot_station_demand(metrics, societies, scenario_name, \
 
     fig, ax = plt.subplots(figsize=figsize)
 
+    x = np.arange(len(station_ids))
+    width = 0.4
+    ax.bar(x - width / 2, energies_planned, width, color=colors,
+           alpha=0.3, hatch='//', edgecolor=colors)
     bars = ax.bar(
-        station_ids,
+        x + width / 2,
         energies,
+        width,
         color=colors,
-        alpha=0.7
+        alpha=0.8
     )
+    ax.set_xticks(x, station_ids)
     scenario_tag = f"[{scenario_name[:3].upper()}-{approach_name.upper()}@{nb_car}]"
 
-    ax.set_title(f"{scenario_tag} Station Demand", fontweight='bold')
+    ax.set_title(f"{scenario_tag} Station energy: planned vs delivered",
+                 fontweight='bold')
     ax.set_xlabel("Station ID")
-    ax.set_ylabel("Energy Demand (kWh)", fontweight='bold')
-    ax.set_ylim(top=max(energies)*1.15)
+    ax.set_ylabel("Energy (kWh)", fontweight='bold')
+    ax.set_ylim(top=max(max(energies_planned, default=0.), 1e-9) * 1.15)
 
     # Valeurs au-dessus des barres
     for bar, val in zip(bars, energies):
@@ -293,6 +302,9 @@ def plot_station_demand(metrics, societies, scenario_name, \
             label=f"Company {sid}"
         )
         for sid in unique_societies
+    ] + [
+        Patch(facecolor='gray', alpha=0.3, hatch='//', label='Planned'),
+        Patch(facecolor='gray', alpha=0.8, label='Delivered'),
     ]
 
     ax.legend(

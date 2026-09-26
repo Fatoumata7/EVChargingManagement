@@ -362,7 +362,7 @@ SHOW_COLUMNS = ('scenario', 'nb_cars', 'method', 'exact_satisfaction',
                 'needs_satisfaction', 'mean_travel_distance_km',
                 'mean_waiting_time_min', 'total_ms_mean', 'nb_reservations',
                 'nb_pres', 'nb_no_show', 'nb_early_canc', 'nb_late_canc',
-                'invariant_ok')
+                'energy_planned_kwh', 'energy_delivered_kwh', 'invariant_ok')
 
 
 def cmd_show(args: argparse.Namespace) -> int:

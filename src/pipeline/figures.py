@@ -242,15 +242,23 @@ def fig_offer_protocol(rows: Rows, scenario: str):
 
 
 def fig_stations(rows: Rows, scenario: str):
-    """Operator-side load: charger occupancy and energy delivered."""
+    """Operator-side load: charger occupancy, energy planned and delivered."""
     fig, axes = plt.subplots(1, 2, figsize=FIGSIZE)
     ok = _plot_lines(axes[0], rows, scenario, 'mean_occupancy_rate',
                      "Occupancy (%)",
                      f'[{_tag(scenario)}] Mean charger occupancy rate',
                      percent=True)
-    ok |= _plot_lines(axes[1], rows, scenario, 'total_station_demand_kwh',
+    ok |= _plot_lines(axes[1], rows, scenario, 'energy_delivered_kwh',
                       "Energy (kWh)",
-                      f'[{_tag(scenario)}] Energy delivered (all stations)')
+                      f'[{_tag(scenario)}] Energy delivered (solid) '
+                      f'vs planned (dashed)')
+    # Planned energy on the same axis, same colour per method: the vertical
+    # gap between the two lines is the energy lost to unused reservations.
+    for method in _methods(rows):
+        x, y = _series(rows, scenario, method, 'energy_planned_kwh')
+        if x:
+            axes[1].plot(x, y, linestyle='--', marker='x', alpha=0.6,
+                         color=METHOD_COLORS.get(method))
     return _finish(fig) if ok else None
 
 

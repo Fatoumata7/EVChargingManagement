@@ -286,13 +286,19 @@ class Car:
 
         return False
 
-    def charge_one_slot(self):
-        """Charge the battery for one slot (called from Simulation)."""
-        delta_soc = self.charging_power * 1e3
-        self.soc_m = min(self.autonomy, self.soc_m + delta_soc)
+    def charge_one_slot(self) -> float:
+        """
+        Charge the battery for one slot (called from Simulation).
+
+        Returns the range actually added, in metres: less than
+        `charging_power` on the slot that fills the battery.
+        """
+        before = self.soc_m
+        self.soc_m = min(self.autonomy, self.soc_m + self.charging_power * 1e3)
         # Energy is flowing: whatever earlier search was abandoned, this need is
         # being served and the vehicle regains the right to ask again later.
         self.clear_gave_up()
+        return self.soc_m - before
 
     def needs_charging(self):
         # do not emit a request if already broken down.

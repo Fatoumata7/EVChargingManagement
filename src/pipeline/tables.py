@@ -47,7 +47,10 @@ SUMMARY_FIELDS: tuple[str, ...] = (
     'nb_stale_confirm', 'nb_station_level_rejections', 'nb_station_requests',
     'station_rejection_rate',
     'mean_occupancy_rate', 'mean_service_rate', 'nb_slots_reserved',
-    'nb_slots_served', 'slot_waste_rate', 'total_station_demand_kwh',
+    'nb_slots_served', 'slot_waste_rate',
+    # energy: booked by the reservations vs actually put into the batteries
+    'energy_planned_kwh', 'energy_delivered_kwh', 'energy_delivery_rate',
+    'energy_exact',
     # health of the run
     'nb_breakdowns', 'nb_diagnostics', 'invariant_ok',
 )
@@ -74,6 +77,23 @@ def _waste_rate(stations: Sequence[Mapping[str, Any]]) -> float | None:
     if reserved <= 0:
         return None
     return round(1. - served / reserved, 4)
+
+
+def _station_energy(result: Mapping[str, Any]) -> tuple[dict, dict]:
+    """
+    `(planned, delivered)` kWh per station, as stored in a result.
+
+    A result written before the two were separated only carries
+    `station_demand_kWh`, which is off by the slot/hour factor and mixes the
+    two notions: it is refused rather than silently mapped onto either.
+    """
+    met = result['metrics']
+    if 'station_energy_planned_kWh' not in met:
+        raise KeyError(
+            "result has no 'station_energy_planned_kWh' (written before the "
+            "planned/delivered energy split): run "
+            "`python -m src.pipeline.energy_fix <run dir>` on its run first")
+    return met['station_energy_planned_kWh'], met['station_energy_delivered_kWh']
 
 
 def _identity(result: Mapping[str, Any]) -> dict:
@@ -118,6 +138,7 @@ def summary_row(result: Mapping[str, Any]) -> dict:
         return sum(s.get(key, 0) for s in stations)
 
     nb_stations = max(1, len(stations))
+    planned_kwh, delivered_kwh = _station_energy(result)
     proc = met.get('mean_processing_time_ms') or {}
 
     row = _identity(result)
@@ -165,8 +186,16 @@ def summary_row(result: Mapping[str, Any]) -> dict:
         # Share of the slots booked and then never used: the direct cost of
         # no-shows and late cancellations for the operator.
         'slot_waste_rate':   _waste_rate(stations),
-        'total_station_demand_kwh': round(
-            sum(met['station_demand_kWh'].values()), 3),
+        # Planned: every confirmed reservation at its reserved duration.
+        # Delivered: what the charging slots really added. The gap is the
+        # energy lost to no-shows, cancellations and sessions cut short.
+        'energy_planned_kwh':   round(sum(planned_kwh.values()), 3),
+        'energy_delivered_kwh': round(sum(delivered_kwh.values()), 3),
+        'energy_delivery_rate': _rate(sum(delivered_kwh.values()),
+                                      sum(planned_kwh.values())),
+        # False only for a run migrated by `energy_fix` without a replay, whose
+        # energies are estimated from the slot counts rather than measured.
+        'energy_exact': met.get('energy_exact', True),
 
         'early_intent_realized_late': beh['reclassified'].get('early->late', 0),
         'mean_lead_slots':            beh.get('mean_lead_slots'),
@@ -207,13 +236,18 @@ def summary_row(result: Mapping[str, Any]) -> dict:
 def station_table(result: Mapping[str, Any]) -> list[dict]:
     """One row per station: capacity, outcomes, occupancy, energy."""
     identity = _identity(result)
-    demand_kwh = result['metrics']['station_demand_kWh']
+    planned_kwh, delivered_kwh = _station_energy(result)
+
+    def lookup(energy: Mapping, station_id) -> float:
+        # JSON turns the integer keys into strings.
+        return energy.get(str(station_id), energy.get(station_id, 0.))
+
     rows = []
     for station in result['stations']:
         row = dict(identity)
         row.update(station)
-        row['demand_kwh'] = demand_kwh.get(str(station['station_id']),
-                                          demand_kwh.get(station['station_id'], 0.))
+        row['energy_planned_kwh'] = lookup(planned_kwh, station['station_id'])
+        row['energy_delivered_kwh'] = lookup(delivered_kwh, station['station_id'])
         rows.append(row)
     return rows
 
