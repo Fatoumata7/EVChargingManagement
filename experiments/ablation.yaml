@@ -27,11 +27,11 @@
 label: ablation
 seed: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 scenarios: [optimistic, balance, pessimistic]
-fleet_sizes: [500, 800] #[50, 150, 250]
+fleet_sizes: [50, 150, 250]
 methods: [ablation, baselines]
 
 total_time: 1440          # 5 days in 5 min slots
-nb_stations: 40
+nb_stations: 10 # 40
 nb_societies: 4
 strategy_noise: 0.5
 
