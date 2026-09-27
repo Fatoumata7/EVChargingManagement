@@ -1,0 +1,13 @@
+scenario,nb_cars,method,seed,world_seed,grid_seed,station_id,society_id,nb_charg_spot,alpha,score_index,score_weighting,nb_request,nb_station_level_rejections,nb_offer_issued,nb_offer_expired,nb_confirm_refused,nb_stale_confirm,nb_ilp_not_optimal,nb_ilp_failed,nb_reservations,nb_pres,nb_no_show,nb_early_canc,nb_late_canc,nb_breakdown_canc,nb_unresolved,nb_slots_reserved,nb_slots_held,nb_slots_served,booking_rate,occupancy_rate,service_rate,energy_planned_kwh,energy_delivered_kwh
+pessimistic,150,load_aware,1,1,1,0,1,6,0.8703,1,duration,126,17,109,65,0,0,0,0,44,16,7,7,12,2,0,1681,927,539,0.9728,0.5365,0.3119,922.3,289.8
+pessimistic,150,load_aware,1,1,1,1,1,6,0.3662,1,duration,62,10,52,34,0,0,0,0,18,6,6,3,3,0,0,721,548,331,0.4172,0.3171,0.1916,393.1,151.1
+pessimistic,150,load_aware,1,1,1,2,2,4,0.8382,2,duration,140,19,121,89,0,0,0,0,32,20,2,5,5,0,0,1296,765,720,1.125,0.6641,0.625,695.0,411.3
+pessimistic,150,load_aware,1,1,1,3,1,6,0.1274,1,duration,136,15,121,74,0,0,0,0,47,20,7,6,13,1,0,1754,963,711,1.015,0.5573,0.4115,999.5,426.6
+pessimistic,150,load_aware,1,1,1,4,2,6,0.5844,2,duration,97,11,86,53,0,0,0,0,33,16,10,2,5,0,0,1316,1034,602,0.7616,0.5984,0.3484,711.8,328.2
+pessimistic,150,load_aware,1,1,1,5,0,6,0.5948,0,duration,121,13,108,79,0,0,0,0,29,16,5,3,5,0,0,1174,830,697,0.6794,0.4803,0.4034,627.1,342.9
+pessimistic,150,load_aware,1,1,1,6,1,5,0.4461,1,duration,130,17,113,55,0,0,0,0,58,21,12,7,17,1,0,2015,1098,612,1.3993,0.7625,0.425,1113.2,365.8
+pessimistic,150,load_aware,1,1,1,7,1,5,0.1213,1,duration,61,10,51,25,0,0,0,0,26,10,6,3,6,1,0,863,561,330,0.5993,0.3896,0.2292,529.2,207.1
+pessimistic,150,load_aware,1,1,1,8,0,5,0.3565,0,duration,66,15,51,20,0,0,0,0,31,10,7,8,5,1,0,1332,720,403,0.925,0.5,0.2799,729.6,231.0
+pessimistic,150,load_aware,1,1,1,9,0,4,0.5513,0,duration,78,11,67,45,0,0,0,0,22,8,7,3,4,0,0,819,589,302,0.7109,0.5113,0.2622,486.1,187.281
+pessimistic,150,load_aware,1,1,1,10,2,5,0.5639,2,duration,165,12,153,117,0,0,0,0,36,15,8,6,6,1,0,1363,874,598,0.9465,0.6069,0.4153,736.4,303.3
+pessimistic,150,load_aware,1,1,1,11,0,5,0.6531,0,duration,136,12,124,82,0,0,0,0,42,18,5,8,11,0,0,1616,841,619,1.1222,0.584,0.4299,895.1,375.7

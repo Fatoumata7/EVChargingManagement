@@ -1,0 +1,13 @@
+scenario,nb_cars,method,seed,world_seed,grid_seed,station_id,society_id,nb_charg_spot,alpha,score_index,score_weighting,nb_request,nb_station_level_rejections,nb_offer_issued,nb_offer_expired,nb_confirm_refused,nb_stale_confirm,nb_ilp_not_optimal,nb_ilp_failed,nb_reservations,nb_pres,nb_no_show,nb_early_canc,nb_late_canc,nb_breakdown_canc,nb_unresolved,nb_slots_reserved,nb_slots_held,nb_slots_served,booking_rate,occupancy_rate,service_rate,energy_planned_kwh,energy_delivered_kwh
+pessimistic,150,nearest_available,3,3,3,0,0,5,0.4658,0,duration,85,42,43,33,0,0,0,0,10,4,2,2,2,0,0,205,138,106,0.1424,0.0958,0.0736,127.8,58.1
+pessimistic,150,nearest_available,3,3,3,1,0,4,0.1215,0,duration,107,42,65,52,0,0,0,0,13,5,4,0,4,0,0,345,256,119,0.2995,0.2222,0.1033,231.1,88.0
+pessimistic,150,nearest_available,3,3,3,2,1,5,0.5425,1,duration,115,48,67,14,0,1,0,0,53,20,8,6,19,0,0,1518,844,578,1.0542,0.5861,0.4014,927.9,359.844
+pessimistic,150,nearest_available,3,3,3,3,0,4,0.3435,0,duration,197,97,100,13,0,3,0,0,87,46,16,11,14,0,0,1512,1102,748,1.3125,0.9566,0.6493,811.5,409.8
+pessimistic,150,nearest_available,3,3,3,4,2,5,0.8782,2,duration,152,70,82,11,0,0,0,0,71,24,15,12,15,5,0,1941,1141,705,1.3479,0.7924,0.4896,1086.2,394.0
+pessimistic,150,nearest_available,3,3,3,5,1,5,0.863,1,duration,144,48,96,61,0,0,0,0,35,18,7,3,7,0,0,1072,786,552,0.7444,0.5458,0.3833,665.3,343.4
+pessimistic,150,nearest_available,3,3,3,6,0,5,0.1826,0,duration,116,38,78,51,0,0,0,0,27,7,10,5,5,0,0,801,456,152,0.5563,0.3167,0.1056,511.9,105.0
+pessimistic,150,nearest_available,3,3,3,7,0,6,0.1163,0,duration,126,38,88,60,0,0,0,0,28,16,4,2,6,0,0,1005,664,544,0.5816,0.3843,0.3148,570.9,317.112
+pessimistic,150,nearest_available,3,3,3,8,1,5,0.3515,1,duration,89,41,48,48,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.0,0.0,0.0,0,0.0
+pessimistic,150,nearest_available,3,3,3,9,0,5,0.2595,0,duration,107,42,65,61,0,0,0,0,4,2,0,0,2,0,0,81,73,73,0.0563,0.0507,0.0507,60.5,54.9
+pessimistic,150,nearest_available,3,3,3,10,1,5,0.1877,1,duration,176,79,97,7,0,1,0,0,90,32,25,12,20,1,0,2083,1300,598,1.4465,0.9028,0.4153,1186.5,347.439
+pessimistic,150,nearest_available,3,3,3,11,2,5,0.7939,2,duration,169,62,107,29,0,1,0,0,78,32,14,14,17,1,0,2020,1307,931,1.4028,0.9076,0.6465,1109.0,511.0

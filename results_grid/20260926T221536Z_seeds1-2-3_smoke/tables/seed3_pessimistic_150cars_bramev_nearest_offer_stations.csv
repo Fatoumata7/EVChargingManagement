@@ -1,0 +1,13 @@
+scenario,nb_cars,method,seed,world_seed,grid_seed,station_id,society_id,nb_charg_spot,alpha,score_index,score_weighting,nb_request,nb_station_level_rejections,nb_offer_issued,nb_offer_expired,nb_confirm_refused,nb_stale_confirm,nb_ilp_not_optimal,nb_ilp_failed,nb_reservations,nb_pres,nb_no_show,nb_early_canc,nb_late_canc,nb_breakdown_canc,nb_unresolved,nb_slots_reserved,nb_slots_held,nb_slots_served,booking_rate,occupancy_rate,service_rate,energy_planned_kwh,energy_delivered_kwh
+pessimistic,150,bramev_nearest_offer,3,3,3,0,0,5,0.3724,0,duration,70,40,30,20,0,0,0,0,10,5,1,1,2,1,0,265,174,156,0.184,0.1208,0.1083,153.0,84.9
+pessimistic,150,bramev_nearest_offer,3,3,3,1,0,4,0.2643,0,duration,94,41,53,43,0,0,0,0,10,5,3,0,2,0,0,314,263,133,0.2726,0.2283,0.1155,209.3,101.6
+pessimistic,150,bramev_nearest_offer,3,3,3,2,1,5,0.2991,1,duration,99,38,61,18,0,0,0,0,43,19,7,2,15,0,0,1353,796,533,0.9396,0.5528,0.3701,802.4,323.076
+pessimistic,150,bramev_nearest_offer,3,3,3,3,0,4,0.334,0,duration,191,101,90,9,0,3,0,0,81,42,11,12,15,1,0,1568,1085,764,1.3611,0.9418,0.6632,857.8,427.9
+pessimistic,150,bramev_nearest_offer,3,3,3,4,2,5,0.8347,2,duration,135,50,85,9,0,1,0,0,76,25,19,9,20,3,0,1966,1157,722,1.3653,0.8035,0.5014,1101.6,399.6
+pessimistic,150,bramev_nearest_offer,3,3,3,5,1,5,0.3996,1,duration,140,39,101,66,0,0,0,0,35,16,8,4,7,0,0,997,697,457,0.6924,0.484,0.3174,594.5,265.9
+pessimistic,150,bramev_nearest_offer,3,3,3,6,0,5,0.2835,0,duration,115,39,76,41,0,0,0,0,35,8,14,7,6,0,0,879,498,129,0.6104,0.3458,0.0896,531.9,81.9
+pessimistic,150,bramev_nearest_offer,3,3,3,7,0,6,0.2627,0,duration,126,39,87,59,0,0,0,0,28,14,4,2,8,0,0,1059,622,500,0.6128,0.36,0.2894,612.5,302.912
+pessimistic,150,bramev_nearest_offer,3,3,3,8,1,5,0.2391,1,duration,83,41,42,42,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.0,0.0,0.0,0,0.0
+pessimistic,150,bramev_nearest_offer,3,3,3,9,0,5,0.3076,0,duration,95,39,56,52,0,0,0,0,4,2,0,0,2,0,0,88,73,73,0.0611,0.0507,0.0507,63.9,54.9
+pessimistic,150,bramev_nearest_offer,3,3,3,10,1,5,0.1877,1,duration,171,70,101,9,0,0,0,0,92,34,23,13,21,1,0,2086,1339,639,1.4486,0.9299,0.4437,1209.2,386.139
+pessimistic,150,bramev_nearest_offer,3,3,3,11,2,5,0.8083,2,duration,169,60,109,29,0,0,0,0,80,33,14,17,14,2,0,1823,1264,905,1.266,0.8778,0.6285,995.4,498.1

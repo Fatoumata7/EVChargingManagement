@@ -1,0 +1,13 @@
+scenario,nb_cars,method,seed,world_seed,grid_seed,station_id,society_id,nb_charg_spot,alpha,score_index,score_weighting,nb_request,nb_station_level_rejections,nb_offer_issued,nb_offer_expired,nb_confirm_refused,nb_stale_confirm,nb_ilp_not_optimal,nb_ilp_failed,nb_reservations,nb_pres,nb_no_show,nb_early_canc,nb_late_canc,nb_breakdown_canc,nb_unresolved,nb_slots_reserved,nb_slots_held,nb_slots_served,booking_rate,occupancy_rate,service_rate,energy_planned_kwh,energy_delivered_kwh
+pessimistic,150,multistation_rep,1,1,1,0,1,6,0.8703,1,duration,113,7,106,46,0,0,0,0,60,24,12,12,10,2,0,2190,1271,759,1.2674,0.7355,0.4392,1202.2,450.0
+pessimistic,150,multistation_rep,1,1,1,1,1,6,0.3662,1,duration,58,4,54,47,0,0,0,0,7,2,1,1,3,0,0,178,67,58,0.103,0.0388,0.0336,122.8,40.0
+pessimistic,150,multistation_rep,1,1,1,2,2,4,0.8382,2,duration,127,6,121,102,0,0,0,0,19,10,1,3,3,2,0,732,504,367,0.6354,0.4375,0.3186,430.5,213.4
+pessimistic,150,multistation_rep,1,1,1,3,1,6,0.1274,1,duration,126,9,117,65,0,0,0,0,52,23,7,8,13,1,0,2000,1082,828,1.1574,0.6262,0.4792,1080.1,453.6
+pessimistic,150,multistation_rep,1,1,1,4,2,6,0.5844,2,duration,106,8,98,40,0,0,0,0,58,28,11,10,8,1,0,2094,1338,992,1.2118,0.7743,0.5741,1153.5,550.7
+pessimistic,150,multistation_rep,1,1,1,5,0,6,0.5948,0,duration,109,7,102,94,0,0,0,0,8,2,4,1,1,0,0,264,206,51,0.1528,0.1192,0.0295,171.7,35.7
+pessimistic,150,multistation_rep,1,1,1,6,1,5,0.4461,1,duration,126,8,118,49,0,0,0,0,69,23,16,12,17,1,0,2240,1220,701,1.5556,0.8472,0.4868,1241.7,408.7
+pessimistic,150,multistation_rep,1,1,1,7,1,5,0.1213,1,duration,56,4,52,30,0,0,0,0,22,7,7,3,5,0,0,864,619,315,0.6,0.4299,0.2188,479.7,166.4
+pessimistic,150,multistation_rep,1,1,1,8,0,5,0.3565,0,duration,61,4,57,25,0,0,0,0,32,10,9,6,7,0,0,1354,775,384,0.9403,0.5382,0.2667,726.6,218.8
+pessimistic,150,multistation_rep,1,1,1,9,0,4,0.5513,0,duration,78,5,73,46,0,0,0,0,27,11,5,4,7,0,0,1137,677,476,0.987,0.5877,0.4132,663.7,263.1
+pessimistic,150,multistation_rep,1,1,1,10,2,5,0.5639,2,duration,168,8,160,124,0,0,0,0,36,20,6,1,8,1,0,1333,958,707,0.9257,0.6653,0.491,753.2,401.4
+pessimistic,150,multistation_rep,1,1,1,11,0,5,0.6531,0,duration,130,8,122,83,0,0,0,0,39,19,7,4,9,0,0,1545,1066,829,1.0729,0.7403,0.5757,802.3,430.4
