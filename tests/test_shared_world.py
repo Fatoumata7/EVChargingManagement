@@ -98,6 +98,25 @@ def test_grid_is_identical_across_fleet_sizes():
             f'the grid depends on the fleet size ({nb_cars})'
 
 
+def test_charger_count_changes_nothing_else_in_the_grid():
+    # A congestion campaign lowers the number of chargers per station; the
+    # positions, companies, initial alpha and company strategies must stay
+    # those of the reference campaign, or the comparison mixes two effects.
+    reference = generate_grid_spec(config_for('balance'), SEED)
+    for low, high in ((1, 1), (2, 2), (1, 3)):
+        config = config_for('balance')
+        config.set_NB_CHARG_SPOT({'low': low, 'high': high})
+        other = generate_grid_spec(config, SEED)
+        for a, b in zip(reference.stations, other.stations):
+            assert {k: v for k, v in a.items() if k != 'nb_charg_spot'} == \
+                   {k: v for k, v in b.items() if k != 'nb_charg_spot'}, \
+                f'chargers [{low}, {high}] change station {a["m"]}'
+            assert low <= b['nb_charg_spot'] <= high
+        assert other.societies == reference.societies
+        assert generate_fleet_spec(config, SEED, 12).to_dict() == \
+               generate_fleet_spec(config_for('balance'), SEED, 12).to_dict()
+
+
 def test_grid_depends_on_the_seed():
     a = generate_grid_spec(config_for('balance'), SEED)
     b = generate_grid_spec(config_for('balance'), SEED + 1)

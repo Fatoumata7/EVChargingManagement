@@ -491,7 +491,7 @@ def test_ablation_aggregates_over_the_seeds():
             assert row['nb_worlds'] == 3, (
                 f"{row['metric']}: {row['nb_worlds']} worlds for 3 seeds")
             assert 0 <= row['nb_improved'] <= 3
-            assert row['share_improved'] == round(row['nb_improved'] / 3, 4)
+            assert row['share_improved'] == row['nb_improved'] / 3
 
         # A share strictly between 0 and 1 is only reachable with several
         # seeds: that is exactly what the dimension buys.

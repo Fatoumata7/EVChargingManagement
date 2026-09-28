@@ -124,6 +124,28 @@ def _plot_lines(ax, rows: Rows, scenario: str, column: str, ylabel: str,
     return drawn
 
 
+def _has(rows: Rows, column: str) -> bool:
+    return any(r.get(column) is not None for r in rows)
+
+
+def _served_column(rows: Rows) -> str:
+    """
+    Column of the demands served (>= 1 slot delivered, even partially).
+
+    Named `served_rate` since the re-analysis (`reanalysis.py`); runs written
+    before it still call it `satisfied_rate`, with the same definition.
+    """
+    return 'served_rate' if _has(rows, 'served_rate') else 'satisfied_rate'
+
+
+def _metrics_for(rows: Rows) -> dict:
+    """`{column: Metric}` matching the vocabulary of `rows`."""
+    if _has(rows, 'served_rate'):
+        from src.pipeline import reanalysis
+        return {m.column: m for m in reanalysis.METRICS}
+    return dict(ablation.METRICS_BY_COLUMN)
+
+
 def _tag(scenario: str) -> str:
     return scenario[:3].upper()
 
@@ -139,13 +161,19 @@ def _finish(fig) -> Any:
 
 def fig_satisfaction(rows: Rows, scenario: str):
     """Service actually rendered: demands served, and energy received."""
-    fig, axes = plt.subplots(1, 2, figsize=FIGSIZE)
-    ok = _plot_lines(axes[0], rows, scenario, 'satisfied_rate', 'Demands (%)',
-                     f'[{_tag(scenario)}] Demands satisfied (a session took place)',
-                     percent=True)
-    ok |= _plot_lines(axes[1], rows, scenario, 'service_ratio_mean', 'Energy (%)',
-                      f'[{_tag(scenario)}] Energy delivered / requested, per demand',
-                      percent=True)
+    panels = [(_served_column(rows), 'Demands (%)',
+               'Demands served (even partially)')]
+    if _has(rows, 'fully_satisfied_rate'):
+        panels.append(('fully_satisfied_rate', 'Demands (%)',
+                       'Demands fully satisfied'))
+    panels.append(('service_ratio_mean', 'Energy (%)',
+                   'Share of energy need met (all demands)'))
+    fig, axes = plt.subplots(1, len(panels),
+                             figsize=(FIGSIZE[0] * len(panels) / 2, FIGSIZE[1]))
+    ok = False
+    for ax, (column, ylabel, title) in zip(axes, panels):
+        ok |= _plot_lines(ax, rows, scenario, column, ylabel,
+                          f'[{_tag(scenario)}] {title}', percent=True)
     for ax in axes:
         ax.set_ylim(0, 105)
         ax.axhline(100, color='black', linestyle='--', linewidth=0.8, alpha=0.4)
@@ -284,16 +312,24 @@ def fig_stations(rows: Rows, scenario: str):
 # ----------------------------------------------------------------------
 
 def fig_scenarios_overview(rows: Rows):
-    """Demands satisfied, one panel per scenario: the overview."""
+    """
+    Demands served, one panel per scenario: the overview. A second row shows
+    the demands fully satisfied when the summary carries them.
+    """
     scenarios = _scenarios(rows)
     if not scenarios:
         return None
-    fig, axes = plt.subplots(1, len(scenarios), figsize=(4.6 * len(scenarios), 4.2),
+    lines = [(_served_column(rows), 'Demands served (even partially)')]
+    if _has(rows, 'fully_satisfied_rate'):
+        lines.append(('fully_satisfied_rate', 'Demands fully satisfied'))
+    fig, axes = plt.subplots(len(lines), len(scenarios),
+                             figsize=(4.6 * len(scenarios), 4.2 * len(lines)),
                              squeeze=False, sharey=True)
-    for ax, scenario in zip(axes[0], scenarios):
-        _plot_lines(ax, rows, scenario, 'satisfied_rate', 'Demands (%)',
-                    f'[{_tag(scenario)}] Demands satisfied', percent=True)
-        ax.set_ylim(0, 105)
+    for ax_row, (column, title) in zip(axes, lines):
+        for ax, scenario in zip(ax_row, scenarios):
+            _plot_lines(ax, rows, scenario, column, 'Demands (%)',
+                        f'[{_tag(scenario)}] {title}', percent=True)
+            ax.set_ylim(0, 105)
     return _finish(fig)
 
 
@@ -533,11 +569,12 @@ def _mean_of(rows: Rows, column: str) -> float:
 
 #: Metrics plotted by the ablation figures, in panel order.
 ABLATION_METRICS: tuple[str, ...] = (
-    'satisfied_rate', 'rate_abs', 'mean_service_rate', 'slot_waste_rate',
+    'served_rate', 'satisfied_rate', 'fully_satisfied_rate', 'rate_abs', 'mean_service_rate', 'slot_waste_rate',
 )
 
 
-def _ablation_bars(means: Rows, kind: str, title: str):
+def _ablation_bars(means: Rows, kind: str, title: str,
+                   by_column: Mapping[str, Any] = ablation.METRICS_BY_COLUMN):
     """
     One panel per metric, one bar per component.
 
@@ -573,7 +610,7 @@ def _ablation_bars(means: Rows, kind: str, title: str):
             value = None if row is None else row['mean_delta_pct']
             values.append(0. if value is None else value)
             improves = bool(row and row['mean_delta'] and
-                            ablation.METRICS_BY_COLUMN[column].improves(row['mean_delta']))
+                            by_column[column].improves(row['mean_delta']))
             colors.append('#3b7dd8' if improves else '#c0392b')
             shares.append(None if row is None else row['share_improved'])
 
@@ -590,7 +627,7 @@ def _ablation_bars(means: Rows, kind: str, title: str):
         ax.set_xticks(x)
         ax.set_xticklabels([_wrap(c) for c in components], fontsize=8)
         ax.set_ylabel('mean relative gap (%)')
-        ax.set_title(ablation.METRICS_BY_COLUMN[column].label,
+        ax.set_title(_wrap(by_column[column].label, 28),
                      fontweight='bold', fontsize=10)
         ax.grid(alpha=0.3, linestyle=':', axis='y')
         ax.margins(y=0.25)
@@ -617,38 +654,45 @@ def _wrap(text: str, width: int = 14) -> str:
 
 def fig_ablation_components(rows: Rows):
     """Contribution of each component added along the ablation ladder."""
-    means = ablation.mean_rows(ablation.ladder_rows(rows))
+    by_column = _metrics_for(rows)
+    means = ablation.mean_rows(ablation.ladder_rows(rows, tuple(by_column.values())))
     if not means:
         return None
     return _ablation_bars(
         means, 'ladder',
-        "Contribution of each component (gap to the previous rung)")
+        "Contribution of each component (gap to the previous rung)", by_column)
 
 
 def fig_ablation_variants(rows: Rows):
     """Effect of replacing an internal mechanism of BRAM-EV."""
-    means = ablation.mean_rows(ablation.variant_rows(rows))
+    by_column = _metrics_for(rows)
+    means = ablation.mean_rows(ablation.variant_rows(rows, tuple(by_column.values())))
     if not means:
         return None
     return _ablation_bars(
         means, 'variant',
-        "BRAM-EV variants (gap to the complete method)")
+        "BRAM-EV variants (gap to the complete method)", by_column)
 
 
 def fig_ablation_ladder(rows: Rows, scenario: str):
-    """Demands satisfied and no-shows rung by rung, against fleet size."""
+    """Demands served (and fully satisfied) and no-shows rung by rung."""
     ladder = [r for r in rows if r['method'] in methods.LADDER
               and r['scenario'] == scenario]
     if not ladder:
         return None
-    fig, axes = plt.subplots(1, 2, figsize=FIGSIZE)
-    ok = _plot_lines(axes[0], ladder, scenario, 'satisfied_rate',
-                     'Demands (%)',
-                     f'[{_tag(scenario)}] Demands satisfied — ablation ladder',
-                     percent=True)
-    ok |= _plot_lines(axes[1], ladder, scenario, 'rate_abs', 'No-show (%)',
-                      f'[{_tag(scenario)}] No-show rate — ablation ladder',
-                      percent=True)
+    panels = [(_served_column(ladder), 'Demands (%)',
+               'Demands served (even partially)')]
+    if _has(ladder, 'fully_satisfied_rate'):
+        panels.append(('fully_satisfied_rate', 'Demands (%)',
+                       'Demands fully satisfied'))
+    panels.append(('rate_abs', 'No-show (%)', 'No-show rate'))
+    fig, axes = plt.subplots(1, len(panels),
+                             figsize=(FIGSIZE[0] * len(panels) / 2, FIGSIZE[1]))
+    ok = False
+    for ax, (column, ylabel, title) in zip(axes, panels):
+        ok |= _plot_lines(ax, ladder, scenario, column, ylabel,
+                          f'[{_tag(scenario)}] {title} — ablation ladder',
+                          percent=True)
     return _finish(fig) if ok else None
 
 

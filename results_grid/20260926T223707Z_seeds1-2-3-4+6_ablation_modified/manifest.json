@@ -1,0 +1,17 @@
+{
+  "run": "20260926T223707Z_seeds1-2-3-4+6_ablation_modified",
+  "kind": "reanalysis",
+  "source_run": "20260926T223707Z_seeds1-2-3-4+6_ablation",
+  "created_utc": "20260928T184859Z",
+  "simulations_rerun": false,
+  "nb_cases": 720,
+  "full_service_tol_kwh": 0.001,
+  "renamed_columns": {
+    "nb_demands_satisfied": "nb_demands_served",
+    "satisfied_rate": "served_rate",
+    "service_ratio_mean_satisfied": "service_ratio_mean_served"
+  },
+  "nb_ilp_not_optimal": 84,
+  "nb_ilp_feasible_time_limit": 84,
+  "nb_ilp_failed": 0
+}

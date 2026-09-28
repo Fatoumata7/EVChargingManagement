@@ -1,0 +1,487 @@
+kind,scenario,nb_cars,world_seed,metric,metric_label,goal,unit,step,component,from_method,to_method,value_from,value_to,delta,delta_pct,improvement
+ladder,balance,250,1,satisfied_rate,Demands satisfied,up,%,2,Reputation,multistation,multistation_rep,0.5931,0.5965,0.0034000000000000696,0.5732591468555167,True
+ladder,balance,250,1,cancelled_rate,Demands cancelled,down,%,2,Reputation,multistation,multistation_rep,0.3988,0.3965,-0.0022999999999999687,-0.5767301905717073,True
+ladder,balance,250,1,service_ratio_mean,Energy served / requested,up,%,2,Reputation,multistation,multistation_rep,0.525,0.534,0.009000000000000008,1.7142857142857157,True
+ladder,balance,250,1,plan_coverage_exact,Planning coverage (exact),up,%,2,Reputation,multistation,multistation_rep,0.9014,0.8939,-0.007499999999999951,-0.8320390503660918,False
+ladder,balance,250,1,plan_coverage_volume,Planning coverage (volume),up,%,2,Reputation,multistation,multistation_rep,0.9175,0.9133,-0.0041999999999999815,-0.45776566757492987,False
+ladder,balance,250,1,confirm_rate,Confirmation rate,up,%,2,Reputation,multistation,multistation_rep,0.9919,0.993,0.0010999999999999899,0.1108982760358897,True
+ladder,balance,250,1,mean_waiting_time_min,Mean waiting time,down,min,2,Reputation,multistation,multistation_rep,18.072,19.896,1.8240000000000016,10.092961487383807,False
+ladder,balance,250,1,mean_travel_distance_km,Mean distance,down,km,2,Reputation,multistation,multistation_rep,0.5474,0.536,-0.011399999999999966,-2.0825721592984956,True
+ladder,balance,250,1,rate_pres,Show-up rate,up,%,2,Reputation,multistation,multistation_rep,0.5984,0.6007,0.0022999999999999687,0.38435828877004824,True
+ladder,balance,250,1,rate_abs,No-show rate,down,%,2,Reputation,multistation,multistation_rep,0.1898,0.1887,-0.0010999999999999899,-0.5795574288724921,True
+ladder,balance,250,1,nb_no_show,No-shows,down,,2,Reputation,multistation,multistation_rep,464.0,456.0,-8.0,-1.7241379310344827,True
+ladder,balance,250,1,nb_reservations,Confirmed reservations,up,,2,Reputation,multistation,multistation_rep,2445.0,2417.0,-28.0,-1.1451942740286298,False
+ladder,balance,250,1,mean_occupancy_rate,Occupancy rate,up,%,2,Reputation,multistation,multistation_rep,0.5599,0.5583,-0.0015999999999999348,-0.28576531523485177,False
+ladder,balance,250,1,mean_service_rate,Service rate,up,%,2,Reputation,multistation,multistation_rep,0.4227,0.4245,0.0017999999999999683,0.42583392476933246,True
+ladder,balance,250,1,slot_waste_rate,Wasted reserved slots,down,%,2,Reputation,multistation,multistation_rep,0.4062,0.3979,-0.00830000000000003,-2.043328409650426,True
+ladder,balance,250,1,held_idle_rate,Held slots left idle,down,%,2,Reputation,multistation,multistation_rep,0.2451,0.2397,-0.005400000000000016,-2.20318237454101,True
+ladder,balance,250,1,energy_planned_kwh,Energy planned,up,kWh,2,Reputation,multistation,multistation_rep,47390.9,46913.9,-477.0,-1.0065223492273834,False
+ladder,balance,250,1,energy_delivered_kwh,Energy delivered,up,kWh,2,Reputation,multistation,multistation_rep,28039.683,28126.293,86.61000000000058,0.3088836631997608,True
+ladder,balance,250,1,energy_delivery_rate,Energy delivered/planned,up,%,2,Reputation,multistation,multistation_rep,0.5917,0.5995,0.007800000000000029,1.3182355923609987,True
+ladder,balance,250,1,no_offer_rate,Demands with no offer,down,%,2,Reputation,multistation,multistation_rep,0.0081,0.007,-0.0010999999999999994,-13.580246913580241,True
+ladder,balance,250,1,abandon_rate,Abandoned searches,down,%,2,Reputation,multistation,multistation_rep,0.0041,0.0037,-0.0004000000000000002,-9.756097560975615,True
+ladder,balance,250,1,excluded_car_share,Vehicles excluded,down,%,2,Reputation,multistation,multistation_rep,0.04,0.036,-0.0040000000000000036,-10.000000000000009,True
+ladder,balance,250,1,request_rejection_rate,Unserved demands,down,%,2,Reputation,multistation,multistation_rep,0.0081,0.007,-0.0010999999999999994,-13.580246913580241,True
+ladder,balance,250,1,nb_station_level_rejections,Rejected demands,down,,2,Reputation,multistation,multistation_rep,2404.0,2131.0,-273.0,-11.356073211314476,True
+ladder,balance,250,1,station_rejection_rate,Station rejection rate,down,%,2,Reputation,multistation,multistation_rep,0.139,0.1264,-0.0126,-9.064748201438848,True
+ladder,balance,250,1,total_ms_mean,End-to-end latency,down,ms,2,Reputation,multistation,multistation_rep,458.444,475.411,16.966999999999985,3.700997286473372,False
+ladder,balance,250,1,wall_time_s,Wall time,down,s,2,Reputation,multistation,multistation_rep,209.341,216.852,7.510999999999996,3.587925919910574,False
+ladder,balance,250,1,satisfied_rate,Demands satisfied,up,%,3,Cross-station adaptation,multistation_rep,bramev,0.5965,0.5954,-0.0010999999999999899,-0.18440905280804523,False
+ladder,balance,250,1,cancelled_rate,Demands cancelled,down,%,3,Cross-station adaptation,multistation_rep,bramev,0.3965,0.3984,0.0018999999999999573,0.47919293820932085,False
+ladder,balance,250,1,service_ratio_mean,Energy served / requested,up,%,3,Cross-station adaptation,multistation_rep,bramev,0.534,0.527,-0.007000000000000006,-1.3108614232209748,False
+ladder,balance,250,1,plan_coverage_exact,Planning coverage (exact),up,%,3,Cross-station adaptation,multistation_rep,bramev,0.8939,0.8873,-0.00660000000000005,-0.7383376216579092,False
+ladder,balance,250,1,plan_coverage_volume,Planning coverage (volume),up,%,3,Cross-station adaptation,multistation_rep,bramev,0.9133,0.9062,-0.007099999999999995,-0.7774006350596732,False
+ladder,balance,250,1,confirm_rate,Confirmation rate,up,%,3,Cross-station adaptation,multistation_rep,bramev,0.993,0.9939,0.0009000000000000119,0.0906344410876145,True
+ladder,balance,250,1,mean_waiting_time_min,Mean waiting time,down,min,3,Cross-station adaptation,multistation_rep,bramev,19.896,20.742,0.8460000000000001,4.252110977080821,False
+ladder,balance,250,1,mean_travel_distance_km,Mean distance,down,km,3,Cross-station adaptation,multistation_rep,bramev,0.536,0.5534,0.01739999999999997,3.2462686567164125,False
+ladder,balance,250,1,rate_pres,Show-up rate,up,%,3,Cross-station adaptation,multistation_rep,bramev,0.6007,0.5995,-0.0011999999999999789,-0.19976693857166286,False
+ladder,balance,250,1,rate_abs,No-show rate,down,%,3,Cross-station adaptation,multistation_rep,bramev,0.1887,0.1883,-0.00040000000000001146,-0.2119766825649239,True
+ladder,balance,250,1,nb_no_show,No-shows,down,,3,Cross-station adaptation,multistation_rep,bramev,456.0,458.0,2.0,0.43859649122807015,False
+ladder,balance,250,1,nb_reservations,Confirmed reservations,up,,3,Cross-station adaptation,multistation_rep,bramev,2417.0,2432.0,15.0,0.6206040546131568,True
+ladder,balance,250,1,mean_occupancy_rate,Occupancy rate,up,%,3,Cross-station adaptation,multistation_rep,bramev,0.5583,0.5538,-0.0045000000000000595,-0.8060182697474583,False
+ladder,balance,250,1,mean_service_rate,Service rate,up,%,3,Cross-station adaptation,multistation_rep,bramev,0.4245,0.4203,-0.0041999999999999815,-0.9893992932862148,False
+ladder,balance,250,1,slot_waste_rate,Wasted reserved slots,down,%,3,Cross-station adaptation,multistation_rep,bramev,0.3979,0.4007,0.0028000000000000247,0.7036943955767844,False
+ladder,balance,250,1,held_idle_rate,Held slots left idle,down,%,3,Cross-station adaptation,multistation_rep,bramev,0.2397,0.2411,0.0014000000000000123,0.5840634125990873,False
+ladder,balance,250,1,energy_planned_kwh,Energy planned,up,kWh,3,Cross-station adaptation,multistation_rep,bramev,46913.9,46712.0,-201.90000000000146,-0.4303628562110621,False
+ladder,balance,250,1,energy_delivered_kwh,Energy delivered,up,kWh,3,Cross-station adaptation,multistation_rep,bramev,28126.293,27876.974,-249.31900000000314,-0.886426803560651,False
+ladder,balance,250,1,energy_delivery_rate,Energy delivered/planned,up,%,3,Cross-station adaptation,multistation_rep,bramev,0.5995,0.5968,-0.0027000000000000357,-0.4503753127606398,False
+ladder,balance,250,1,no_offer_rate,Demands with no offer,down,%,3,Cross-station adaptation,multistation_rep,bramev,0.007,0.0061,-0.0008999999999999998,-12.857142857142852,True
+ladder,balance,250,1,abandon_rate,Abandoned searches,down,%,3,Cross-station adaptation,multistation_rep,bramev,0.0037,0.0033,-0.0004000000000000002,-10.810810810810816,True
+ladder,balance,250,1,excluded_car_share,Vehicles excluded,down,%,3,Cross-station adaptation,multistation_rep,bramev,0.036,0.032,-0.003999999999999997,-11.111111111111104,True
+ladder,balance,250,1,request_rejection_rate,Unserved demands,down,%,3,Cross-station adaptation,multistation_rep,bramev,0.007,0.0061,-0.0008999999999999998,-12.857142857142852,True
+ladder,balance,250,1,nb_station_level_rejections,Rejected demands,down,,3,Cross-station adaptation,multistation_rep,bramev,2131.0,1949.0,-182.0,-8.540591271703425,True
+ladder,balance,250,1,station_rejection_rate,Station rejection rate,down,%,3,Cross-station adaptation,multistation_rep,bramev,0.1264,0.1173,-0.00910000000000001,-7.199367088607603,True
+ladder,balance,250,1,total_ms_mean,End-to-end latency,down,ms,3,Cross-station adaptation,multistation_rep,bramev,475.411,471.18,-4.2309999999999945,-0.8899667866330385,True
+ladder,balance,250,1,wall_time_s,Wall time,down,s,3,Cross-station adaptation,multistation_rep,bramev,216.852,215.037,-1.8149999999999977,-0.8369763709811289,True
+ladder,balance,250,2,satisfied_rate,Demands satisfied,up,%,2,Reputation,multistation,multistation_rep,0.5893,0.5969,0.00759999999999994,1.289665705073806,True
+ladder,balance,250,2,cancelled_rate,Demands cancelled,down,%,2,Reputation,multistation,multistation_rep,0.4047,0.396,-0.008699999999999986,-2.1497405485544814,True
+ladder,balance,250,2,service_ratio_mean,Energy served / requested,up,%,2,Reputation,multistation,multistation_rep,0.496,0.499,0.0030000000000000027,0.6048387096774199,True
+ladder,balance,250,2,plan_coverage_exact,Planning coverage (exact),up,%,2,Reputation,multistation,multistation_rep,0.8421,0.8293,-0.012799999999999923,-1.5200095000593663,False
+ladder,balance,250,2,plan_coverage_volume,Planning coverage (volume),up,%,2,Reputation,multistation,multistation_rep,0.8651,0.8577,-0.007399999999999962,-0.8553924401803216,False
+ladder,balance,250,2,confirm_rate,Confirmation rate,up,%,2,Reputation,multistation,multistation_rep,0.9941,0.9929,-0.0011999999999999789,-0.1207122019917492,False
+ladder,balance,250,2,mean_waiting_time_min,Mean waiting time,down,min,2,Reputation,multistation,multistation_rep,28.554,29.694,1.1400000000000006,3.992435385585209,False
+ladder,balance,250,2,mean_travel_distance_km,Mean distance,down,km,2,Reputation,multistation,multistation_rep,0.5527,0.5407,-0.01200000000000001,-2.1711597611724285,True
+ladder,balance,250,2,rate_pres,Show-up rate,up,%,2,Reputation,multistation,multistation_rep,0.5936,0.6012,0.00759999999999994,1.2803234501347607,True
+ladder,balance,250,2,rate_abs,No-show rate,down,%,2,Reputation,multistation,multistation_rep,0.1952,0.1893,-0.005900000000000016,-3.0225409836065658,True
+ladder,balance,250,2,nb_no_show,No-shows,down,,2,Reputation,multistation,multistation_rep,491.0,476.0,-15.0,-3.054989816700611,True
+ladder,balance,250,2,nb_reservations,Confirmed reservations,up,,2,Reputation,multistation,multistation_rep,2515.0,2515.0,0.0,0.0,False
+ladder,balance,250,2,mean_occupancy_rate,Occupancy rate,up,%,2,Reputation,multistation,multistation_rep,0.5413,0.5414,9.999999999998899e-05,0.01847404396822261,True
+ladder,balance,250,2,mean_service_rate,Service rate,up,%,2,Reputation,multistation,multistation_rep,0.4084,0.4112,0.0028000000000000247,0.6856023506366368,True
+ladder,balance,250,2,slot_waste_rate,Wasted reserved slots,down,%,2,Reputation,multistation,multistation_rep,0.4067,0.4015,-0.005199999999999982,-1.2785837226456804,True
+ladder,balance,250,2,held_idle_rate,Held slots left idle,down,%,2,Reputation,multistation,multistation_rep,0.2454,0.2404,-0.0050000000000000044,-2.037489812550939,True
+ladder,balance,250,2,energy_planned_kwh,Energy planned,up,kWh,2,Reputation,multistation,multistation_rep,46914.2,46646.5,-267.6999999999971,-0.5706161460709063,False
+ladder,balance,250,2,energy_delivered_kwh,Energy delivered,up,kWh,2,Reputation,multistation,multistation_rep,27731.655,27897.012,165.35699999999997,0.5962752673794621,True
+ladder,balance,250,2,energy_delivery_rate,Energy delivered/planned,up,%,2,Reputation,multistation,multistation_rep,0.5911,0.5981,0.007000000000000006,1.1842327863305713,True
+ladder,balance,250,2,no_offer_rate,Demands with no offer,down,%,2,Reputation,multistation,multistation_rep,0.0059,0.0071,0.0012000000000000005,20.338983050847467,False
+ladder,balance,250,2,abandon_rate,Abandoned searches,down,%,2,Reputation,multistation,multistation_rep,0.0036,0.0043,0.0007000000000000001,19.444444444444446,False
+ladder,balance,250,2,excluded_car_share,Vehicles excluded,down,%,2,Reputation,multistation,multistation_rep,0.036,0.044,0.008,22.222222222222225,False
+ladder,balance,250,2,request_rejection_rate,Unserved demands,down,%,2,Reputation,multistation,multistation_rep,0.0059,0.0071,0.0012000000000000005,20.338983050847467,False
+ladder,balance,250,2,nb_station_level_rejections,Rejected demands,down,,2,Reputation,multistation,multistation_rep,2098.0,2563.0,465.0,22.163965681601525,False
+ladder,balance,250,2,station_rejection_rate,Station rejection rate,down,%,2,Reputation,multistation,multistation_rep,0.1412,0.1672,0.025999999999999995,18.413597733711047,False
+ladder,balance,250,2,total_ms_mean,End-to-end latency,down,ms,2,Reputation,multistation,multistation_rep,325.061,329.489,4.427999999999997,1.3622058628995781,False
+ladder,balance,250,2,wall_time_s,Wall time,down,s,2,Reputation,multistation,multistation_rep,177.231,183.911,6.680000000000007,3.7690923145499418,False
+ladder,balance,250,2,satisfied_rate,Demands satisfied,up,%,3,Cross-station adaptation,multistation_rep,bramev,0.5969,0.5904,-0.00649999999999995,-1.0889596247277518,False
+ladder,balance,250,2,cancelled_rate,Demands cancelled,down,%,3,Cross-station adaptation,multistation_rep,bramev,0.396,0.404,0.008000000000000007,2.020202020202022,False
+ladder,balance,250,2,service_ratio_mean,Energy served / requested,up,%,3,Cross-station adaptation,multistation_rep,bramev,0.499,0.494,-0.0050000000000000044,-1.002004008016033,False
+ladder,balance,250,2,plan_coverage_exact,Planning coverage (exact),up,%,3,Cross-station adaptation,multistation_rep,bramev,0.8293,0.8343,0.0050000000000000044,0.6029181237187995,True
+ladder,balance,250,2,plan_coverage_volume,Planning coverage (volume),up,%,3,Cross-station adaptation,multistation_rep,bramev,0.8577,0.8631,0.00539999999999996,0.629590766002094,True
+ladder,balance,250,2,confirm_rate,Confirmation rate,up,%,3,Cross-station adaptation,multistation_rep,bramev,0.9929,0.9945,0.0016000000000000458,0.16114412327525893,True
+ladder,balance,250,2,mean_waiting_time_min,Mean waiting time,down,min,3,Cross-station adaptation,multistation_rep,bramev,29.694,29.886,0.19200000000000017,0.6465952717720758,False
+ladder,balance,250,2,mean_travel_distance_km,Mean distance,down,km,3,Cross-station adaptation,multistation_rep,bramev,0.5407,0.5526,0.011900000000000022,2.2008507490290405,False
+ladder,balance,250,2,rate_pres,Show-up rate,up,%,3,Cross-station adaptation,multistation_rep,bramev,0.6012,0.5941,-0.007099999999999995,-1.180971390552228,False
+ladder,balance,250,2,rate_abs,No-show rate,down,%,3,Cross-station adaptation,multistation_rep,bramev,0.1893,0.195,0.005700000000000011,3.0110935023771845,False
+ladder,balance,250,2,nb_no_show,No-shows,down,,3,Cross-station adaptation,multistation_rep,bramev,476.0,491.0,15.0,3.1512605042016806,False
+ladder,balance,250,2,nb_reservations,Confirmed reservations,up,,3,Cross-station adaptation,multistation_rep,bramev,2515.0,2518.0,3.0,0.11928429423459244,True
+ladder,balance,250,2,mean_occupancy_rate,Occupancy rate,up,%,3,Cross-station adaptation,multistation_rep,bramev,0.5414,0.5435,0.0020999999999999908,0.3878832656076821,True
+ladder,balance,250,2,mean_service_rate,Service rate,up,%,3,Cross-station adaptation,multistation_rep,bramev,0.4112,0.4069,-0.004300000000000026,-1.045719844357983,False
+ladder,balance,250,2,slot_waste_rate,Wasted reserved slots,down,%,3,Cross-station adaptation,multistation_rep,bramev,0.4015,0.4118,0.010299999999999976,2.565379825653792,False
+ladder,balance,250,2,held_idle_rate,Held slots left idle,down,%,3,Cross-station adaptation,multistation_rep,bramev,0.2404,0.2513,0.01090000000000002,4.534109816971722,False
+ladder,balance,250,2,energy_planned_kwh,Energy planned,up,kWh,3,Cross-station adaptation,multistation_rep,bramev,46646.5,47007.1,360.59999999999854,0.7730483530382741,True
+ladder,balance,250,2,energy_delivered_kwh,Energy delivered,up,kWh,3,Cross-station adaptation,multistation_rep,bramev,27897.012,27618.423,-278.58899999999994,-0.9986338321824573,False
+ladder,balance,250,2,energy_delivery_rate,Energy delivered/planned,up,%,3,Cross-station adaptation,multistation_rep,bramev,0.5981,0.5875,-0.010599999999999943,-1.772278883129902,False
+ladder,balance,250,2,no_offer_rate,Demands with no offer,down,%,3,Cross-station adaptation,multistation_rep,bramev,0.0071,0.0055,-0.0016000000000000007,-22.535211267605646,True
+ladder,balance,250,2,abandon_rate,Abandoned searches,down,%,3,Cross-station adaptation,multistation_rep,bramev,0.0043,0.0051,0.0008000000000000004,18.60465116279071,False
+ladder,balance,250,2,excluded_car_share,Vehicles excluded,down,%,3,Cross-station adaptation,multistation_rep,bramev,0.044,0.052,0.008,18.181818181818183,False
+ladder,balance,250,2,request_rejection_rate,Unserved demands,down,%,3,Cross-station adaptation,multistation_rep,bramev,0.0071,0.0055,-0.0016000000000000007,-22.535211267605646,True
+ladder,balance,250,2,nb_station_level_rejections,Rejected demands,down,,3,Cross-station adaptation,multistation_rep,bramev,2563.0,2167.0,-396.0,-15.450643776824034,True
+ladder,balance,250,2,station_rejection_rate,Station rejection rate,down,%,3,Cross-station adaptation,multistation_rep,bramev,0.1672,0.148,-0.019199999999999995,-11.483253588516744,True
+ladder,balance,250,2,total_ms_mean,End-to-end latency,down,ms,3,Cross-station adaptation,multistation_rep,bramev,329.489,332.414,2.9250000000000114,0.8877382856483863,False
+ladder,balance,250,2,wall_time_s,Wall time,down,s,3,Cross-station adaptation,multistation_rep,bramev,183.911,182.723,-1.1879999999999882,-0.6459646241932174,True
+ladder,balance,250,3,satisfied_rate,Demands satisfied,up,%,2,Reputation,multistation,multistation_rep,0.5896,0.589,-0.0006000000000000449,-0.1017639077340646,False
+ladder,balance,250,3,cancelled_rate,Demands cancelled,down,%,2,Reputation,multistation,multistation_rep,0.4037,0.4055,0.0018000000000000238,0.44587565023532916,False
+ladder,balance,250,3,service_ratio_mean,Energy served / requested,up,%,2,Reputation,multistation,multistation_rep,0.483,0.485,0.0020000000000000018,0.4140786749482405,True
+ladder,balance,250,3,plan_coverage_exact,Planning coverage (exact),up,%,2,Reputation,multistation,multistation_rep,0.8255,0.8206,-0.0049000000000000155,-0.5935796486977608,False
+ladder,balance,250,3,plan_coverage_volume,Planning coverage (volume),up,%,2,Reputation,multistation,multistation_rep,0.8496,0.8506,0.0010000000000000009,0.11770244821092289,True
+ladder,balance,250,3,confirm_rate,Confirmation rate,up,%,2,Reputation,multistation,multistation_rep,0.9934,0.9945,0.001100000000000101,0.11073082343467898,True
+ladder,balance,250,3,mean_waiting_time_min,Mean waiting time,down,min,2,Reputation,multistation,multistation_rep,33.69,32.514,-1.1759999999999948,-3.490650044523582,True
+ladder,balance,250,3,mean_travel_distance_km,Mean distance,down,km,2,Reputation,multistation,multistation_rep,0.5844,0.5641,-0.020299999999999985,-3.473648186173851,True
+ladder,balance,250,3,rate_pres,Show-up rate,up,%,2,Reputation,multistation,multistation_rep,0.5936,0.593,-0.0006000000000000449,-0.10107816711591053,False
+ladder,balance,250,3,rate_abs,No-show rate,down,%,2,Reputation,multistation,multistation_rep,0.1883,0.19,0.001700000000000007,0.9028146574615014,False
+ladder,balance,250,3,nb_no_show,No-shows,down,,2,Reputation,multistation,multistation_rep,480.0,480.0,0.0,0.0,False
+ladder,balance,250,3,nb_reservations,Confirmed reservations,up,,2,Reputation,multistation,multistation_rep,2549.0,2526.0,-23.0,-0.9023146331894861,False
+ladder,balance,250,3,mean_occupancy_rate,Occupancy rate,up,%,2,Reputation,multistation,multistation_rep,0.5409,0.5348,-0.006099999999999994,-1.1277500462192631,False
+ladder,balance,250,3,mean_service_rate,Service rate,up,%,2,Reputation,multistation,multistation_rep,0.4049,0.402,-0.002899999999999958,-0.7162262286984338,False
+ladder,balance,250,3,slot_waste_rate,Wasted reserved slots,down,%,2,Reputation,multistation,multistation_rep,0.4117,0.4107,-0.0010000000000000009,-0.2428953121204763,True
+ladder,balance,250,3,held_idle_rate,Held slots left idle,down,%,2,Reputation,multistation,multistation_rep,0.2515,0.2483,-0.0032000000000000084,-1.2723658051689894,True
+ladder,balance,250,3,energy_planned_kwh,Energy planned,up,kWh,2,Reputation,multistation,multistation_rep,46272.6,45723.7,-548.9000000000015,-1.1862311605572229,False
+ladder,balance,250,3,energy_delivered_kwh,Energy delivered,up,kWh,2,Reputation,multistation,multistation_rep,27198.999,26915.012,-283.987000000001,-1.0441082776612514,False
+ladder,balance,250,3,energy_delivery_rate,Energy delivered/planned,up,%,2,Reputation,multistation,multistation_rep,0.5878,0.5886,0.0008000000000000229,0.1361007145287552,True
+ladder,balance,250,3,no_offer_rate,Demands with no offer,down,%,2,Reputation,multistation,multistation_rep,0.0066,0.0055,-0.0011000000000000003,-16.66666666666667,True
+ladder,balance,250,3,abandon_rate,Abandoned searches,down,%,2,Reputation,multistation,multistation_rep,0.0051,0.0024,-0.0027000000000000006,-52.941176470588246,True
+ladder,balance,250,3,excluded_car_share,Vehicles excluded,down,%,2,Reputation,multistation,multistation_rep,0.052,0.024,-0.027999999999999997,-53.84615384615385,True
+ladder,balance,250,3,request_rejection_rate,Unserved demands,down,%,2,Reputation,multistation,multistation_rep,0.0066,0.0055,-0.0011000000000000003,-16.66666666666667,True
+ladder,balance,250,3,nb_station_level_rejections,Rejected demands,down,,2,Reputation,multistation,multistation_rep,2574.0,1934.0,-640.0,-24.864024864024863,True
+ladder,balance,250,3,station_rejection_rate,Station rejection rate,down,%,2,Reputation,multistation,multistation_rep,0.1732,0.1365,-0.03669999999999998,-21.189376443418006,True
+ladder,balance,250,3,total_ms_mean,End-to-end latency,down,ms,2,Reputation,multistation,multistation_rep,263.739,272.756,9.016999999999996,3.418910362138325,False
+ladder,balance,250,3,wall_time_s,Wall time,down,s,2,Reputation,multistation,multistation_rep,165.311,171.438,6.126999999999981,3.7063474299955725,False
+ladder,balance,250,3,satisfied_rate,Demands satisfied,up,%,3,Cross-station adaptation,multistation_rep,bramev,0.589,0.5873,-0.0016999999999999238,-0.2886247877758784,False
+ladder,balance,250,3,cancelled_rate,Demands cancelled,down,%,3,Cross-station adaptation,multistation_rep,bramev,0.4055,0.4056,9.999999999998899e-05,0.024660912453758073,False
+ladder,balance,250,3,service_ratio_mean,Energy served / requested,up,%,3,Cross-station adaptation,multistation_rep,bramev,0.485,0.485,0.0,0.0,False
+ladder,balance,250,3,plan_coverage_exact,Planning coverage (exact),up,%,3,Cross-station adaptation,multistation_rep,bramev,0.8206,0.8246,0.0040000000000000036,0.4874482086278337,True
+ladder,balance,250,3,plan_coverage_volume,Planning coverage (volume),up,%,3,Cross-station adaptation,multistation_rep,bramev,0.8506,0.8543,0.0036999999999999256,0.4349870679520251,True
+ladder,balance,250,3,confirm_rate,Confirmation rate,up,%,3,Cross-station adaptation,multistation_rep,bramev,0.9945,0.9929,-0.0016000000000000458,-0.1608848667672243,False
+ladder,balance,250,3,mean_waiting_time_min,Mean waiting time,down,min,3,Cross-station adaptation,multistation_rep,bramev,32.514,33.636,1.1219999999999999,3.4508211847204273,False
+ladder,balance,250,3,mean_travel_distance_km,Mean distance,down,km,3,Cross-station adaptation,multistation_rep,bramev,0.5641,0.5726,0.008499999999999952,1.5068250310228597,False
+ladder,balance,250,3,rate_pres,Show-up rate,up,%,3,Cross-station adaptation,multistation_rep,bramev,0.593,0.5915,-0.0014999999999999458,-0.2529510961214074,False
+ladder,balance,250,3,rate_abs,No-show rate,down,%,3,Cross-station adaptation,multistation_rep,bramev,0.19,0.1898,-0.00020000000000000573,-0.10526315789473986,True
+ladder,balance,250,3,nb_no_show,No-shows,down,,3,Cross-station adaptation,multistation_rep,bramev,480.0,478.0,-2.0,-0.4166666666666667,True
+ladder,balance,250,3,nb_reservations,Confirmed reservations,up,,3,Cross-station adaptation,multistation_rep,bramev,2526.0,2519.0,-7.0,-0.2771179730799683,False
+ladder,balance,250,3,mean_occupancy_rate,Occupancy rate,up,%,3,Cross-station adaptation,multistation_rep,bramev,0.5348,0.5359,0.0010999999999999899,0.205684367988031,True
+ladder,balance,250,3,mean_service_rate,Service rate,up,%,3,Cross-station adaptation,multistation_rep,bramev,0.402,0.3991,-0.0029000000000000137,-0.721393034825874,False
+ladder,balance,250,3,slot_waste_rate,Wasted reserved slots,down,%,3,Cross-station adaptation,multistation_rep,bramev,0.4107,0.4153,0.004599999999999993,1.120038957876794,False
+ladder,balance,250,3,held_idle_rate,Held slots left idle,down,%,3,Cross-station adaptation,multistation_rep,bramev,0.2483,0.2554,0.007100000000000023,2.8594442207007744,False
+ladder,balance,250,3,energy_planned_kwh,Energy planned,up,kWh,3,Cross-station adaptation,multistation_rep,bramev,45723.7,45905.8,182.10000000000582,0.39826173297437834,True
+ladder,balance,250,3,energy_delivered_kwh,Energy delivered,up,kWh,3,Cross-station adaptation,multistation_rep,bramev,26915.012,26850.519,-64.49299999999857,-0.23961720693269087,False
+ladder,balance,250,3,energy_delivery_rate,Energy delivered/planned,up,%,3,Cross-station adaptation,multistation_rep,bramev,0.5886,0.5849,-0.0037000000000000366,-0.6286102616377908,False
+ladder,balance,250,3,no_offer_rate,Demands with no offer,down,%,3,Cross-station adaptation,multistation_rep,bramev,0.0055,0.0071,0.0016000000000000007,29.090909090909108,False
+ladder,balance,250,3,abandon_rate,Abandoned searches,down,%,3,Cross-station adaptation,multistation_rep,bramev,0.0024,0.0051,0.0027000000000000006,112.50000000000004,False
+ladder,balance,250,3,excluded_car_share,Vehicles excluded,down,%,3,Cross-station adaptation,multistation_rep,bramev,0.024,0.052,0.027999999999999997,116.66666666666666,False
+ladder,balance,250,3,request_rejection_rate,Unserved demands,down,%,3,Cross-station adaptation,multistation_rep,bramev,0.0055,0.0071,0.0016000000000000007,29.090909090909108,False
+ladder,balance,250,3,nb_station_level_rejections,Rejected demands,down,,3,Cross-station adaptation,multistation_rep,bramev,1934.0,2631.0,697.0,36.039296794208894,False
+ladder,balance,250,3,station_rejection_rate,Station rejection rate,down,%,3,Cross-station adaptation,multistation_rep,bramev,0.1365,0.1764,0.03989999999999999,29.230769230769223,False
+ladder,balance,250,3,total_ms_mean,End-to-end latency,down,ms,3,Cross-station adaptation,multistation_rep,bramev,272.756,262.837,-9.918999999999983,-3.636583613192738,True
+ladder,balance,250,3,wall_time_s,Wall time,down,s,3,Cross-station adaptation,multistation_rep,bramev,171.438,168.907,-2.5309999999999775,-1.4763354682159018,True
+ladder,pessimistic,250,1,satisfied_rate,Demands satisfied,up,%,2,Reputation,multistation,multistation_rep,0.4072,0.4098,0.002599999999999991,0.6385068762278957,True
+ladder,pessimistic,250,1,cancelled_rate,Demands cancelled,down,%,2,Reputation,multistation,multistation_rep,0.586,0.5846,-0.0013999999999999568,-0.23890784982934418,True
+ladder,pessimistic,250,1,service_ratio_mean,Energy served / requested,up,%,2,Reputation,multistation,multistation_rep,0.359,0.359,0.0,0.0,False
+ladder,pessimistic,250,1,plan_coverage_exact,Planning coverage (exact),up,%,2,Reputation,multistation,multistation_rep,0.9013,0.8914,-0.00990000000000002,-1.098413402862534,False
+ladder,pessimistic,250,1,plan_coverage_volume,Planning coverage (volume),up,%,2,Reputation,multistation,multistation_rep,0.9149,0.9075,-0.007400000000000073,-0.808831566291406,False
+ladder,pessimistic,250,1,confirm_rate,Confirmation rate,up,%,2,Reputation,multistation,multistation_rep,0.9932,0.9944,0.0011999999999999789,0.12082158679017105,True
+ladder,pessimistic,250,1,mean_waiting_time_min,Mean waiting time,down,min,2,Reputation,multistation,multistation_rep,18.672,19.89,1.218,6.523136246786632,False
+ladder,pessimistic,250,1,mean_travel_distance_km,Mean distance,down,km,2,Reputation,multistation,multistation_rep,0.5323,0.5406,0.008299999999999974,1.559271087732477,False
+ladder,pessimistic,250,1,rate_pres,Show-up rate,up,%,2,Reputation,multistation,multistation_rep,0.41,0.4121,0.0021000000000000463,0.5121951219512308,True
+ladder,pessimistic,250,1,rate_abs,No-show rate,down,%,2,Reputation,multistation,multistation_rep,0.2191,0.2162,-0.002899999999999986,-1.3235965312642566,True
+ladder,pessimistic,250,1,nb_no_show,No-shows,down,,2,Reputation,multistation,multistation_rep,673.0,658.0,-15.0,-2.2288261515601784,True
+ladder,pessimistic,250,1,nb_reservations,Confirmed reservations,up,,2,Reputation,multistation,multistation_rep,3071.0,3043.0,-28.0,-0.9117551286225986,False
+ladder,pessimistic,250,1,mean_occupancy_rate,Occupancy rate,up,%,2,Reputation,multistation,multistation_rep,0.5766,0.5689,-0.00770000000000004,-1.3354144987859937,False
+ladder,pessimistic,250,1,mean_service_rate,Service rate,up,%,2,Reputation,multistation,multistation_rep,0.369,0.3674,-0.0015999999999999903,-0.4336043360433578,False
+ladder,pessimistic,250,1,slot_waste_rate,Wasted reserved slots,down,%,2,Reputation,multistation,multistation_rep,0.5972,0.5939,-0.0032999999999999696,-0.5525787006028081,True
+ladder,pessimistic,250,1,held_idle_rate,Held slots left idle,down,%,2,Reputation,multistation,multistation_rep,0.36,0.3542,-0.005799999999999972,-1.6111111111111034,True
+ladder,pessimistic,250,1,energy_planned_kwh,Energy planned,up,kWh,2,Reputation,multistation,multistation_rep,61222.3,60219.3,-1003.0,-1.638291929574681,False
+ladder,pessimistic,250,1,energy_delivered_kwh,Energy delivered,up,kWh,2,Reputation,multistation,multistation_rep,24812.902,24604.304,-208.59799999999814,-0.8406836088741177,False
+ladder,pessimistic,250,1,energy_delivery_rate,Energy delivered/planned,up,%,2,Reputation,multistation,multistation_rep,0.4053,0.4086,0.003300000000000025,0.8142116950407168,True
+ladder,pessimistic,250,1,no_offer_rate,Demands with no offer,down,%,2,Reputation,multistation,multistation_rep,0.0068,0.0056,-0.0011999999999999997,-17.64705882352941,True
+ladder,pessimistic,250,1,abandon_rate,Abandoned searches,down,%,2,Reputation,multistation,multistation_rep,0.0049,0.0036,-0.0013,-26.53061224489796,True
+ladder,pessimistic,250,1,excluded_car_share,Vehicles excluded,down,%,2,Reputation,multistation,multistation_rep,0.06,0.044,-0.016,-26.666666666666668,True
+ladder,pessimistic,250,1,request_rejection_rate,Unserved demands,down,%,2,Reputation,multistation,multistation_rep,0.0068,0.0056,-0.0011999999999999997,-17.64705882352941,True
+ladder,pessimistic,250,1,nb_station_level_rejections,Rejected demands,down,,2,Reputation,multistation,multistation_rep,3264.0,2711.0,-553.0,-16.942401960784313,True
+ladder,pessimistic,250,1,station_rejection_rate,Station rejection rate,down,%,2,Reputation,multistation,multistation_rep,0.1478,0.1268,-0.02099999999999999,-14.208389715832201,True
+ladder,pessimistic,250,1,total_ms_mean,End-to-end latency,down,ms,2,Reputation,multistation,multistation_rep,477.447,509.206,31.759000000000015,6.6518377956087305,False
+ladder,pessimistic,250,1,wall_time_s,Wall time,down,s,2,Reputation,multistation,multistation_rep,282.362,302.141,19.778999999999996,7.004837761455152,False
+ladder,pessimistic,250,1,satisfied_rate,Demands satisfied,up,%,3,Cross-station adaptation,multistation_rep,bramev,0.4098,0.4096,-0.00019999999999997797,-0.04880429477793508,False
+ladder,pessimistic,250,1,cancelled_rate,Demands cancelled,down,%,3,Cross-station adaptation,multistation_rep,bramev,0.5846,0.5865,0.0019000000000000128,0.3250085528566563,False
+ladder,pessimistic,250,1,service_ratio_mean,Energy served / requested,up,%,3,Cross-station adaptation,multistation_rep,bramev,0.359,0.362,0.0030000000000000027,0.8356545961002794,True
+ladder,pessimistic,250,1,plan_coverage_exact,Planning coverage (exact),up,%,3,Cross-station adaptation,multistation_rep,bramev,0.8914,0.8926,0.0011999999999999789,0.13461969934933576,True
+ladder,pessimistic,250,1,plan_coverage_volume,Planning coverage (volume),up,%,3,Cross-station adaptation,multistation_rep,bramev,0.9075,0.9103,0.0028000000000000247,0.308539944903584,True
+ladder,pessimistic,250,1,confirm_rate,Confirmation rate,up,%,3,Cross-station adaptation,multistation_rep,bramev,0.9944,0.9961,0.0017000000000000348,0.17095736122285146,True
+ladder,pessimistic,250,1,mean_waiting_time_min,Mean waiting time,down,min,3,Cross-station adaptation,multistation_rep,bramev,19.89,20.418,0.5279999999999987,2.6546003016591184,False
+ladder,pessimistic,250,1,mean_travel_distance_km,Mean distance,down,km,3,Cross-station adaptation,multistation_rep,bramev,0.5406,0.5434,0.0028000000000000247,0.5179430262671152,False
+ladder,pessimistic,250,1,rate_pres,Show-up rate,up,%,3,Cross-station adaptation,multistation_rep,bramev,0.4121,0.4112,-0.0009000000000000119,-0.21839359378791842,False
+ladder,pessimistic,250,1,rate_abs,No-show rate,down,%,3,Cross-station adaptation,multistation_rep,bramev,0.2162,0.2169,0.0007000000000000062,0.3237742830712332,False
+ladder,pessimistic,250,1,nb_no_show,No-shows,down,,3,Cross-station adaptation,multistation_rep,bramev,658.0,662.0,4.0,0.60790273556231,False
+ladder,pessimistic,250,1,nb_reservations,Confirmed reservations,up,,3,Cross-station adaptation,multistation_rep,bramev,3043.0,3052.0,9.0,0.29576076240552085,True
+ladder,pessimistic,250,1,mean_occupancy_rate,Occupancy rate,up,%,3,Cross-station adaptation,multistation_rep,bramev,0.5689,0.5693,0.00040000000000006697,0.07031112673581771,True
+ladder,pessimistic,250,1,mean_service_rate,Service rate,up,%,3,Cross-station adaptation,multistation_rep,bramev,0.3674,0.3702,0.002799999999999969,0.76211213935764,True
+ladder,pessimistic,250,1,slot_waste_rate,Wasted reserved slots,down,%,3,Cross-station adaptation,multistation_rep,bramev,0.5939,0.5901,-0.0038000000000000256,-0.6398383566256989,True
+ladder,pessimistic,250,1,held_idle_rate,Held slots left idle,down,%,3,Cross-station adaptation,multistation_rep,bramev,0.3542,0.3497,-0.004500000000000004,-1.2704686617730108,True
+ladder,pessimistic,250,1,energy_planned_kwh,Energy planned,up,kWh,3,Cross-station adaptation,multistation_rep,bramev,60219.3,60284.3,65.0,0.1079388169573542,True
+ladder,pessimistic,250,1,energy_delivered_kwh,Energy delivered,up,kWh,3,Cross-station adaptation,multistation_rep,bramev,24604.304,24888.144,283.84000000000015,1.1536193017286738,True
+ladder,pessimistic,250,1,energy_delivery_rate,Energy delivered/planned,up,%,3,Cross-station adaptation,multistation_rep,bramev,0.4086,0.4128,0.0041999999999999815,1.0279001468428735,True
+ladder,pessimistic,250,1,no_offer_rate,Demands with no offer,down,%,3,Cross-station adaptation,multistation_rep,bramev,0.0056,0.0039,-0.0017000000000000001,-30.35714285714286,True
+ladder,pessimistic,250,1,abandon_rate,Abandoned searches,down,%,3,Cross-station adaptation,multistation_rep,bramev,0.0036,0.0026,-0.001,-27.77777777777778,True
+ladder,pessimistic,250,1,excluded_car_share,Vehicles excluded,down,%,3,Cross-station adaptation,multistation_rep,bramev,0.044,0.032,-0.011999999999999997,-27.27272727272727,True
+ladder,pessimistic,250,1,request_rejection_rate,Unserved demands,down,%,3,Cross-station adaptation,multistation_rep,bramev,0.0056,0.0039,-0.0017000000000000001,-30.35714285714286,True
+ladder,pessimistic,250,1,nb_station_level_rejections,Rejected demands,down,,3,Cross-station adaptation,multistation_rep,bramev,2711.0,2442.0,-269.0,-9.922537808926595,True
+ladder,pessimistic,250,1,station_rejection_rate,Station rejection rate,down,%,3,Cross-station adaptation,multistation_rep,bramev,0.1268,0.1159,-0.010899999999999993,-8.596214511041005,True
+ladder,pessimistic,250,1,total_ms_mean,End-to-end latency,down,ms,3,Cross-station adaptation,multistation_rep,bramev,509.206,516.077,6.870999999999981,1.349355663523207,False
+ladder,pessimistic,250,1,wall_time_s,Wall time,down,s,3,Cross-station adaptation,multistation_rep,bramev,302.141,304.321,2.180000000000007,0.7215174372230206,False
+ladder,pessimistic,250,2,satisfied_rate,Demands satisfied,up,%,2,Reputation,multistation,multistation_rep,0.3969,0.3997,0.0028000000000000247,0.7054673721340451,True
+ladder,pessimistic,250,2,cancelled_rate,Demands cancelled,down,%,2,Reputation,multistation,multistation_rep,0.5981,0.5955,-0.0025999999999999357,-0.43470991472996756,True
+ladder,pessimistic,250,2,service_ratio_mean,Energy served / requested,up,%,2,Reputation,multistation,multistation_rep,0.329,0.328,-0.0010000000000000009,-0.3039513677811553,False
+ladder,pessimistic,250,2,plan_coverage_exact,Planning coverage (exact),up,%,2,Reputation,multistation,multistation_rep,0.833,0.8295,-0.0034999999999999476,-0.4201680672268845,False
+ladder,pessimistic,250,2,plan_coverage_volume,Planning coverage (volume),up,%,2,Reputation,multistation,multistation_rep,0.8544,0.8541,-0.000300000000000078,-0.035112359550570925,False
+ladder,pessimistic,250,2,confirm_rate,Confirmation rate,up,%,2,Reputation,multistation,multistation_rep,0.995,0.9953,0.00029999999999996696,0.0301507537688409,True
+ladder,pessimistic,250,2,mean_waiting_time_min,Mean waiting time,down,min,2,Reputation,multistation,multistation_rep,31.806,31.356,-0.4499999999999993,-1.4148273910582887,True
+ladder,pessimistic,250,2,mean_travel_distance_km,Mean distance,down,km,2,Reputation,multistation,multistation_rep,0.5541,0.5544,0.00029999999999996696,0.05414185165132051,False
+ladder,pessimistic,250,2,rate_pres,Show-up rate,up,%,2,Reputation,multistation,multistation_rep,0.3992,0.4016,0.0024000000000000132,0.6012024048096225,True
+ladder,pessimistic,250,2,rate_abs,No-show rate,down,%,2,Reputation,multistation,multistation_rep,0.2307,0.2303,-0.0003999999999999837,-0.1733853489380077,True
+ladder,pessimistic,250,2,nb_no_show,No-shows,down,,2,Reputation,multistation,multistation_rep,738.0,727.0,-11.0,-1.4905149051490514,True
+ladder,pessimistic,250,2,nb_reservations,Confirmed reservations,up,,2,Reputation,multistation,multistation_rep,3199.0,3157.0,-42.0,-1.312910284463895,False
+ladder,pessimistic,250,2,mean_occupancy_rate,Occupancy rate,up,%,2,Reputation,multistation,multistation_rep,0.5588,0.5484,-0.010399999999999965,-1.8611309949892565,False
+ladder,pessimistic,250,2,mean_service_rate,Service rate,up,%,2,Reputation,multistation,multistation_rep,0.3524,0.3464,-0.006000000000000005,-1.7026106696935317,False
+ladder,pessimistic,250,2,slot_waste_rate,Wasted reserved slots,down,%,2,Reputation,multistation,multistation_rep,0.6006,0.6026,0.0020000000000000018,0.33300033300033327,False
+ladder,pessimistic,250,2,held_idle_rate,Held slots left idle,down,%,2,Reputation,multistation,multistation_rep,0.3694,0.3684,-0.0010000000000000009,-0.2707092582566326,True
+ladder,pessimistic,250,2,energy_planned_kwh,Energy planned,up,kWh,2,Reputation,multistation,multistation_rep,60669.9,60130.9,-539.0,-0.8884141889141073,False
+ladder,pessimistic,250,2,energy_delivered_kwh,Energy delivered,up,kWh,2,Reputation,multistation,multistation_rep,24319.009,23932.564,-386.4449999999997,-1.589065574176973,False
+ladder,pessimistic,250,2,energy_delivery_rate,Energy delivered/planned,up,%,2,Reputation,multistation,multistation_rep,0.4008,0.398,-0.002799999999999969,-0.69860279441117,False
+ladder,pessimistic,250,2,no_offer_rate,Demands with no offer,down,%,2,Reputation,multistation,multistation_rep,0.005,0.0047,-0.0002999999999999999,-5.999999999999998,True
+ladder,pessimistic,250,2,abandon_rate,Abandoned searches,down,%,2,Reputation,multistation,multistation_rep,0.0028,0.0041,0.0013000000000000004,46.42857142857144,False
+ladder,pessimistic,250,2,excluded_car_share,Vehicles excluded,down,%,2,Reputation,multistation,multistation_rep,0.036,0.052,0.016,44.44444444444445,False
+ladder,pessimistic,250,2,request_rejection_rate,Unserved demands,down,%,2,Reputation,multistation,multistation_rep,0.005,0.0047,-0.0002999999999999999,-5.999999999999998,True
+ladder,pessimistic,250,2,nb_station_level_rejections,Rejected demands,down,,2,Reputation,multistation,multistation_rep,2997.0,3038.0,41.0,1.3680347013680347,False
+ladder,pessimistic,250,2,station_rejection_rate,Station rejection rate,down,%,2,Reputation,multistation,multistation_rep,0.1552,0.1592,0.0040000000000000036,2.5773195876288684,False
+ladder,pessimistic,250,2,total_ms_mean,End-to-end latency,down,ms,2,Reputation,multistation,multistation_rep,341.641,355.922,14.281000000000006,4.1801188967366345,False
+ladder,pessimistic,250,2,wall_time_s,Wall time,down,s,2,Reputation,multistation,multistation_rep,224.522,228.536,4.01400000000001,1.78779807769395,False
+ladder,pessimistic,250,2,satisfied_rate,Demands satisfied,up,%,3,Cross-station adaptation,multistation_rep,bramev,0.3997,0.3961,-0.003599999999999992,-0.9006755066299705,False
+ladder,pessimistic,250,2,cancelled_rate,Demands cancelled,down,%,3,Cross-station adaptation,multistation_rep,bramev,0.5955,0.6008,0.005299999999999971,0.8900083963056207,False
+ladder,pessimistic,250,2,service_ratio_mean,Energy served / requested,up,%,3,Cross-station adaptation,multistation_rep,bramev,0.328,0.326,-0.0020000000000000018,-0.6097560975609762,False
+ladder,pessimistic,250,2,plan_coverage_exact,Planning coverage (exact),up,%,3,Cross-station adaptation,multistation_rep,bramev,0.8295,0.8331,0.0035999999999999366,0.4339963833634643,True
+ladder,pessimistic,250,2,plan_coverage_volume,Planning coverage (volume),up,%,3,Cross-station adaptation,multistation_rep,bramev,0.8541,0.8575,0.0034000000000000696,0.3980798501346528,True
+ladder,pessimistic,250,2,confirm_rate,Confirmation rate,up,%,3,Cross-station adaptation,multistation_rep,bramev,0.9953,0.9969,0.0016000000000000458,0.16075555109012818,True
+ladder,pessimistic,250,2,mean_waiting_time_min,Mean waiting time,down,min,3,Cross-station adaptation,multistation_rep,bramev,31.356,31.59,0.2339999999999982,0.7462686567164122,False
+ladder,pessimistic,250,2,mean_travel_distance_km,Mean distance,down,km,3,Cross-station adaptation,multistation_rep,bramev,0.5544,0.5447,-0.009700000000000042,-1.7496392496392572,True
+ladder,pessimistic,250,2,rate_pres,Show-up rate,up,%,3,Cross-station adaptation,multistation_rep,bramev,0.4016,0.3973,-0.004300000000000026,-1.07071713147411,False
+ladder,pessimistic,250,2,rate_abs,No-show rate,down,%,3,Cross-station adaptation,multistation_rep,bramev,0.2303,0.2299,-0.00040000000000001146,-0.1736864958749507,True
+ladder,pessimistic,250,2,nb_no_show,No-shows,down,,3,Cross-station adaptation,multistation_rep,bramev,727.0,740.0,13.0,1.7881705639614855,False
+ladder,pessimistic,250,2,nb_reservations,Confirmed reservations,up,,3,Cross-station adaptation,multistation_rep,bramev,3157.0,3219.0,62.0,1.9638897687678176,True
+ladder,pessimistic,250,2,mean_occupancy_rate,Occupancy rate,up,%,3,Cross-station adaptation,multistation_rep,bramev,0.5484,0.5551,0.006700000000000039,1.2217359591539094,True
+ladder,pessimistic,250,2,mean_service_rate,Service rate,up,%,3,Cross-station adaptation,multistation_rep,bramev,0.3464,0.3499,0.003500000000000003,1.01039260969977,True
+ladder,pessimistic,250,2,slot_waste_rate,Wasted reserved slots,down,%,3,Cross-station adaptation,multistation_rep,bramev,0.6026,0.6058,0.0031999999999999806,0.5310321938267475,False
+ladder,pessimistic,250,2,held_idle_rate,Held slots left idle,down,%,3,Cross-station adaptation,multistation_rep,bramev,0.3684,0.3697,0.0012999999999999678,0.3528773072746927,False
+ladder,pessimistic,250,2,energy_planned_kwh,Energy planned,up,kWh,3,Cross-station adaptation,multistation_rep,bramev,60130.9,61260.1,1129.199999999997,1.877903041531055,True
+ladder,pessimistic,250,2,energy_delivered_kwh,Energy delivered,up,kWh,3,Cross-station adaptation,multistation_rep,bramev,23932.564,24137.831,205.26699999999983,0.8576891301742673,True
+ladder,pessimistic,250,2,energy_delivery_rate,Energy delivered/planned,up,%,3,Cross-station adaptation,multistation_rep,bramev,0.398,0.394,-0.0040000000000000036,-1.0050251256281415,False
+ladder,pessimistic,250,2,no_offer_rate,Demands with no offer,down,%,3,Cross-station adaptation,multistation_rep,bramev,0.0047,0.0031,-0.0016000000000000003,-34.04255319148937,True
+ladder,pessimistic,250,2,abandon_rate,Abandoned searches,down,%,3,Cross-station adaptation,multistation_rep,bramev,0.0041,0.0022,-0.0019000000000000002,-46.34146341463415,True
+ladder,pessimistic,250,2,excluded_car_share,Vehicles excluded,down,%,3,Cross-station adaptation,multistation_rep,bramev,0.052,0.028,-0.023999999999999997,-46.15384615384615,True
+ladder,pessimistic,250,2,request_rejection_rate,Unserved demands,down,%,3,Cross-station adaptation,multistation_rep,bramev,0.0047,0.0031,-0.0016000000000000003,-34.04255319148937,True
+ladder,pessimistic,250,2,nb_station_level_rejections,Rejected demands,down,,3,Cross-station adaptation,multistation_rep,bramev,3038.0,2268.0,-770.0,-25.34562211981567,True
+ladder,pessimistic,250,2,station_rejection_rate,Station rejection rate,down,%,3,Cross-station adaptation,multistation_rep,bramev,0.1592,0.1217,-0.037500000000000006,-23.55527638190955,True
+ladder,pessimistic,250,2,total_ms_mean,End-to-end latency,down,ms,3,Cross-station adaptation,multistation_rep,bramev,355.922,346.686,-9.236000000000047,-2.59495057905947,True
+ladder,pessimistic,250,2,wall_time_s,Wall time,down,s,3,Cross-station adaptation,multistation_rep,bramev,228.536,225.32,-3.216000000000008,-1.407218118808419,True
+ladder,pessimistic,250,3,satisfied_rate,Demands satisfied,up,%,2,Reputation,multistation,multistation_rep,0.3876,0.3929,0.005300000000000027,1.3673890608875199,True
+ladder,pessimistic,250,3,cancelled_rate,Demands cancelled,down,%,2,Reputation,multistation,multistation_rep,0.6049,0.6027,-0.0021999999999999797,-0.363696478756816,True
+ladder,pessimistic,250,3,service_ratio_mean,Energy served / requested,up,%,2,Reputation,multistation,multistation_rep,0.317,0.32,0.0030000000000000027,0.9463722397476348,True
+ladder,pessimistic,250,3,plan_coverage_exact,Planning coverage (exact),up,%,2,Reputation,multistation,multistation_rep,0.8184,0.8159,-0.0025000000000000577,-0.3054740957966835,False
+ladder,pessimistic,250,3,plan_coverage_volume,Planning coverage (volume),up,%,2,Reputation,multistation,multistation_rep,0.8387,0.8409,0.0021999999999999797,0.2623107189698319,True
+ladder,pessimistic,250,3,confirm_rate,Confirmation rate,up,%,2,Reputation,multistation,multistation_rep,0.9925,0.9956,0.0030999999999999917,0.31234256926952053,True
+ladder,pessimistic,250,3,mean_waiting_time_min,Mean waiting time,down,min,2,Reputation,multistation,multistation_rep,31.938,32.832,0.8940000000000019,2.7991733984595215,False
+ladder,pessimistic,250,3,mean_travel_distance_km,Mean distance,down,km,2,Reputation,multistation,multistation_rep,0.5644,0.5634,-0.0010000000000000009,-0.17717930545712277,True
+ladder,pessimistic,250,3,rate_pres,Show-up rate,up,%,2,Reputation,multistation,multistation_rep,0.3908,0.3947,0.0039000000000000146,0.997952917093146,True
+ladder,pessimistic,250,3,rate_abs,No-show rate,down,%,2,Reputation,multistation,multistation_rep,0.2244,0.2221,-0.0022999999999999965,-1.024955436720141,True
+ladder,pessimistic,250,3,nb_no_show,No-shows,down,,2,Reputation,multistation,multistation_rep,712.0,699.0,-13.0,-1.8258426966292134,True
+ladder,pessimistic,250,3,nb_reservations,Confirmed reservations,up,,2,Reputation,multistation,multistation_rep,3173.0,3147.0,-26.0,-0.8194138039710054,False
+ladder,pessimistic,250,3,mean_occupancy_rate,Occupancy rate,up,%,2,Reputation,multistation,multistation_rep,0.5337,0.5312,-0.0024999999999999467,-0.46842795578039104,False
+ladder,pessimistic,250,3,mean_service_rate,Service rate,up,%,2,Reputation,multistation,multistation_rep,0.3373,0.3362,-0.0010999999999999899,-0.32611918173732285,False
+ladder,pessimistic,250,3,slot_waste_rate,Wasted reserved slots,down,%,2,Reputation,multistation,multistation_rep,0.6089,0.6069,-0.0020000000000000018,-0.3284611594678932,True
+ladder,pessimistic,250,3,held_idle_rate,Held slots left idle,down,%,2,Reputation,multistation,multistation_rep,0.3679,0.3671,-0.0008000000000000229,-0.2174503941288456,True
+ladder,pessimistic,250,3,energy_planned_kwh,Energy planned,up,kWh,2,Reputation,multistation,multistation_rep,58535.5,58297.6,-237.90000000000146,-0.4064200357048312,False
+ladder,pessimistic,250,3,energy_delivered_kwh,Energy delivered,up,kWh,2,Reputation,multistation,multistation_rep,22941.202,23013.142,71.93999999999869,0.3135842664216055,True
+ladder,pessimistic,250,3,energy_delivery_rate,Energy delivered/planned,up,%,2,Reputation,multistation,multistation_rep,0.3919,0.3948,0.002899999999999958,0.7399846899719209,True
+ladder,pessimistic,250,3,no_offer_rate,Demands with no offer,down,%,2,Reputation,multistation,multistation_rep,0.0075,0.0044,-0.0030999999999999995,-41.33333333333333,True
+ladder,pessimistic,250,3,abandon_rate,Abandoned searches,down,%,2,Reputation,multistation,multistation_rep,0.0041,0.0032,-0.0009000000000000002,-21.951219512195127,True
+ladder,pessimistic,250,3,excluded_car_share,Vehicles excluded,down,%,2,Reputation,multistation,multistation_rep,0.052,0.04,-0.011999999999999997,-23.076923076923073,True
+ladder,pessimistic,250,3,request_rejection_rate,Unserved demands,down,%,2,Reputation,multistation,multistation_rep,0.0075,0.0044,-0.0030999999999999995,-41.33333333333333,True
+ladder,pessimistic,250,3,nb_station_level_rejections,Rejected demands,down,,2,Reputation,multistation,multistation_rep,3291.0,2256.0,-1035.0,-31.449407474931633,True
+ladder,pessimistic,250,3,station_rejection_rate,Station rejection rate,down,%,2,Reputation,multistation,multistation_rep,0.174,0.1252,-0.04879999999999998,-28.045977011494244,True
+ladder,pessimistic,250,3,total_ms_mean,End-to-end latency,down,ms,2,Reputation,multistation,multistation_rep,239.938,251.655,11.717000000000013,4.883344864089895,False
+ladder,pessimistic,250,3,wall_time_s,Wall time,down,s,2,Reputation,multistation,multistation_rep,188.178,194.821,6.643000000000001,3.53016824495956,False
+ladder,pessimistic,250,3,satisfied_rate,Demands satisfied,up,%,3,Cross-station adaptation,multistation_rep,bramev,0.3929,0.3873,-0.005600000000000049,-1.4252990582845633,False
+ladder,pessimistic,250,3,cancelled_rate,Demands cancelled,down,%,3,Cross-station adaptation,multistation_rep,bramev,0.6027,0.6071,0.0043999999999999595,0.730048116807692,False
+ladder,pessimistic,250,3,service_ratio_mean,Energy served / requested,up,%,3,Cross-station adaptation,multistation_rep,bramev,0.32,0.315,-0.0050000000000000044,-1.5625000000000013,False
+ladder,pessimistic,250,3,plan_coverage_exact,Planning coverage (exact),up,%,3,Cross-station adaptation,multistation_rep,bramev,0.8159,0.8179,0.0020000000000000018,0.24512807942149797,True
+ladder,pessimistic,250,3,plan_coverage_volume,Planning coverage (volume),up,%,3,Cross-station adaptation,multistation_rep,bramev,0.8409,0.8423,0.0014000000000000679,0.1664882863598606,True
+ladder,pessimistic,250,3,confirm_rate,Confirmation rate,up,%,3,Cross-station adaptation,multistation_rep,bramev,0.9956,0.9944,-0.0012000000000000899,-0.12053033346726495,False
+ladder,pessimistic,250,3,mean_waiting_time_min,Mean waiting time,down,min,3,Cross-station adaptation,multistation_rep,bramev,32.832,33.156,0.32399999999999807,0.986842105263152,False
+ladder,pessimistic,250,3,mean_travel_distance_km,Mean distance,down,km,3,Cross-station adaptation,multistation_rep,bramev,0.5634,0.5656,0.0021999999999999797,0.3904863329783422,False
+ladder,pessimistic,250,3,rate_pres,Show-up rate,up,%,3,Cross-station adaptation,multistation_rep,bramev,0.3947,0.3898,-0.0049000000000000155,-1.241449201925517,False
+ladder,pessimistic,250,3,rate_abs,No-show rate,down,%,3,Cross-station adaptation,multistation_rep,bramev,0.2221,0.2273,0.00520000000000001,2.3412877082395362,False
+ladder,pessimistic,250,3,nb_no_show,No-shows,down,,3,Cross-station adaptation,multistation_rep,bramev,699.0,725.0,26.0,3.719599427753934,False
+ladder,pessimistic,250,3,nb_reservations,Confirmed reservations,up,,3,Cross-station adaptation,multistation_rep,bramev,3147.0,3189.0,42.0,1.334604385128694,True
+ladder,pessimistic,250,3,mean_occupancy_rate,Occupancy rate,up,%,3,Cross-station adaptation,multistation_rep,bramev,0.5312,0.5407,0.009499999999999953,1.7884036144578224,True
+ladder,pessimistic,250,3,mean_service_rate,Service rate,up,%,3,Cross-station adaptation,multistation_rep,bramev,0.3362,0.3365,0.00030000000000002247,0.08923259964307628,True
+ladder,pessimistic,250,3,slot_waste_rate,Wasted reserved slots,down,%,3,Cross-station adaptation,multistation_rep,bramev,0.6069,0.613,0.006099999999999994,1.0051079255231494,False
+ladder,pessimistic,250,3,held_idle_rate,Held slots left idle,down,%,3,Cross-station adaptation,multistation_rep,bramev,0.3671,0.3775,0.01040000000000002,2.833015527104337,False
+ladder,pessimistic,250,3,energy_planned_kwh,Energy planned,up,kWh,3,Cross-station adaptation,multistation_rep,bramev,58297.6,59361.5,1063.9000000000015,1.824946481501814,True
+ladder,pessimistic,250,3,energy_delivered_kwh,Energy delivered,up,kWh,3,Cross-station adaptation,multistation_rep,bramev,23013.142,22999.69,-13.452000000001135,-0.05845355666775591,False
+ladder,pessimistic,250,3,energy_delivery_rate,Energy delivered/planned,up,%,3,Cross-station adaptation,multistation_rep,bramev,0.3948,0.3875,-0.007299999999999973,-1.849037487335353,False
+ladder,pessimistic,250,3,no_offer_rate,Demands with no offer,down,%,3,Cross-station adaptation,multistation_rep,bramev,0.0044,0.0056,0.0011999999999999997,27.272727272727263,False
+ladder,pessimistic,250,3,abandon_rate,Abandoned searches,down,%,3,Cross-station adaptation,multistation_rep,bramev,0.0032,0.0031,-0.00010000000000000026,-3.125000000000008,True
+ladder,pessimistic,250,3,excluded_car_share,Vehicles excluded,down,%,3,Cross-station adaptation,multistation_rep,bramev,0.04,0.04,0.0,0.0,False
+ladder,pessimistic,250,3,request_rejection_rate,Unserved demands,down,%,3,Cross-station adaptation,multistation_rep,bramev,0.0044,0.0056,0.0011999999999999997,27.272727272727263,False
+ladder,pessimistic,250,3,nb_station_level_rejections,Rejected demands,down,,3,Cross-station adaptation,multistation_rep,bramev,2256.0,2434.0,178.0,7.890070921985815,False
+ladder,pessimistic,250,3,station_rejection_rate,Station rejection rate,down,%,3,Cross-station adaptation,multistation_rep,bramev,0.1252,0.1336,0.00839999999999999,6.709265175718842,False
+ladder,pessimistic,250,3,total_ms_mean,End-to-end latency,down,ms,3,Cross-station adaptation,multistation_rep,bramev,251.655,245.7,-5.9550000000000125,-2.366334863205584,True
+ladder,pessimistic,250,3,wall_time_s,Wall time,down,s,3,Cross-station adaptation,multistation_rep,bramev,194.821,190.399,-4.421999999999997,-2.269775845519732,True
+baseline,balance,250,1,satisfied_rate,Demands satisfied,up,%,0,Nearest Available,nearest_available,bramev,0.6005,0.5954,-0.005099999999999993,-0.8492922564529547,False
+baseline,balance,250,1,cancelled_rate,Demands cancelled,down,%,0,Nearest Available,nearest_available,bramev,0.3937,0.3984,0.004699999999999982,1.1938023876047708,False
+baseline,balance,250,1,service_ratio_mean,Energy served / requested,up,%,0,Nearest Available,nearest_available,bramev,0.375,0.527,0.15200000000000002,40.53333333333334,True
+baseline,balance,250,1,plan_coverage_exact,Planning coverage (exact),up,%,0,Nearest Available,nearest_available,bramev,0.6277,0.8873,0.25959999999999994,41.35733630715308,True
+baseline,balance,250,1,plan_coverage_volume,Planning coverage (volume),up,%,0,Nearest Available,nearest_available,bramev,0.658,0.9062,0.24819999999999998,37.72036474164133,True
+baseline,balance,250,1,confirm_rate,Confirmation rate,up,%,0,Nearest Available,nearest_available,bramev,0.9942,0.9939,-0.00029999999999996696,-0.030175015087504222,False
+baseline,balance,250,1,mean_waiting_time_min,Mean waiting time,down,min,0,Nearest Available,nearest_available,bramev,71.634,20.742,-50.891999999999996,-71.04447608677444,True
+baseline,balance,250,1,mean_travel_distance_km,Mean distance,down,km,0,Nearest Available,nearest_available,bramev,0.4595,0.5534,0.09389999999999998,20.435255712731227,False
+baseline,balance,250,1,rate_pres,Show-up rate,up,%,0,Nearest Available,nearest_available,bramev,0.6043,0.5995,-0.0047999999999999154,-0.7943074631805256,False
+baseline,balance,250,1,rate_abs,No-show rate,down,%,0,Nearest Available,nearest_available,bramev,0.1854,0.1883,0.002899999999999986,1.5641855447680613,False
+baseline,balance,250,1,nb_no_show,No-shows,down,,0,Nearest Available,nearest_available,bramev,568.0,458.0,-110.0,-19.366197183098592,True
+baseline,balance,250,1,nb_reservations,Confirmed reservations,up,,0,Nearest Available,nearest_available,bramev,3063.0,2432.0,-631.0,-20.60071825008162,False
+baseline,balance,250,1,mean_occupancy_rate,Occupancy rate,up,%,0,Nearest Available,nearest_available,bramev,0.4839,0.5538,0.06989999999999996,14.445133292002472,True
+baseline,balance,250,1,mean_service_rate,Service rate,up,%,0,Nearest Available,nearest_available,bramev,0.371,0.4203,0.04930000000000001,13.288409703504048,True
+baseline,balance,250,1,slot_waste_rate,Wasted reserved slots,down,%,0,Nearest Available,nearest_available,bramev,0.3918,0.4007,0.008900000000000019,2.271567126084742,False
+baseline,balance,250,1,held_idle_rate,Held slots left idle,down,%,0,Nearest Available,nearest_available,bramev,0.2333,0.2411,0.007800000000000001,3.3433347621088734,False
+baseline,balance,250,1,energy_planned_kwh,Energy planned,up,kWh,0,Nearest Available,nearest_available,bramev,40796.4,46712.0,5915.5999999999985,14.50029904599425,True
+baseline,balance,250,1,energy_delivered_kwh,Energy delivered,up,kWh,0,Nearest Available,nearest_available,bramev,24678.364,27876.974,3198.609999999997,12.961191430679914,True
+baseline,balance,250,1,energy_delivery_rate,Energy delivered/planned,up,%,0,Nearest Available,nearest_available,bramev,0.6049,0.5968,-0.008099999999999996,-1.3390643081501068,False
+baseline,balance,250,1,no_offer_rate,Demands with no offer,down,%,0,Nearest Available,nearest_available,bramev,0.0058,0.0061,0.0003000000000000008,5.172413793103463,False
+baseline,balance,250,1,abandon_rate,Abandoned searches,down,%,0,Nearest Available,nearest_available,bramev,0.0029,0.0033,0.0004000000000000002,13.79310344827587,False
+baseline,balance,250,1,excluded_car_share,Vehicles excluded,down,%,0,Nearest Available,nearest_available,bramev,0.036,0.032,-0.003999999999999997,-11.111111111111104,True
+baseline,balance,250,1,request_rejection_rate,Unserved demands,down,%,0,Nearest Available,nearest_available,bramev,0.0058,0.0061,0.0003000000000000008,5.172413793103463,False
+baseline,balance,250,1,nb_station_level_rejections,Rejected demands,down,,0,Nearest Available,nearest_available,bramev,3674.0,1949.0,-1725.0,-46.951551442569404,True
+baseline,balance,250,1,station_rejection_rate,Station rejection rate,down,%,0,Nearest Available,nearest_available,bramev,0.1709,0.1173,-0.053599999999999995,-31.36337039204213,True
+baseline,balance,250,1,total_ms_mean,End-to-end latency,down,ms,0,Nearest Available,nearest_available,bramev,479.464,471.18,-8.283999999999992,-1.7277626683129477,True
+baseline,balance,250,1,wall_time_s,Wall time,down,s,0,Nearest Available,nearest_available,bramev,283.321,215.037,-68.28400000000002,-24.101284408850745,True
+baseline,balance,250,2,satisfied_rate,Demands satisfied,up,%,0,Nearest Available,nearest_available,bramev,0.586,0.5904,0.0044000000000000705,0.7508532423208312,True
+baseline,balance,250,2,cancelled_rate,Demands cancelled,down,%,0,Nearest Available,nearest_available,bramev,0.4077,0.404,-0.003699999999999981,-0.9075300466028896,True
+baseline,balance,250,2,service_ratio_mean,Energy served / requested,up,%,0,Nearest Available,nearest_available,bramev,0.327,0.494,0.16699999999999998,51.0703363914373,True
+baseline,balance,250,2,plan_coverage_exact,Planning coverage (exact),up,%,0,Nearest Available,nearest_available,bramev,0.5584,0.8343,0.27590000000000003,49.409025787965625,True
+baseline,balance,250,2,plan_coverage_volume,Planning coverage (volume),up,%,0,Nearest Available,nearest_available,bramev,0.5927,0.8631,0.2704,45.62173106124515,True
+baseline,balance,250,2,confirm_rate,Confirmation rate,up,%,0,Nearest Available,nearest_available,bramev,0.9937,0.9945,0.0008000000000000229,0.08050719533058498,True
+baseline,balance,250,2,mean_waiting_time_min,Mean waiting time,down,min,0,Nearest Available,nearest_available,bramev,82.344,29.886,-52.458,-63.70591664237832,True
+baseline,balance,250,2,mean_travel_distance_km,Mean distance,down,km,0,Nearest Available,nearest_available,bramev,0.4635,0.5526,0.08909999999999996,19.22330097087378,False
+baseline,balance,250,2,rate_pres,Show-up rate,up,%,0,Nearest Available,nearest_available,bramev,0.5906,0.5941,0.0034999999999999476,0.5926176769386975,True
+baseline,balance,250,2,rate_abs,No-show rate,down,%,0,Nearest Available,nearest_available,bramev,0.1906,0.195,0.004400000000000015,2.308499475341036,False
+baseline,balance,250,2,nb_no_show,No-shows,down,,0,Nearest Available,nearest_available,bramev,634.0,491.0,-143.0,-22.555205047318612,True
+baseline,balance,250,2,nb_reservations,Confirmed reservations,up,,0,Nearest Available,nearest_available,bramev,3327.0,2518.0,-809.0,-24.31620078148482,False
+baseline,balance,250,2,mean_occupancy_rate,Occupancy rate,up,%,0,Nearest Available,nearest_available,bramev,0.4605,0.5435,0.08299999999999996,18.023887079261666,True
+baseline,balance,250,2,mean_service_rate,Service rate,up,%,0,Nearest Available,nearest_available,bramev,0.3491,0.4069,0.05779999999999996,16.556860498424506,True
+baseline,balance,250,2,slot_waste_rate,Wasted reserved slots,down,%,0,Nearest Available,nearest_available,bramev,0.4074,0.4118,0.004400000000000015,1.0800196367206714,False
+baseline,balance,250,2,held_idle_rate,Held slots left idle,down,%,0,Nearest Available,nearest_available,bramev,0.2419,0.2513,0.00940000000000002,3.885903265812327,False
+baseline,balance,250,2,energy_planned_kwh,Energy planned,up,kWh,0,Nearest Available,nearest_available,bramev,40376.7,47007.1,6630.4000000000015,16.421351918309327,True
+baseline,balance,250,2,energy_delivered_kwh,Energy delivered,up,kWh,0,Nearest Available,nearest_available,bramev,23868.514,27618.423,3749.9089999999997,15.710693175117646,True
+baseline,balance,250,2,energy_delivery_rate,Energy delivered/planned,up,%,0,Nearest Available,nearest_available,bramev,0.5911,0.5875,-0.0035999999999999366,-0.6090340043985683,False
+baseline,balance,250,2,no_offer_rate,Demands with no offer,down,%,0,Nearest Available,nearest_available,bramev,0.0063,0.0055,-0.0008000000000000004,-12.698412698412705,True
+baseline,balance,250,2,abandon_rate,Abandoned searches,down,%,0,Nearest Available,nearest_available,bramev,0.0042,0.0051,0.0009000000000000006,21.428571428571445,False
+baseline,balance,250,2,excluded_car_share,Vehicles excluded,down,%,0,Nearest Available,nearest_available,bramev,0.056,0.052,-0.0040000000000000036,-7.1428571428571495,True
+baseline,balance,250,2,request_rejection_rate,Unserved demands,down,%,0,Nearest Available,nearest_available,bramev,0.0063,0.0055,-0.0008000000000000004,-12.698412698412705,True
+baseline,balance,250,2,nb_station_level_rejections,Rejected demands,down,,0,Nearest Available,nearest_available,bramev,4402.0,2167.0,-2235.0,-50.77237619263971,True
+baseline,balance,250,2,station_rejection_rate,Station rejection rate,down,%,0,Nearest Available,nearest_available,bramev,0.2214,0.148,-0.07340000000000002,-33.15266485998194,True
+baseline,balance,250,2,total_ms_mean,End-to-end latency,down,ms,0,Nearest Available,nearest_available,bramev,343.564,332.414,-11.150000000000034,-3.245392415969087,True
+baseline,balance,250,2,wall_time_s,Wall time,down,s,0,Nearest Available,nearest_available,bramev,235.419,182.723,-52.696,-22.38391973460086,True
+baseline,balance,250,3,satisfied_rate,Demands satisfied,up,%,0,Nearest Available,nearest_available,bramev,0.5887,0.5873,-0.0013999999999999568,-0.23781212841854202,False
+baseline,balance,250,3,cancelled_rate,Demands cancelled,down,%,0,Nearest Available,nearest_available,bramev,0.4044,0.4056,0.0012000000000000344,0.2967359050445189,False
+baseline,balance,250,3,service_ratio_mean,Energy served / requested,up,%,0,Nearest Available,nearest_available,bramev,0.322,0.485,0.16299999999999998,50.62111801242235,True
+baseline,balance,250,3,plan_coverage_exact,Planning coverage (exact),up,%,0,Nearest Available,nearest_available,bramev,0.5498,0.8246,0.27480000000000004,49.98181156784286,True
+baseline,balance,250,3,plan_coverage_volume,Planning coverage (volume),up,%,0,Nearest Available,nearest_available,bramev,0.5851,0.8543,0.2692,46.00922919159118,True
+baseline,balance,250,3,confirm_rate,Confirmation rate,up,%,0,Nearest Available,nearest_available,bramev,0.9931,0.9929,-0.00019999999999997797,-0.020138958815827005,False
+baseline,balance,250,3,mean_waiting_time_min,Mean waiting time,down,min,0,Nearest Available,nearest_available,bramev,86.664,33.636,-53.028,-61.18803655497092,True
+baseline,balance,250,3,mean_travel_distance_km,Mean distance,down,km,0,Nearest Available,nearest_available,bramev,0.4971,0.5726,0.07550000000000001,15.188090927378799,False
+baseline,balance,250,3,rate_pres,Show-up rate,up,%,0,Nearest Available,nearest_available,bramev,0.5928,0.5915,-0.0012999999999999678,-0.21929824561402966,False
+baseline,balance,250,3,rate_abs,No-show rate,down,%,0,Nearest Available,nearest_available,bramev,0.1916,0.1898,-0.001799999999999996,-0.9394572025052171,True
+baseline,balance,250,3,nb_no_show,No-shows,down,,0,Nearest Available,nearest_available,bramev,636.0,478.0,-158.0,-24.842767295597483,True
+baseline,balance,250,3,nb_reservations,Confirmed reservations,up,,0,Nearest Available,nearest_available,bramev,3320.0,2519.0,-801.0,-24.126506024096386,False
+baseline,balance,250,3,mean_occupancy_rate,Occupancy rate,up,%,0,Nearest Available,nearest_available,bramev,0.4547,0.5359,0.08120000000000005,17.85792830437652,True
+baseline,balance,250,3,mean_service_rate,Service rate,up,%,0,Nearest Available,nearest_available,bramev,0.3454,0.3991,0.053700000000000025,15.547191661841351,True
+baseline,balance,250,3,slot_waste_rate,Wasted reserved slots,down,%,0,Nearest Available,nearest_available,bramev,0.403,0.4153,0.012299999999999978,3.0521091811414336,False
+baseline,balance,250,3,held_idle_rate,Held slots left idle,down,%,0,Nearest Available,nearest_available,bramev,0.2403,0.2554,0.015100000000000002,6.283811901789431,False
+baseline,balance,250,3,energy_planned_kwh,Energy planned,up,kWh,0,Nearest Available,nearest_available,bramev,39206.0,45905.8,6699.800000000003,17.08871091159517,True
+baseline,balance,250,3,energy_delivered_kwh,Energy delivered,up,kWh,0,Nearest Available,nearest_available,bramev,23360.428,26850.519,3490.0910000000003,14.940184315116145,True
+baseline,balance,250,3,energy_delivery_rate,Energy delivered/planned,up,%,0,Nearest Available,nearest_available,bramev,0.5958,0.5849,-0.01090000000000002,-1.8294729775092349,False
+baseline,balance,250,3,no_offer_rate,Demands with no offer,down,%,0,Nearest Available,nearest_available,bramev,0.0069,0.0071,0.00020000000000000052,2.8985507246376887,False
+baseline,balance,250,3,abandon_rate,Abandoned searches,down,%,0,Nearest Available,nearest_available,bramev,0.0051,0.0051,0.0,0.0,False
+baseline,balance,250,3,excluded_car_share,Vehicles excluded,down,%,0,Nearest Available,nearest_available,bramev,0.068,0.052,-0.016000000000000007,-23.52941176470589,True
+baseline,balance,250,3,request_rejection_rate,Unserved demands,down,%,0,Nearest Available,nearest_available,bramev,0.0069,0.0071,0.00020000000000000052,2.8985507246376887,False
+baseline,balance,250,3,nb_station_level_rejections,Rejected demands,down,,0,Nearest Available,nearest_available,bramev,4348.0,2631.0,-1717.0,-39.48942042318307,True
+baseline,balance,250,3,station_rejection_rate,Station rejection rate,down,%,0,Nearest Available,nearest_available,bramev,0.2232,0.1764,-0.04680000000000001,-20.967741935483872,True
+baseline,balance,250,3,total_ms_mean,End-to-end latency,down,ms,0,Nearest Available,nearest_available,bramev,268.463,262.837,-5.626000000000033,-2.0956332902485753,True
+baseline,balance,250,3,wall_time_s,Wall time,down,s,0,Nearest Available,nearest_available,bramev,216.271,168.907,-47.363999999999976,-21.90030101123127,True
+baseline,pessimistic,250,1,satisfied_rate,Demands satisfied,up,%,0,Nearest Available,nearest_available,bramev,0.4081,0.4096,0.0015000000000000013,0.36755697133055654,True
+baseline,pessimistic,250,1,cancelled_rate,Demands cancelled,down,%,0,Nearest Available,nearest_available,bramev,0.5872,0.5865,-0.0007000000000000339,-0.11920980926431095,True
+baseline,pessimistic,250,1,service_ratio_mean,Energy served / requested,up,%,0,Nearest Available,nearest_available,bramev,0.249,0.362,0.11299999999999999,45.38152610441767,True
+baseline,pessimistic,250,1,plan_coverage_exact,Planning coverage (exact),up,%,0,Nearest Available,nearest_available,bramev,0.6416,0.8926,0.251,39.1209476309227,True
+baseline,pessimistic,250,1,plan_coverage_volume,Planning coverage (volume),up,%,0,Nearest Available,nearest_available,bramev,0.6673,0.9103,0.243,36.41540536490334,True
+baseline,pessimistic,250,1,confirm_rate,Confirmation rate,up,%,0,Nearest Available,nearest_available,bramev,0.9953,0.9961,0.0008000000000000229,0.08037777554506409,True
+baseline,pessimistic,250,1,mean_waiting_time_min,Mean waiting time,down,min,0,Nearest Available,nearest_available,bramev,68.85,20.418,-48.431999999999995,-70.3442265795207,True
+baseline,pessimistic,250,1,mean_travel_distance_km,Mean distance,down,km,0,Nearest Available,nearest_available,bramev,0.451,0.5434,0.09239999999999998,20.487804878048777,False
+baseline,pessimistic,250,1,rate_pres,Show-up rate,up,%,0,Nearest Available,nearest_available,bramev,0.4108,0.4112,0.00040000000000001146,0.09737098344693561,True
+baseline,pessimistic,250,1,rate_abs,No-show rate,down,%,0,Nearest Available,nearest_available,bramev,0.221,0.2169,-0.0040999999999999925,-1.8552036199094988,True
+baseline,pessimistic,250,1,nb_no_show,No-shows,down,,0,Nearest Available,nearest_available,bramev,850.0,662.0,-188.0,-22.11764705882353,True
+baseline,pessimistic,250,1,nb_reservations,Confirmed reservations,up,,0,Nearest Available,nearest_available,bramev,3846.0,3052.0,-794.0,-20.64482579303172,False
+baseline,pessimistic,250,1,mean_occupancy_rate,Occupancy rate,up,%,0,Nearest Available,nearest_available,bramev,0.4854,0.5693,0.08390000000000003,17.28471363823651,True
+baseline,pessimistic,250,1,mean_service_rate,Service rate,up,%,0,Nearest Available,nearest_available,bramev,0.3112,0.3702,0.059,18.958868894601544,True
+baseline,pessimistic,250,1,slot_waste_rate,Wasted reserved slots,down,%,0,Nearest Available,nearest_available,bramev,0.5924,0.5901,-0.0023000000000000798,-0.3882511816340445,True
+baseline,pessimistic,250,1,held_idle_rate,Held slots left idle,down,%,0,Nearest Available,nearest_available,bramev,0.3588,0.3497,-0.009099999999999997,-2.5362318840579703,True
+baseline,pessimistic,250,1,energy_planned_kwh,Energy planned,up,kWh,0,Nearest Available,nearest_available,bramev,51676.7,60284.3,8607.600000000006,16.6566363564237,True
+baseline,pessimistic,250,1,energy_delivered_kwh,Energy delivered,up,kWh,0,Nearest Available,nearest_available,bramev,21150.949,24888.144,3737.1949999999997,17.669159903888946,True
+baseline,pessimistic,250,1,energy_delivery_rate,Energy delivered/planned,up,%,0,Nearest Available,nearest_available,bramev,0.4093,0.4128,0.003500000000000003,0.8551184949914495,True
+baseline,pessimistic,250,1,no_offer_rate,Demands with no offer,down,%,0,Nearest Available,nearest_available,bramev,0.0047,0.0039,-0.0008000000000000004,-17.021276595744688,True
+baseline,pessimistic,250,1,abandon_rate,Abandoned searches,down,%,0,Nearest Available,nearest_available,bramev,0.0039,0.0026,-0.0013,-33.333333333333336,True
+baseline,pessimistic,250,1,excluded_car_share,Vehicles excluded,down,%,0,Nearest Available,nearest_available,bramev,0.06,0.032,-0.027999999999999997,-46.666666666666664,True
+baseline,pessimistic,250,1,request_rejection_rate,Unserved demands,down,%,0,Nearest Available,nearest_available,bramev,0.0047,0.0039,-0.0008000000000000004,-17.021276595744688,True
+baseline,pessimistic,250,1,nb_station_level_rejections,Rejected demands,down,,0,Nearest Available,nearest_available,bramev,4259.0,2442.0,-1817.0,-42.66259685372153,True
+baseline,pessimistic,250,1,station_rejection_rate,Station rejection rate,down,%,0,Nearest Available,nearest_available,bramev,0.1593,0.1159,-0.043399999999999994,-27.24419334588826,True
+baseline,pessimistic,250,1,total_ms_mean,End-to-end latency,down,ms,0,Nearest Available,nearest_available,bramev,549.689,516.077,-33.611999999999966,-6.114730329331671,True
+baseline,pessimistic,250,1,wall_time_s,Wall time,down,s,0,Nearest Available,nearest_available,bramev,393.391,304.321,-89.07,-22.641595766044468,True
+baseline,pessimistic,250,2,satisfied_rate,Demands satisfied,up,%,0,Nearest Available,nearest_available,bramev,0.3951,0.3961,0.0010000000000000009,0.2531004808909139,True
+baseline,pessimistic,250,2,cancelled_rate,Demands cancelled,down,%,0,Nearest Available,nearest_available,bramev,0.6015,0.6008,-0.0007000000000000339,-0.11637572734830157,True
+baseline,pessimistic,250,2,service_ratio_mean,Energy served / requested,up,%,0,Nearest Available,nearest_available,bramev,0.215,0.326,0.11100000000000002,51.62790697674419,True
+baseline,pessimistic,250,2,plan_coverage_exact,Planning coverage (exact),up,%,0,Nearest Available,nearest_available,bramev,0.5729,0.8331,0.2602,45.418048525048,True
+baseline,pessimistic,250,2,plan_coverage_volume,Planning coverage (volume),up,%,0,Nearest Available,nearest_available,bramev,0.6008,0.8575,0.25670000000000004,42.72636484687085,True
+baseline,pessimistic,250,2,confirm_rate,Confirmation rate,up,%,0,Nearest Available,nearest_available,bramev,0.9966,0.9969,0.00029999999999996696,0.03010234798313937,True
+baseline,pessimistic,250,2,mean_waiting_time_min,Mean waiting time,down,min,0,Nearest Available,nearest_available,bramev,77.58,31.59,-45.989999999999995,-59.28074245939674,True
+baseline,pessimistic,250,2,mean_travel_distance_km,Mean distance,down,km,0,Nearest Available,nearest_available,bramev,0.4407,0.5447,0.10399999999999998,23.59882005899705,False
+baseline,pessimistic,250,2,rate_pres,Show-up rate,up,%,0,Nearest Available,nearest_available,bramev,0.3967,0.3973,0.0005999999999999894,0.1512477943029971,True
+baseline,pessimistic,250,2,rate_abs,No-show rate,down,%,0,Nearest Available,nearest_available,bramev,0.2308,0.2299,-0.0009000000000000119,-0.38994800693241416,True
+baseline,pessimistic,250,2,nb_no_show,No-shows,down,,0,Nearest Available,nearest_available,bramev,947.0,740.0,-207.0,-21.858500527983104,True
+baseline,pessimistic,250,2,nb_reservations,Confirmed reservations,up,,0,Nearest Available,nearest_available,bramev,4104.0,3219.0,-885.0,-21.564327485380115,False
+baseline,pessimistic,250,2,mean_occupancy_rate,Occupancy rate,up,%,0,Nearest Available,nearest_available,bramev,0.4533,0.5551,0.10180000000000006,22.457533642179584,True
+baseline,pessimistic,250,2,mean_service_rate,Service rate,up,%,0,Nearest Available,nearest_available,bramev,0.2875,0.3499,0.06240000000000001,21.704347826086963,True
+baseline,pessimistic,250,2,slot_waste_rate,Wasted reserved slots,down,%,0,Nearest Available,nearest_available,bramev,0.6042,0.6058,0.0016000000000000458,0.2648129758358236,False
+baseline,pessimistic,250,2,held_idle_rate,Held slots left idle,down,%,0,Nearest Available,nearest_available,bramev,0.3657,0.3697,0.003999999999999948,1.093792726278356,False
+baseline,pessimistic,250,2,energy_planned_kwh,Energy planned,up,kWh,0,Nearest Available,nearest_available,bramev,50805.6,61260.1,10454.5,20.577456028469303,True
+baseline,pessimistic,250,2,energy_delivered_kwh,Energy delivered,up,kWh,0,Nearest Available,nearest_available,bramev,20078.254,24137.831,4059.5769999999975,20.218774999061157,True
+baseline,pessimistic,250,2,energy_delivery_rate,Energy delivered/planned,up,%,0,Nearest Available,nearest_available,bramev,0.3952,0.394,-0.0011999999999999789,-0.3036437246963509,False
+baseline,pessimistic,250,2,no_offer_rate,Demands with no offer,down,%,0,Nearest Available,nearest_available,bramev,0.0034,0.0031,-0.0002999999999999999,-8.823529411764705,True
+baseline,pessimistic,250,2,abandon_rate,Abandoned searches,down,%,0,Nearest Available,nearest_available,bramev,0.0019,0.0022,0.00030000000000000014,15.789473684210533,False
+baseline,pessimistic,250,2,excluded_car_share,Vehicles excluded,down,%,0,Nearest Available,nearest_available,bramev,0.032,0.028,-0.004,-12.5,True
+baseline,pessimistic,250,2,request_rejection_rate,Unserved demands,down,%,0,Nearest Available,nearest_available,bramev,0.0034,0.0031,-0.0002999999999999999,-8.823529411764705,True
+baseline,pessimistic,250,2,nb_station_level_rejections,Rejected demands,down,,0,Nearest Available,nearest_available,bramev,4279.0,2268.0,-2011.0,-46.996961906987615,True
+baseline,pessimistic,250,2,station_rejection_rate,Station rejection rate,down,%,0,Nearest Available,nearest_available,bramev,0.1784,0.1217,-0.0567,-31.78251121076233,True
+baseline,pessimistic,250,2,total_ms_mean,End-to-end latency,down,ms,0,Nearest Available,nearest_available,bramev,382.536,346.686,-35.85000000000002,-9.371666980362638,True
+baseline,pessimistic,250,2,wall_time_s,Wall time,down,s,0,Nearest Available,nearest_available,bramev,302.597,225.32,-77.27699999999999,-25.53792668136168,True
+baseline,pessimistic,250,3,satisfied_rate,Demands satisfied,up,%,0,Nearest Available,nearest_available,bramev,0.3882,0.3873,-0.0009000000000000119,-0.2318392581143771,False
+baseline,pessimistic,250,3,cancelled_rate,Demands cancelled,down,%,0,Nearest Available,nearest_available,bramev,0.6055,0.6071,0.0015999999999999348,0.2642444260941263,False
+baseline,pessimistic,250,3,service_ratio_mean,Energy served / requested,up,%,0,Nearest Available,nearest_available,bramev,0.212,0.315,0.10300000000000001,48.584905660377366,True
+baseline,pessimistic,250,3,plan_coverage_exact,Planning coverage (exact),up,%,0,Nearest Available,nearest_available,bramev,0.568,0.8179,0.2499,43.99647887323945,True
+baseline,pessimistic,250,3,plan_coverage_volume,Planning coverage (volume),up,%,0,Nearest Available,nearest_available,bramev,0.5959,0.8423,0.24640000000000006,41.3492196677295,True
+baseline,pessimistic,250,3,confirm_rate,Confirmation rate,up,%,0,Nearest Available,nearest_available,bramev,0.9937,0.9944,0.0006999999999999229,0.07044379591425208,True
+baseline,pessimistic,250,3,mean_waiting_time_min,Mean waiting time,down,min,0,Nearest Available,nearest_available,bramev,79.62,33.156,-46.464000000000006,-58.35719668425019,True
+baseline,pessimistic,250,3,mean_travel_distance_km,Mean distance,down,km,0,Nearest Available,nearest_available,bramev,0.4769,0.5656,0.0887,18.59928706227721,False
+baseline,pessimistic,250,3,rate_pres,Show-up rate,up,%,0,Nearest Available,nearest_available,bramev,0.3906,0.3898,-0.0008000000000000229,-0.20481310803892036,False
+baseline,pessimistic,250,3,rate_abs,No-show rate,down,%,0,Nearest Available,nearest_available,bramev,0.2266,0.2273,0.0007000000000000062,0.3089143865842922,False
+baseline,pessimistic,250,3,nb_no_show,No-shows,down,,0,Nearest Available,nearest_available,bramev,891.0,725.0,-166.0,-18.6307519640853,True
+baseline,pessimistic,250,3,nb_reservations,Confirmed reservations,up,,0,Nearest Available,nearest_available,bramev,3932.0,3189.0,-743.0,-18.896236012207527,False
+baseline,pessimistic,250,3,mean_occupancy_rate,Occupancy rate,up,%,0,Nearest Available,nearest_available,bramev,0.4343,0.5407,0.10639999999999994,24.49919410545704,True
+baseline,pessimistic,250,3,mean_service_rate,Service rate,up,%,0,Nearest Available,nearest_available,bramev,0.2739,0.3365,0.06260000000000004,22.855056589996366,True
+baseline,pessimistic,250,3,slot_waste_rate,Wasted reserved slots,down,%,0,Nearest Available,nearest_available,bramev,0.6132,0.613,-0.00019999999999997797,-0.032615786040439985,True
+baseline,pessimistic,250,3,held_idle_rate,Held slots left idle,down,%,0,Nearest Available,nearest_available,bramev,0.3692,0.3775,0.00830000000000003,2.248104008667397,False
+baseline,pessimistic,250,3,energy_planned_kwh,Energy planned,up,kWh,0,Nearest Available,nearest_available,bramev,48413.9,59361.5,10947.599999999999,22.612514174648183,True
+baseline,pessimistic,250,3,energy_delivered_kwh,Energy delivered,up,kWh,0,Nearest Available,nearest_available,bramev,18741.225,22999.69,4258.465,22.72244743873466,True
+baseline,pessimistic,250,3,energy_delivery_rate,Energy delivered/planned,up,%,0,Nearest Available,nearest_available,bramev,0.3871,0.3875,0.00040000000000001146,0.10333247222940105,True
+baseline,pessimistic,250,3,no_offer_rate,Demands with no offer,down,%,0,Nearest Available,nearest_available,bramev,0.0063,0.0056,-0.0007000000000000001,-11.111111111111112,True
+baseline,pessimistic,250,3,abandon_rate,Abandoned searches,down,%,0,Nearest Available,nearest_available,bramev,0.0051,0.0031,-0.0020000000000000005,-39.21568627450981,True
+baseline,pessimistic,250,3,excluded_car_share,Vehicles excluded,down,%,0,Nearest Available,nearest_available,bramev,0.08,0.04,-0.04,-50.0,True
+baseline,pessimistic,250,3,request_rejection_rate,Unserved demands,down,%,0,Nearest Available,nearest_available,bramev,0.0063,0.0056,-0.0007000000000000001,-11.111111111111112,True
+baseline,pessimistic,250,3,nb_station_level_rejections,Rejected demands,down,,0,Nearest Available,nearest_available,bramev,5471.0,2434.0,-3037.0,-55.51087552549808,True
+baseline,pessimistic,250,3,station_rejection_rate,Station rejection rate,down,%,0,Nearest Available,nearest_available,bramev,0.2279,0.1336,-0.0943,-41.377797279508556,True
+baseline,pessimistic,250,3,total_ms_mean,End-to-end latency,down,ms,0,Nearest Available,nearest_available,bramev,301.623,245.7,-55.923,-18.540694840910675,True
+baseline,pessimistic,250,3,wall_time_s,Wall time,down,s,0,Nearest Available,nearest_available,bramev,251.465,190.399,-61.066,-24.284095202115605,True

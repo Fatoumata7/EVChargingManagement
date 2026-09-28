@@ -1,0 +1,29 @@
+# Congestion pilot: same worlds as the ablation campaign, fewer chargers.
+#
+#   python -m src.pipeline.cli run --config experiments/congestion_pilot.yaml
+#
+# The 40 stations are kept (same positions, companies and initial alpha: the
+# grid draws do not depend on the number of chargers, see
+# `tests/test_shared_world.py::test_charger_count_changes_nothing_else_in_the_grid`)
+# and every station gets 2 chargers instead of 4 to 6. Removing stations would
+# also change the distances and the choice set; lowering the capacity isolates
+# the congestion.
+#
+# 3 seeds x 2 scenarios x 1 fleet x 4 methods = 24 runs. Every other parameter
+# is the one of `ablation.yaml`.
+label: congestion_pilot
+seed: [1, 2, 3]
+scenarios: [balance, pessimistic]
+fleet_sizes: [250]
+methods: [nearest_available, multistation, multistation_rep, bramev]
+
+total_time: 1440          # 5 days in 5 min slots
+nb_stations: 40
+nb_societies: 4
+nb_charg_spot_low: 2
+nb_charg_spot_high: 2
+strategy_noise: 0.5
+
+save_latency: true
+save_tables: true
+figures: true

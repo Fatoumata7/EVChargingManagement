@@ -188,8 +188,15 @@ def _verdict(est: Estimate, metric: Metric) -> str:
     return BETTER if metric.improves(est.mean) else WORSE
 
 
-def _round(value: float | None, digits: int = 6) -> float | None:
-    return None if value is None else round(float(value), digits)
+def _num(value: float | None) -> float | None:
+    """
+    A stored statistic, at full precision.
+
+    Tables on disk are never rounded: a mean or an interval recomputed from
+    rounded values would drift from the one computed here. Rounding belongs to
+    the display (`render_paired_table`, notebooks, report tables) only.
+    """
+    return None if value is None else float(value)
 
 
 def _seed_tag(seeds: Iterable[Any]) -> str:
@@ -262,14 +269,14 @@ def metric_rows(rows: Rows, metrics: Sequence[Metric] = METRICS,
                 'unit':           metric.unit,
                 'nb_seeds':       est.n,
                 'seeds':          _seed_tag(seeds),
-                'mean':           _round(est.mean),
-                'sd':             _round(est.sd),
-                'sem':            _round(est.sem),
-                'ci95_low':       _round(est.ci_low),
-                'ci95_high':      _round(est.ci_high),
-                'ci95_halfwidth': _round(est.halfwidth),
-                'min':            _round(min(values)),
-                'max':            _round(max(values)),
+                'mean':           _num(est.mean),
+                'sd':             _num(est.sd),
+                'sem':            _num(est.sem),
+                'ci95_low':       _num(est.ci_low),
+                'ci95_high':      _num(est.ci_high),
+                'ci95_halfwidth': _num(est.halfwidth),
+                'min':            _num(min(values)),
+                'max':            _num(max(values)),
             })
 
     order = {m.column: i for i, m in enumerate(metrics)}
@@ -283,7 +290,8 @@ def metric_rows(rows: Rows, metrics: Sequence[Metric] = METRICS,
 # ----------------------------------------------------------------------
 
 def paired_rows(detail: Rows,
-                confidence: float = DEFAULT_CONFIDENCE) -> list[dict]:
+                confidence: float = DEFAULT_CONFIDENCE,
+                metrics: Sequence[Metric] = METRICS) -> list[dict]:
     """
     Paired statistics of every comparison the ablation already defines.
 
@@ -302,10 +310,11 @@ def paired_rows(detail: Rows,
                row['from_method'], row['to_method'], row['metric'])
         grouped.setdefault(key, []).append(row)
 
+    by_column = {m.column: m for m in metrics}
     out: list[dict] = []
     for key, group in grouped.items():
         kind, scenario, nb_cars, step, component, src, dst, column = key
-        metric = ablation.METRICS_BY_COLUMN.get(column)
+        metric = by_column.get(column)
         if metric is None:
             continue
 
@@ -328,25 +337,25 @@ def paired_rows(detail: Rows,
             'to_method':       dst,
             'nb_pairs':        est.n,
             'seeds':           _seed_tag(r.get('world_seed') for r in group),
-            'mean_value_from': _round(_mean(_floats(
+            'mean_value_from': _num(_mean(_floats(
                 r['value_from'] for r in group))),
-            'mean_value_to':   _round(_mean(_floats(
+            'mean_value_to':   _num(_mean(_floats(
                 r['value_to'] for r in group))),
-            'mean_delta':      _round(est.mean),
-            'sd_delta':        _round(est.sd),
-            'sem_delta':       _round(est.sem),
-            'ci95_low':        _round(est.ci_low),
-            'ci95_high':       _round(est.ci_high),
-            'mean_delta_pct':  _round(_mean(pcts), 4) if pcts else None,
-            't_stat':          _round(t_stat, 4),
-            'p_value':         _round(p_value, 6),
+            'mean_delta':      _num(est.mean),
+            'sd_delta':        _num(est.sd),
+            'sem_delta':       _num(est.sem),
+            'ci95_low':        _num(est.ci_low),
+            'ci95_high':       _num(est.ci_high),
+            'mean_delta_pct':  _mean(pcts) if pcts else None,
+            't_stat':          _num(t_stat),
+            'p_value':         _num(p_value),
             'significant_95':  est.excludes_zero,
             'nb_improved':     nb_improved,
-            'share_improved':  round(nb_improved / len(group), 4),
+            'share_improved':  nb_improved / len(group),
             'verdict':         _verdict(est, metric),
         })
 
-    order = {m.column: i for i, m in enumerate(METRICS)}
+    order = {m.column: i for i, m in enumerate(metrics)}
     out.sort(key=lambda r: (r['kind'] != 'ladder', str(r['scenario']),
                             r['nb_cars'] or 0, r['step'], str(r['component']),
                             order.get(r['metric'], 99)))
@@ -376,7 +385,7 @@ def write_tables(store, rows: Rows | None = None,
                                METRIC_FIELDS),
         store.write_root_table('paired',
                                paired_rows(ablation.detail_rows(rows, metrics),
-                                           confidence),
+                                           confidence, metrics),
                                PAIRED_FIELDS),
     ]
     return [path for path in written if path is not None]

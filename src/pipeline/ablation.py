@@ -183,7 +183,7 @@ def _delta_row(kind: str, world: tuple, component: str, step: int,
 
     # Relative gap: undefined when the reference is zero (not 'infinite').
     base = abs(float(value_from))
-    delta_pct = round(100. * delta / base, 4) if base > 1e-12 else None
+    delta_pct = 100. * delta / base if base > 1e-12 else None
 
     scenario, nb_cars, world_seed = world
     return {
@@ -202,9 +202,9 @@ def _delta_row(kind: str, world: tuple, component: str, step: int,
         'component':    component,
         'from_method':  before.get('method'),
         'to_method':    after.get('method'),
-        'value_from':   round(float(value_from), 6),
-        'value_to':     round(float(value_to), 6),
-        'delta':        round(delta, 6),
+        'value_from':   float(value_from),
+        'value_to':     float(value_to),
+        'delta':        delta,
         'delta_pct':    delta_pct,
         'improvement':  metric.improves(delta),
     }
@@ -301,12 +301,12 @@ def mean_rows(detail: Rows) -> list[dict]:
             'from_method':     from_method,
             'to_method':       to_method,
             'nb_worlds':       len(group),
-            'mean_value_from': round(mean(r['value_from'] for r in group), 6),
-            'mean_value_to':   round(mean(r['value_to'] for r in group), 6),
-            'mean_delta':      round(mean(r['delta'] for r in group), 6),
-            'mean_delta_pct':  round(mean(pcts), 4) if pcts else None,
+            'mean_value_from': mean(r['value_from'] for r in group),
+            'mean_value_to':   mean(r['value_to'] for r in group),
+            'mean_delta':      mean(r['delta'] for r in group),
+            'mean_delta_pct':  mean(pcts) if pcts else None,
             'nb_improved':     nb_improved,
-            'share_improved':  round(nb_improved / len(group), 4),
+            'share_improved':  nb_improved / len(group),
         })
 
     order = {m.column: i for i, m in enumerate(METRICS)}
