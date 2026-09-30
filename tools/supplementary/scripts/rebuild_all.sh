@@ -22,6 +22,7 @@ mkdir -p "$OUT"
 cd "$ROOT/code"
 export PYTHONPATH="$ROOT/code${PYTHONPATH:+:$PYTHONPATH}"
 export MPLBACKEND=Agg
+export PYTHONDONTWRITEBYTECODE=1
 
 echo "[1/3] Main campaign: indicators, means and 95% CIs, paired tests, Holm, figures"
 $PYTHON -m src.pipeline.reanalysis "$ABLATION" "$OUT/ablation_modified" > /dev/null

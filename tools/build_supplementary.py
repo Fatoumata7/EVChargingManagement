@@ -52,8 +52,7 @@ EXECUTED_MODULES = (
 )
 
 CODE_PATHS = ('src', 'tests', 'main.py', 'pyproject.toml', 'uv.lock',
-              '.python-version', 'experiments/ablation.yaml',
-              'experiments/congestion_pilot.yaml')
+              '.python-version', 'experiments')
 
 #: Run files shipped as input data. Root-level tables of the raw runs
 #: (summary_mean, paired, ablation*) and their figures use the former
@@ -184,9 +183,12 @@ def main(ref: str, work: Path) -> int:
 
     # --- Outputs: produced by the archived code on the archived data.
     subprocess.run([str(stage / 'scripts' / 'rebuild_all.sh'), 'outputs_tmp'],
-                   cwd=stage, check=False,
-                   env={**os.environ, 'PYTHON': sys.executable})
+                   cwd=stage, check=True,
+                   env={**os.environ, 'PYTHON': sys.executable,
+                        'PYTHONDONTWRITEBYTECODE': '1'})
     (stage / 'outputs_tmp').rename(stage / 'outputs')
+    for cache in list(stage.rglob('__pycache__')):
+        shutil.rmtree(cache)
 
     # --- Anonymity scan (text files; PNG metadata only names matplotlib).
     hits = []

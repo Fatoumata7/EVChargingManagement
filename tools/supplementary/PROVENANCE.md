@@ -25,6 +25,14 @@ modules it imports are listed in `provenance.json`: the simulator
     imported them, and they were extended after its launch.
   - Their final versions are in `code/`, which produced every table.
 
+- **Which code built the tables.** Every table and figure in `outputs/` is
+  built by `code/`, from the per-case results and per-request data. The main
+  campaign ran older versions of three post-processing modules (`ablation.py`,
+  `aggregate.py`, `figures.py`: storage rounding and former labels). They only
+  produced the raw run's root-level tables and figures, which are not shipped
+  and are superseded by `outputs/`. The simulator it executed is identical to
+  the one in `code/`.
+
 ## Checks
 
 - The simulator (`src/env`, `src/experiments`, `src/metrics`) is
