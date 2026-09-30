@@ -16,7 +16,7 @@ served / fully satisfied / share of need met). Numbers are rounded in
 `README.md` only.
 
 Usage:
-    python -m src.pipeline.congestion <pilot run dir> <reference run dir>
+    python -m src.pipeline.congestion <pilot run dir> <reference run dir> [<output dir>]
 """
 
 from __future__ import annotations
@@ -237,7 +237,8 @@ def display_components(rows: Sequence[Mapping], scenario: str) -> str:
 # Driver
 # ----------------------------------------------------------------------
 
-def report(pilot_dir: Path, reference_dir: Path) -> Path:
+def report(pilot_dir: Path, reference_dir: Path, out: Path | None = None) -> Path:
+    """Write the report in `out` (default: `<pilot_dir>/congestion`)."""
     pilot_dir, reference_dir = Path(pilot_dir), Path(reference_dir)
     pilot, fields, solver, _ = reanalysis.recompute_run(pilot_dir)
 
@@ -253,8 +254,8 @@ def report(pilot_dir: Path, reference_dir: Path) -> Path:
     capacity = capacity_rows(pilot, reference)
     components = component_rows(pilot)
 
-    out = pilot_dir / 'congestion'
-    out.mkdir(exist_ok=True)
+    out = Path(out) if out is not None else pilot_dir / 'congestion'
+    out.mkdir(parents=True, exist_ok=True)
     _write_csv(out / 'summary.csv', pilot, fields)
     _write_csv(out / 'reference_summary.csv', reference, fields)
     _write_csv(out / 'pilot_by_method.csv', means, aggregate.METRIC_FIELDS)
@@ -293,6 +294,12 @@ def report(pilot_dir: Path, reference_dir: Path) -> Path:
                  '', f'## {scenario} — components within the pilot (paired Δ [95 % CI], worlds improved, verdict)',
                  '', display_components(components, scenario)]
     (out / 'README.md').write_text('\n'.join(text) + '\n', encoding='utf-8')
+    # Figures on the re-analysed rows (served / fully satisfied), not on the
+    # raw `summary.csv` of the run, which still carries the former names.
+    from src.pipeline import figures
+    from src.pipeline.cli import _shared_tables
+    figures.render_all(pilot, out / 'figures',
+                       **_shared_tables(RunStore.open(pilot_dir)))
     (out / 'manifest.json').write_text(json.dumps({
         'pilot_run': pilot_dir.name, 'reference_run': reference_dir.name,
         'seeds': sorted(seeds), 'nb_pilot_cases': len(pilot),
@@ -303,6 +310,6 @@ def report(pilot_dir: Path, reference_dir: Path) -> Path:
 
 
 if __name__ == '__main__':
-    if len(sys.argv) != 3:
+    if len(sys.argv) not in (3, 4):
         sys.exit(__doc__.split('Usage:')[1])
-    print(report(Path(sys.argv[1]), Path(sys.argv[2])))
+    print(report(*map(Path, sys.argv[1:])))

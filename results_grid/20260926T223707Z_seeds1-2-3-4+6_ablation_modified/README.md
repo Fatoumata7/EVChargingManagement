@@ -53,6 +53,14 @@ Colonnes renommées dans `summary.csv` : `nb_demands_satisfied → nb_demands_se
   47,18 % / 47,18 % / 47,20 % / 47,29 % / 48,10 %. Passer de 0 à 1e-3 kWh
   change le résultat de 0,02 point.
 
+### Occupation des points de recharge (niveau réseau)
+
+`nb_chargers`, `network_occupancy_rate` (créneaux réservés encore tenus /
+capacité) et `network_service_rate` (créneaux effectivement utilisés pour
+charger / capacité) sont calculés sur l'ensemble du réseau, pondérés par la
+capacité. Les moyennes par station (`mean_occupancy_rate`,
+`mean_service_rate`) donnent le même poids à une station de 4 et de 6 points.
+
 ## 2. Précision
 
 - Les taux sont recalculés **à partir des comptages** des JSON de résultats,
@@ -103,19 +111,30 @@ une solution réalisable, qui a bien été utilisée pour produire des offres.
   de la machine : les cas concernés sont listés station par station dans
   `solver_status.csv` et résumés dans `tables_display/solver_status.md`.
 
-## 4. Contenu
+## 4. Correction de Holm
+
+Une famille par contraste de l'échelle d'ablation (recherche multi-stations,
+réputation, adaptation) : 9 configurations (3 scénarios × 3 flottes) × 3
+indicateurs (`served_rate`, `fully_satisfied_rate`, `service_ratio_mean`) =
+27 tests t appariés (10 graines), α = 0,05. Après correction : 15/27 tests
+significatifs pour la recherche multi-stations, 0/27 pour la réputation et
+0/27 pour l'adaptation (plus petite p ajustée : 0,51).
+
+## 5. Contenu
 
 | Fichier | Contenu |
 |---|---|
-| `summary.csv` | une ligne par cas (720), colonnes renommées et complétées, pleine précision |
+| `summary.csv` | une ligne par cas (720), colonnes renommées et complétées, pleine précision ; mêmes colonnes que le pilote congestion |
 | `summary_mean.csv` | moyenne, écart-type, IC 95 % par (scénario, flotte, méthode, métrique) |
 | `paired.csv` | écarts appariés par graine : échelle d'ablation, baselines, variantes |
 | `ablation.csv` / `ablation_mean.csv` | écarts monde par monde / moyennés sur tous les mondes |
+| `holm_ladder.csv` | tests t appariés de l'échelle d'ablation, correction de Holm par contraste (27 tests : 9 configurations × 3 indicateurs de service) |
 | `solver_status.csv` | stations ayant au moins une résolution non optimale |
 | `full_service_sensitivity.csv` | `fully_satisfied_rate` selon la tolérance |
 | `tables_display/service_means.md` | les 4 indicateurs de service, moyenne ± demi-largeur IC, en % |
 | `tables_display/paired_{ladder,baseline,variant}.md` | écarts appariés en points de %, IC, p, verdict |
 | `tables_display/solver_status.md` | résolutions non optimales par cas |
+| `tables_display/holm_ladder.md` | tests corrigés par Holm, arrondis pour l'affichage |
 | `params.json` | copie des paramètres du run source |
 | `manifest.json` | provenance, tolérance, renommages, bilan du solveur |
 | `figures/*.png` | figures régénérées depuis le nouveau `summary.csv` (35 figures) |

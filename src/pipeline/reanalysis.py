@@ -389,8 +389,11 @@ def recompute_run(source: Path, keep=None
     fields[anchor:anchor] = ['nb_demands_fully_satisfied', 'fully_satisfied_rate',
                              'fully_satisfied_share_of_served']
     fields.insert(fields.index('service_ratio_mean') + 1, 'service_ratio_mean_served')
+    fields.remove('nb_ilp_feasible_time_limit')
     fields.insert(fields.index('nb_ilp_failed'), 'nb_ilp_feasible_time_limit')
-    for col in ('network_occupancy_rate', 'network_service_rate'):
+    if len(fields) != len(set(fields)):
+        raise AssertionError(f'duplicate columns: {fields}')
+    for col in ('nb_chargers', 'network_occupancy_rate', 'network_service_rate'):
         fields.remove(col)
     anchor = fields.index('mean_service_rate') + 1
     fields[anchor:anchor] = ['nb_chargers', 'network_occupancy_rate',
@@ -450,6 +453,8 @@ def reanalyse(source: Path, target: Path) -> dict:
         'nb_ilp_failed': sum(s['nb_ilp_failed'] for s in solver),
     }
     (target / 'manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')
+    from src.pipeline import holm
+    holm.write(target)
     render_figures(source, target)
     return manifest
 
