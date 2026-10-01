@@ -1,0 +1,243 @@
+{
+  "run": "20261001T203713Z_seeds1-2-3-4+1_bimodal_pilot",
+  "started_utc": "20261001T203713Z",
+  "finished_utc": "20261001T204543Z",
+  "seed": 1,
+  "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "nb_cases_planned": 20,
+  "nb_cases_done": 20,
+  "params_source": "experiments/bimodal_pilot.yaml",
+  "git_commit": "c8a95baabba798961185c2e06ab9b980f8a160cd",
+  "git_dirty": false,
+  "python": "3.12.0",
+  "platform": "macOS-26.6.2-arm64-arm-64bit",
+  "cases": [
+    {
+      "tag": "seed2_balance_bimodal_250cars_multistation",
+      "seed": 2,
+      "scenario": "balance_bimodal",
+      "nb_cars": 250,
+      "method": "multistation",
+      "world_seed": 2,
+      "wall_time_s": 153.878,
+      "invariant_ok": true,
+      "nb_diagnostics": 0
+    },
+    {
+      "tag": "seed2_balance_bimodal_250cars_bramev",
+      "seed": 2,
+      "scenario": "balance_bimodal",
+      "nb_cars": 250,
+      "method": "bramev",
+      "world_seed": 2,
+      "wall_time_s": 159.924,
+      "invariant_ok": true,
+      "nb_diagnostics": 0
+    },
+    {
+      "tag": "seed2_balance_bimodal_250cars_load_aware",
+      "seed": 2,
+      "scenario": "balance_bimodal",
+      "nb_cars": 250,
+      "method": "load_aware",
+      "world_seed": 2,
+      "wall_time_s": 161.508,
+      "invariant_ok": true,
+      "nb_diagnostics": 0
+    },
+    {
+      "tag": "seed2_balance_bimodal_250cars_multistation_rep",
+      "seed": 2,
+      "scenario": "balance_bimodal",
+      "nb_cars": 250,
+      "method": "multistation_rep",
+      "world_seed": 2,
+      "wall_time_s": 161.636,
+      "invariant_ok": true,
+      "nb_diagnostics": 0
+    },
+    {
+      "tag": "seed1_balance_bimodal_250cars_load_aware",
+      "seed": 1,
+      "scenario": "balance_bimodal",
+      "nb_cars": 250,
+      "method": "load_aware",
+      "world_seed": 1,
+      "wall_time_s": 196.45,
+      "invariant_ok": true,
+      "nb_diagnostics": 0
+    },
+    {
+      "tag": "seed1_balance_bimodal_250cars_multistation",
+      "seed": 1,
+      "scenario": "balance_bimodal",
+      "nb_cars": 250,
+      "method": "multistation",
+      "world_seed": 1,
+      "wall_time_s": 201.919,
+      "invariant_ok": true,
+      "nb_diagnostics": 0
+    },
+    {
+      "tag": "seed1_balance_bimodal_250cars_multistation_rep",
+      "seed": 1,
+      "scenario": "balance_bimodal",
+      "nb_cars": 250,
+      "method": "multistation_rep",
+      "world_seed": 1,
+      "wall_time_s": 218.181,
+      "invariant_ok": true,
+      "nb_diagnostics": 0
+    },
+    {
+      "tag": "seed1_balance_bimodal_250cars_bramev",
+      "seed": 1,
+      "scenario": "balance_bimodal",
+      "nb_cars": 250,
+      "method": "bramev",
+      "world_seed": 1,
+      "wall_time_s": 230.593,
+      "invariant_ok": true,
+      "nb_diagnostics": 0
+    },
+    {
+      "tag": "seed3_balance_bimodal_250cars_multistation",
+      "seed": 3,
+      "scenario": "balance_bimodal",
+      "nb_cars": 250,
+      "method": "multistation",
+      "world_seed": 3,
+      "wall_time_s": 160.951,
+      "invariant_ok": true,
+      "nb_diagnostics": 0
+    },
+    {
+      "tag": "seed3_balance_bimodal_250cars_load_aware",
+      "seed": 3,
+      "scenario": "balance_bimodal",
+      "nb_cars": 250,
+      "method": "load_aware",
+      "world_seed": 3,
+      "wall_time_s": 162.466,
+      "invariant_ok": true,
+      "nb_diagnostics": 0
+    },
+    {
+      "tag": "seed3_balance_bimodal_250cars_multistation_rep",
+      "seed": 3,
+      "scenario": "balance_bimodal",
+      "nb_cars": 250,
+      "method": "multistation_rep",
+      "world_seed": 3,
+      "wall_time_s": 167.053,
+      "invariant_ok": true,
+      "nb_diagnostics": 0
+    },
+    {
+      "tag": "seed3_balance_bimodal_250cars_bramev",
+      "seed": 3,
+      "scenario": "balance_bimodal",
+      "nb_cars": 250,
+      "method": "bramev",
+      "world_seed": 3,
+      "wall_time_s": 165.666,
+      "invariant_ok": true,
+      "nb_diagnostics": 0
+    },
+    {
+      "tag": "seed4_balance_bimodal_250cars_multistation",
+      "seed": 4,
+      "scenario": "balance_bimodal",
+      "nb_cars": 250,
+      "method": "multistation",
+      "world_seed": 4,
+      "wall_time_s": 185.934,
+      "invariant_ok": true,
+      "nb_diagnostics": 0
+    },
+    {
+      "tag": "seed4_balance_bimodal_250cars_multistation_rep",
+      "seed": 4,
+      "scenario": "balance_bimodal",
+      "nb_cars": 250,
+      "method": "multistation_rep",
+      "world_seed": 4,
+      "wall_time_s": 183.039,
+      "invariant_ok": true,
+      "nb_diagnostics": 0
+    },
+    {
+      "tag": "seed4_balance_bimodal_250cars_bramev",
+      "seed": 4,
+      "scenario": "balance_bimodal",
+      "nb_cars": 250,
+      "method": "bramev",
+      "world_seed": 4,
+      "wall_time_s": 181.997,
+      "invariant_ok": true,
+      "nb_diagnostics": 0
+    },
+    {
+      "tag": "seed4_balance_bimodal_250cars_load_aware",
+      "seed": 4,
+      "scenario": "balance_bimodal",
+      "nb_cars": 250,
+      "method": "load_aware",
+      "world_seed": 4,
+      "wall_time_s": 175.908,
+      "invariant_ok": true,
+      "nb_diagnostics": 0
+    },
+    {
+      "tag": "seed5_balance_bimodal_250cars_multistation",
+      "seed": 5,
+      "scenario": "balance_bimodal",
+      "nb_cars": 250,
+      "method": "multistation",
+      "world_seed": 5,
+      "wall_time_s": 174.49,
+      "invariant_ok": true,
+      "nb_diagnostics": 0
+    },
+    {
+      "tag": "seed5_balance_bimodal_250cars_load_aware",
+      "seed": 5,
+      "scenario": "balance_bimodal",
+      "nb_cars": 250,
+      "method": "load_aware",
+      "world_seed": 5,
+      "wall_time_s": 165.636,
+      "invariant_ok": true,
+      "nb_diagnostics": 0
+    },
+    {
+      "tag": "seed5_balance_bimodal_250cars_bramev",
+      "seed": 5,
+      "scenario": "balance_bimodal",
+      "nb_cars": 250,
+      "method": "bramev",
+      "world_seed": 5,
+      "wall_time_s": 174.638,
+      "invariant_ok": true,
+      "nb_diagnostics": 0
+    },
+    {
+      "tag": "seed5_balance_bimodal_250cars_multistation_rep",
+      "seed": 5,
+      "scenario": "balance_bimodal",
+      "nb_cars": 250,
+      "method": "multistation_rep",
+      "world_seed": 5,
+      "wall_time_s": 183.908,
+      "invariant_ok": true,
+      "nb_diagnostics": 0
+    }
+  ],
+  "total_wall_time_s": 509.6
+}
