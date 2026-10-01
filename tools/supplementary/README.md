@@ -1,7 +1,6 @@
 # Supplementary material — reproducing the tables and analyses
 
-This archive rebuilds every table, confidence interval, paired test (with Holm
-correction) and figure of the paper from the stored simulation outputs.
+This archive rebuilds every table, confidence interval, paired test and figure of the paper from the stored simulation outputs.
 **No simulation is needed.** The full rebuild takes about a minute.
 
 ## Contents
