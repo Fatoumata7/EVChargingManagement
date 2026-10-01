@@ -38,9 +38,9 @@ def _rows():
                     rows.append({'scenario': scenario, 'nb_cars': nb_cars,
                                  'world_seed': seed, 'seed': seed,
                                  'method': method,
-                                 'served_rate': value,
+                                 'service_ratio_mean': value,
                                  'fully_satisfied_rate': value - 0.1,
-                                 'service_ratio_mean': value - 0.05})
+                                 'E_tot': 30000. * value})
     return rows
 
 
@@ -52,6 +52,13 @@ def test_one_family_of_27_per_ladder_contrast():
         assert len(family) == 27
         assert all(r['family_size'] == 27 and r['nb_pairs'] == 10 for r in family)
         assert sorted(r['holm_rank'] for r in family) == list(range(1, 28))
+
+
+def test_families_use_the_three_endpoints_of_the_paper():
+    out = holm.family_rows(_rows())
+    assert {r['endpoint'] for r in out} == {'S_del', 'S_full', 'E_tot'}
+    assert {r['metric'] for r in out} == {'service_ratio_mean',
+                                          'fully_satisfied_rate', 'E_tot'}
 
 
 def test_p_values_are_those_of_the_paired_t_test():
