@@ -1,0 +1,11 @@
+scenario,nb_cars,method,seed,world_seed,grid_seed,kind,label,count,rate
+optimistic,150,min_waiting,4,4,4,observed,abs,125,0.106
+optimistic,150,min_waiting,4,4,4,observed,breakdown,1,0.0008
+optimistic,150,min_waiting,4,4,4,observed,early,89,0.0755
+optimistic,150,min_waiting,4,4,4,observed,late,95,0.0806
+optimistic,150,min_waiting,4,4,4,observed,pres,869,0.7371
+optimistic,150,min_waiting,4,4,4,intent,abs,126,0.1069
+optimistic,150,min_waiting,4,4,4,intent,early,98,0.0831
+optimistic,150,min_waiting,4,4,4,intent,late,86,0.0729
+optimistic,150,min_waiting,4,4,4,intent,pres,869,0.7371
+optimistic,150,min_waiting,4,4,4,reclassified,early->late,9,
