@@ -108,6 +108,9 @@ class RunStore:
         name = f"{_utc_stamp()}_{seed_tag(params.seeds)}"
         if params.label:
             name = f"{name}_{_slug(params.label)}"
+        # The repository state is read *before* the run directory exists: the
+        # new, untracked directory would otherwise mark every run as dirty.
+        commit, dirty = git_commit(), git_is_dirty()
         store = cls(Path(params.output_root) / name)
         store._mkdirs()
         store.write_params(params)
@@ -120,8 +123,8 @@ class RunStore:
             'nb_cases_planned': params.nb_cases,
             'nb_cases_done': 0,
             'params_source': params._source,
-            'git_commit': git_commit(),
-            'git_dirty': git_is_dirty(),
+            'git_commit': commit,
+            'git_dirty': dirty,
             'python': sys.version.split()[0],
             'platform': platform.platform(),
             'cases': [],
