@@ -1,0 +1,42 @@
+{
+  "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "scenarios": [
+    "balance_bimodal"
+  ],
+  "fleet_sizes": [
+    250
+  ],
+  "methods": [
+    "multistation",
+    "multistation_rep",
+    "bramev",
+    "load_aware"
+  ],
+  "total_time": 1440,
+  "nb_stations": 40,
+  "nb_societies": 4,
+  "nb_charg_spot_low": 2,
+  "nb_charg_spot_high": 2,
+  "strategy_noise": 0.5,
+  "offer_ttl_slots": 1,
+  "late_cancel_fraction": 0.5,
+  "reservation_lead_low": 0,
+  "reservation_lead_high": 12,
+  "society_update_interval": null,
+  "alpha_fixed": 0.5,
+  "output_root": "results_grid",
+  "label": "bimodal_pilot",
+  "keep_logs": false,
+  "save_latency": true,
+  "save_tables": true,
+  "diagnostics": true,
+  "figures": true,
+  "log_every": 144,
+  "workers": 8
+}
