@@ -38,6 +38,7 @@ from loguru import logger
 import src.env.utils as utils
 import src.experiments.config as cfg
 import src.experiments.methods as methods
+from src.metrics.diagnostics import DecisionRecorder
 from src.metrics.metrics import (MetricsCollector, BreakdownTracker,
                                   BehaviorTracker, RESERVATION_TO_DEMAND,
                                   kwh_per_km)
@@ -115,11 +116,24 @@ class Simulation:
         # car.idx -> slot of its (first) exclusion, reported in the results.
         self._excluded_at = {}
 
+        # Optional structured record of the decisions (read-only: same run
+        # with or without it). Off by default, the tables being large.
+        self.recorder = None
+        if getattr(config, 'DIAGNOSTICS', False):
+            self.recorder = DecisionRecorder()
+            for station in stations:
+                station.recorder = self.recorder
+
     # ------------------------------------------------------------------
     def run(self, file, print_metrics=True):
+        slots_per_day = 24 * self.config.NB_SLOTS_IN_ONE_HOUR
+        if self.recorder is not None:
+            self._snapshot_scores(t=0, day=0)
         for t in range(self.t_max):
             self.current_t = t
             self.step(t, self.config.log_iter, file=file)
+            if self.recorder is not None and (t + 1) % slots_per_day == 0:
+                self._snapshot_scores(t=t + 1, day=(t + 1) // slots_per_day)
         self._finalize(file)
         print(f"\n\n=== Simulation finished ({self.t_max} slots) ===", file=file)
         if print_metrics:
@@ -127,6 +141,10 @@ class Simulation:
             self.breakdowns.print_report()
             self.behaviors.print_report(self.config.BASE_CANCEL_PROB)
     # ------------------------------------------------------------------
+
+    def _snapshot_scores(self, t: int, day: int) -> None:
+        self.recorder.snapshot_scores(t, day, self.cars, self.config.NB_SOCIETIES,
+                                      self._excluded_at)
 
     def step(self, t_c: int, log_iter: int, file):
 
@@ -230,6 +248,8 @@ class Simulation:
             # No station within the radius: the vehicle stops and retries with a
             # widened radius rather than driving off at random.
             if not targets:
+                if self.recorder is not None:
+                    self.recorder.record_no_station(t_c, car, req)
                 self._retry_or_give_up(car, id_demand, 'no eligible station',
                                        t_c, file)
                 continue
@@ -388,6 +408,9 @@ class Simulation:
             car.nb_confirm_failed += 1
             print(f'\ncar_{car.idx} CONFIRM REFUSED {offer.offer_id} '
                   f'({offer.reject_reason})', file=file)
+
+        if self.recorder is not None:
+            self.recorder.record_ranking(ranked, attempts)
 
         # The offers not retained expire immediately.
         for offer, _ in ranked:

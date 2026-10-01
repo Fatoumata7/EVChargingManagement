@@ -341,6 +341,8 @@ class WorldSpec(_JsonSpec):
     grid_seed: int = 0
     fleet_seed: int = 0
     base_cancel_prob: dict = field(default_factory=dict)
+    #: Profile regimes only: the profiles and the number of vehicles of each.
+    behavior_profiles: dict = field(default_factory=dict)
     societies: list = field(default_factory=list)
     stations: list = field(default_factory=list)
     cars: list = field(default_factory=list)
@@ -359,11 +361,15 @@ def compose_world_spec(grid: GridSpec, fleet: FleetSpec,
     grid.check_matches(config)
     fleet.check_matches(config)
 
-    cars = [
-        dict(car, theta=theta_from_noise(car['behavior_noise'],
-                                         config.BASE_CANCEL_PROB))
-        for car in fleet.cars
-    ]
+    profiles = config.BEHAVIOR_PROFILES.get(config.SCENARIO_NAME)
+    if profiles:
+        cars, counts = assign_profiles(fleet, profiles)
+    else:
+        cars, counts = [
+            dict(car, theta=theta_from_noise(car['behavior_noise'],
+                                             config.BASE_CANCEL_PROB))
+            for car in fleet.cars
+        ], {}
 
     return WorldSpec(
         seed=fleet.seed,
@@ -374,11 +380,51 @@ def compose_world_spec(grid: GridSpec, fleet: FleetSpec,
         grid_seed=grid.seed,
         fleet_seed=fleet.seed,
         base_cancel_prob=dict(config.BASE_CANCEL_PROB),
+        behavior_profiles=({name: dict(p, nb_cars=counts[name])
+                            for name, p in profiles.items()} if profiles else {}),
         societies=[dict(s) for s in grid.societies],
         stations=[dict(s) for s in grid.stations],
         cars=cars,
         config_summary=config.summary(),
     )
+
+
+def assign_profiles(fleet: FleetSpec, profiles: dict) -> tuple[list, dict]:
+    """
+    Give each vehicle a behaviour profile and its fixed probabilities.
+
+    The profiles are dealt along a random permutation of the vehicle indices,
+    drawn in the dedicated `('car_profile', 0)` stream: the existing streams
+    are untouched, and a profile is not tied to the first indices (vehicles
+    are processed in index order). Profile sizes follow their `share`, the
+    last profile taking the remainder.
+
+    `theta` is the profile's percentage weights divided by their sum — no
+    per-vehicle noise and no floor, unlike `theta_from_noise`, whose floor of
+    0.1 would distort probabilities written as fractions.
+    """
+    names = list(profiles)
+    n = fleet.nb_cars
+    counts = {name: int(round(profiles[name]['share'] * n)) for name in names[:-1]}
+    counts[names[-1]] = n - sum(counts.values())
+    if counts[names[-1]] < 0:
+        raise ValueError(f'profile shares exceed the fleet: {counts}')
+
+    order = RngHub(fleet.seed).stream('car_profile', 0).permutation(n)
+    profile_of, start = {}, 0
+    for name in names:
+        for idx in order[start:start + counts[name]]:
+            profile_of[int(idx)] = name
+        start += counts[name]
+
+    cars = []
+    for car in fleet.cars:
+        name = profile_of[car['idx']]
+        weights = {k: float(profiles[name][k]) for k in BEHAVIOR_KEYS}
+        total = sum(weights.values())
+        cars.append(dict(car, profile=name,
+                         theta={k: w / total for k, w in weights.items()}))
+    return cars, counts
 
 
 def generate_world_spec(config: cfg_module.SimulationConfig,

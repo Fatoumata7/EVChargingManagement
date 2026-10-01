@@ -101,6 +101,10 @@ class Station:
         self.nb_ilp_not_optimal = 0  # solves not proven optimal (time limit)
         self.nb_ilp_failed = 0       # solves with no solution at all
 
+        # --- optional structured record of the decisions (read-only), set by
+        # `Simulation` when `config.DIAGNOSTICS` is on.
+        self.recorder = None
+
     # ------------------------------------------------------------------
     # Method
     # ------------------------------------------------------------------
@@ -301,12 +305,27 @@ class Station:
         status = solver.Solve()
 
         offers = []
+        solved = status in (pywraplp.Solver.OPTIMAL, pywraplp.Solver.FEASIBLE)
+        batch_id = None
+        if self.recorder is not None:
+            batch_id = self.recorder.record_batch(
+                self, t_c, station_demands,
+                nb_candidate_slots=len({(j, t) for (_, j, t) in a}),
+                status=status,
+                objective=objective.Value() if solved else None,
+                bound=objective.BestBound() if solved else None,
+                solve_ms=float(solver.wall_time()))
         if status != pywraplp.Solver.OPTIMAL:
             self.nb_ilp_not_optimal += 1
-        if status not in (pywraplp.Solver.OPTIMAL, pywraplp.Solver.FEASIBLE):
+        if not solved:
             # No solution at all: every demand of the batch goes unanswered.
             self.nb_ilp_failed += 1
             self.nb_station_level_rejections += len(n_list)
+            if self.recorder is not None:
+                for car, req in station_demands:
+                    self.recorder.record_decision(self, t_c, batch_id, car, req,
+                                                  scores[req['n']],
+                                                  reason='solver_failed')
             return offers
 
         for idx, n in enumerate(n_list):
@@ -316,6 +335,10 @@ class Station:
             )
             if j_selected is None:
                 self.nb_station_level_rejections += 1
+                if self.recorder is not None:
+                    self.recorder.record_decision(self, t_c, batch_id, cars[idx],
+                                                  station_demands[idx][1],
+                                                  scores[n], reason='no_allocation')
                 continue
 
             times = sorted(t for (nn, j, t), var in a.items()
@@ -323,6 +346,10 @@ class Station:
             if not times:
                 # demand that could not be satisfied
                 self.nb_station_level_rejections += 1
+                if self.recorder is not None:
+                    self.recorder.record_decision(self, t_c, batch_id, cars[idx],
+                                                  station_demands[idx][1],
+                                                  scores[n], reason='no_allocation')
                 continue
 
             t_arr, t_dep = times[0], times[-1] + 1
@@ -335,14 +362,19 @@ class Station:
                 f"Station {self.m}: slots already booked offered to {n}"
             )
 
-            offers.append((cars[idx], self._make_offer(
+            offer = self._make_offer(
                 charger_id=j_selected,
                 t_arr=t_arr,
                 t_dep=t_dep,
                 d_prop=len(times),
                 distance=distance[n],
                 t_c=t_c
-            )))
+            )
+            offers.append((cars[idx], offer))
+            if self.recorder is not None:
+                self.recorder.record_decision(self, t_c, batch_id, cars[idx],
+                                              station_demands[idx][1], scores[n],
+                                              offer=offer, reason='offer')
 
         return offers
 

@@ -117,6 +117,69 @@ def test_charger_count_changes_nothing_else_in_the_grid():
                generate_fleet_spec(config_for('balance'), SEED, 12).to_dict()
 
 
+def _bimodal_world(seed=SEED, nb_cars=40):
+    config = config_for('balance_bimodal', nb_cars=nb_cars)
+    return compose_world_spec(generate_grid_spec(config, seed),
+                              generate_fleet_spec(config, seed, nb_cars), config)
+
+
+def test_bimodal_profiles_have_exact_fixed_probabilities():
+    expected = {'H': {'pres': .90, 'abs': .05, 'early': .03, 'late': .02},
+                'L': {'pres': .30, 'abs': .35, 'early': .21, 'late': .14}}
+    world = _bimodal_world()
+    for car in world.cars:
+        for k, v in expected[car['profile']].items():
+            assert abs(car['theta'][k] - v) < 1e-12, (car['idx'], k, car['theta'])
+    counts = {p: sum(c['profile'] == p for c in world.cars) for p in 'HL'}
+    assert counts == {'H': 20, 'L': 20}, counts
+    assert world.behavior_profiles['H']['nb_cars'] == 20
+
+
+def test_bimodal_profiles_follow_a_permutation_not_the_index_order():
+    for seed in (1, 2, 3, 4, 5):
+        world = _bimodal_world(seed, nb_cars=250)
+        first_half = [c['profile'] for c in world.cars[:125]]
+        assert 30 < first_half.count('H') < 95, (seed, first_half.count('H'))
+    a = [c['profile'] for c in _bimodal_world(1, 250).cars]
+    b = [c['profile'] for c in _bimodal_world(2, 250).cars]
+    assert a != b, 'the assignment does not depend on the seed'
+
+
+def test_bimodal_regime_keeps_the_grid_the_fleet_and_the_streams():
+    ref = config_for('balance', nb_cars=40)
+    base = compose_world_spec(generate_grid_spec(ref, SEED),
+                              generate_fleet_spec(ref, SEED, 40), ref)
+    bimodal = _bimodal_world()
+    assert bimodal.stations == base.stations and bimodal.societies == base.societies
+    static = ('idx', 'loc', 'soc_init', 'autonomy', 'soc_threshold_m', 'pref',
+              'charging_power', 'behavior_noise')
+    for a, b in zip(base.cars, bimodal.cars):
+        assert {k: a[k] for k in static} == {k: b[k] for k in static}
+    assert 'profile' not in base.cars[0] and not base.behavior_profiles
+
+
+def test_stations_never_read_profiles_or_latent_probabilities():
+    import inspect
+    import src.env.society as society
+    import src.env.station as station
+    for module in (station, society):
+        source = inspect.getsource(module)
+        for word in ('profile', 'theta', 'BASE_CANCEL_PROB'):
+            assert word not in source, f'{module.__name__} reads {word!r}'
+
+
+def test_scores_start_at_zero_in_the_bimodal_world():
+    config = config_for('balance_bimodal', nb_cars=40)
+    cars, _, _ = build_world(_bimodal_world(), config)
+    assert all(not c.score.any() and all(len(h) == 0 for h in c.score_history)
+               for c in cars)
+
+
+def test_default_campaign_scenarios_exclude_profile_regimes():
+    assert ExperimentParams().scenarios == ('optimistic', 'balance', 'pessimistic')
+    ExperimentParams(scenarios=('balance_bimodal',)).validate()
+
+
 def test_grid_depends_on_the_seed():
     a = generate_grid_spec(config_for('balance'), SEED)
     b = generate_grid_spec(config_for('balance'), SEED + 1)

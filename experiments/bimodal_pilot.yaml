@@ -1,0 +1,39 @@
+# Bimodal pilot: marginal value of reputation in a strongly heterogeneous
+# population, and whether the scores separate the two driver profiles.
+#
+#   python -m src.pipeline.cli run --config experiments/bimodal_pilot.yaml --workers 8
+#
+# Regime `balance_bimodal` (src/experiments/config.py, BEHAVIOR_PROFILES):
+#   H, 125 vehicles: presence .90, absence .05, early .03, late .02
+#   L, 125 vehicles: presence .30, absence .35, early .21, late .14
+#   mean = the balanced regime (.60, .20, .12, .08); no per-vehicle noise.
+# Profiles are dealt along a random permutation of the vehicle indices in the
+# dedicated `car_profile` stream; stations only see the reputation scores,
+# which all start at zero.
+#
+# Everything else is the congestion pilot: 40 stations with 2 chargers each,
+# 4 operators, 250 vehicles, 1440 slots (5 days), same seeds draw the same
+# grid, operator scales, initial weights and fleets. The four methods of a
+# seed start from the same persisted world.
+#
+# 5 seeds x 1 regime x 1 fleet x 4 methods = 20 runs. `diagnostics` exports,
+# per case, the station decisions (non-offers included), the solver batches,
+# the offers and their fate, and the daily scores of every (vehicle,
+# operator) pair; it changes no result.
+label: bimodal_pilot
+seed: [1, 2, 3, 4, 5]
+scenarios: [balance_bimodal]
+fleet_sizes: [250]
+methods: [multistation, multistation_rep, bramev, load_aware]
+
+total_time: 1440          # 5 days in 5 min slots
+nb_stations: 40
+nb_societies: 4
+nb_charg_spot_low: 2
+nb_charg_spot_high: 2
+strategy_noise: 0.5
+
+save_latency: true
+save_tables: true
+diagnostics: true
+figures: true

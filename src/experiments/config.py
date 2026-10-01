@@ -80,6 +80,27 @@ class SimulationConfig:
         'optimistic':  {'pres': 75, 'abs': 10, 'early':  9, 'late':  6, 'noise': 0.15},
         'balance':     {'pres': 60, 'abs': 20, 'early': 12, 'late':  8, 'noise': 0.15},
         'pessimistic': {'pres': 40, 'abs': 25, 'early': 15, 'late': 20, 'noise': 0.15},
+        # Two-profile population (see BEHAVIOR_PROFILES): its mean is the
+        # balanced regime, and it carries no per-vehicle noise.
+        'balance_bimodal': {'pres': 60, 'abs': 20, 'early': 12, 'late': 8, 'noise': 0.0},
+    }
+
+    #: Structured export of the allocation decisions (src/metrics/diagnostics.py).
+    #: Read-only; off by default, the tables being large.
+    DIAGNOSTICS = False
+
+    #: Scenarios whose population is a mixture of fixed behaviour profiles
+    #: rather than per-vehicle perturbations of `SCENARIOS[name]`. Weights are
+    #: percentages (summing to 100); `share` is the fraction of the fleet.
+    #: Profiles are assigned by a random permutation of the vehicle indices in
+    #: the dedicated `car_profile` stream (see `world.assign_profiles`), and
+    #: their probabilities are used as is — no noise, no floor. Stations never
+    #: see them: they only read the reputation scores.
+    BEHAVIOR_PROFILES = {
+        'balance_bimodal': {
+            'H': {'pres': 90, 'abs': 5,  'early': 3,  'late': 2,  'share': 0.5},
+            'L': {'pres': 30, 'abs': 35, 'early': 21, 'late': 14, 'share': 0.5},
+        },
     }
 
 

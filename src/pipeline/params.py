@@ -20,7 +20,12 @@ import src.experiments.config as cfg_module
 import src.experiments.methods as methods_module
 from src.experiments.seeding import DEFAULT_SEED
 
+#: Every scenario a campaign may name.
 SCENARIOS = tuple(cfg_module.SimulationConfig.SCENARIOS)
+
+#: Scenarios run when a campaign names none: the three regimes of the main
+#: campaign. Profile regimes (`balance_bimodal`) must be asked for explicitly.
+DEFAULT_SCENARIOS = ('optimistic', 'balance', 'pessimistic')
 
 #: Available methods, in registry order (ablation ladder then BRAM-EV
 #: variants) — see `src/experiments/methods.py`.
@@ -144,7 +149,7 @@ class ExperimentParams:
     #: single seed `share_improved` can only be 0 or 1 and carries no
     #: statistical content (see `src/pipeline/ablation.py`).
     seeds: tuple[int, ...] = (DEFAULT_SEED,)
-    scenarios: tuple[str, ...] = SCENARIOS
+    scenarios: tuple[str, ...] = DEFAULT_SCENARIOS
     fleet_sizes: tuple[int, ...] = (50, 100, 150, 200, 250)
     methods: tuple[str, ...] = methods_module.LADDER
 
@@ -177,6 +182,9 @@ class ExperimentParams:
     keep_logs: bool = False
     save_latency: bool = True
     save_tables: bool = True
+    #: Structured diagnostic tables per case: station decisions, solver
+    #: batches, offers and their fate, daily scores. Changes no result.
+    diagnostics: bool = False
     figures: bool = True
     log_every: int = 12 * SLOTS_PER_HOUR
 
@@ -469,6 +477,7 @@ class ExperimentParams:
         config.set_RESERVATION_LEAD_PARAMS({'low': self.reservation_lead_low,
                                             'high': self.reservation_lead_high})
         config.set_ALPHA_FIXED(self.alpha_fixed)
+        config.DIAGNOSTICS = bool(self.diagnostics)
         if self.society_update_interval is not None:
             config.SOCIETY_UPDATE_INTERVAL = self.society_update_interval
         config.set_log_iter(self.log_every)

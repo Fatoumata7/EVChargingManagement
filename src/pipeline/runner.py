@@ -199,6 +199,8 @@ def execute_case(root: str, case: CaseParams) -> tuple[dict, dict]:
     case_tables = (tables.case_tables(simulation, outcome.result,
                                       with_latency=params.save_latency)
                    if params.save_tables else {})
+    if params.save_tables and tables.profile_table(spec):
+        case_tables['profiles'] = tables.profile_table(spec)
     return outcome.result, case_tables
 
 

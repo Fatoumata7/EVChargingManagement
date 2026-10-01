@@ -46,6 +46,7 @@ STREAM_CODES = {
     'car_init':     8,   # draw of the static attributes of a vehicle
     'car_lead':     9,   # planning horizon of a request (l_n)
     'car_choice':  10,   # random tie-break between offers (random baseline)
+    'car_profile': 11,   # assignment of behaviour profiles (bimodal regimes)
 }
 
 DEFAULT_SEED = 20260101

@@ -381,7 +381,18 @@ def case_tables(sim, result: Mapping[str, Any], *,
     }
     if with_latency:
         tables['latency'] = latency_table(sim.metrics, result)
+    if getattr(sim, 'recorder', None) is not None:
+        tables.update(sim.recorder.tables())
     return {name: rows for name, rows in tables.items() if rows}
+
+
+def profile_table(spec) -> list[dict]:
+    """Behaviour profile and fixed probabilities of each vehicle (profile regimes)."""
+    if not getattr(spec, 'behavior_profiles', None):
+        return []
+    return [{'car_id': car['idx'], 'profile': car['profile'],
+             **{f'theta_{k}': v for k, v in car['theta'].items()}}
+            for car in spec.cars]
 
 
 # ----------------------------------------------------------------------
