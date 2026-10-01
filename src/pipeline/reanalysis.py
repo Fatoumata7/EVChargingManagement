@@ -72,6 +72,21 @@ FULL_SERVICE_TOL_KWH = 1e-3
 #: that the indicator does not depend on the choice above.
 SENSITIVITY_TOLS_KWH = (0., 1e-4, 1e-3, 1e-2, 1e-1)
 
+#: Notation of the paper -> column it names, added to `summary.csv` as is.
+#: `E_tot`, `U`, `O_mean` and `O_max` are computed under their paper name.
+PAPER_ALIASES = {
+    'S_del':           'service_ratio_mean',
+    'S_full':          'fully_satisfied_rate',
+    'I_held':          'held_idle_rate',
+    'sched_delay_min': 'mean_waiting_time_min',
+    'n_requests':      'nb_demands',
+    'withdrawals':     'nb_cars_excluded',
+}
+
+#: Columns of the paper notation, in display order.
+PAPER_COLUMNS = ('S_del', 'S_full', 'E_tot', 'U', 'O_mean', 'O_max', 'I_held',
+                 'sched_delay_min', 'n_requests', 'withdrawals')
+
 #: Columns renamed in `summary.csv`.
 RENAMED = {
     'nb_demands_satisfied':         'nb_demands_served',
@@ -98,8 +113,18 @@ def _metrics() -> tuple[Metric, ...]:
             out.append(Metric('service_ratio_mean_served',
                               'Share of energy need met (served demands)',
                               GOAL_UP, '%'))
+        elif m.column == 'energy_delivered_kwh':
+            out.append(m)
+            out.append(Metric('E_tot', 'Total energy delivered, from requests (E_tot)',
+                              GOAL_UP, 'kWh'))
         elif m.column == 'mean_service_rate':
             out.append(m)
+            out.append(Metric('U', 'Executed utilization, station mean (U)',
+                              GOAL_UP, '%'))
+            out.append(Metric('O_mean', 'Held occupancy, station mean (mean O_m)',
+                              GOAL_UP, '%'))
+            out.append(Metric('O_max', 'Held occupancy, most occupied station (max O_m)',
+                              GOAL_UP, '%'))
             out.append(Metric('network_occupancy_rate',
                               'Charger occupancy (network, held slots)',
                               GOAL_UP, '%'))
@@ -158,6 +183,8 @@ def demand_service(demands: Sequence[Mapping[str, Any]],
         'fully_satisfied_share_of_served': _ratio(full, len(served)),
         'service_ratio_mean':         mean(all_ratios) if all_ratios else None,
         'service_ratio_mean_served':  mean(srv_ratios) if srv_ratios else None,
+        # Paper: E_tot = sum over requests of E_n^del(T), from request records.
+        'E_tot': sum(d['energy_delivered_kwh'] for d in demands),
     }
 
 
@@ -244,6 +271,13 @@ def recompute_row(row: Mapping[str, Any], result: Mapping[str, Any],
         'network_occupancy_rate': _ratio(total('nb_slots_held'), capacity),
         'network_service_rate':   _ratio(total('nb_slots_served'), capacity),
     })
+    # Paper, Eq. (utilization): U and O_m weight stations equally, and are
+    # computed here from the slot counts rather than from the per-station
+    # rates of the result, which are stored rounded to 4 decimals.
+    horizon = result['config']['total_time']
+    executed = [s['nb_slots_served'] / (s['nb_charg_spot'] * horizon) for s in stations]
+    held = [s['nb_slots_held'] / (s['nb_charg_spot'] * horizon) for s in stations]
+    out.update({'U': mean(executed), 'O_mean': mean(held), 'O_max': max(held)})
     planned = sum(result['metrics']['station_energy_planned_kWh'].values())
     delivered = sum(result['metrics']['station_energy_delivered_kWh'].values())
     out['energy_delivery_rate'] = _ratio(delivered, planned)
@@ -260,6 +294,7 @@ def recompute_row(row: Mapping[str, Any], result: Mapping[str, Any],
         out['mean_waiting_time_min'] = mean(a['waiting_time_min'] for a in acceptances)
 
     out.update(demand_service(demands))
+    out.update({paper: out[column] for paper, column in PAPER_ALIASES.items()})
     return out
 
 
@@ -391,6 +426,9 @@ def recompute_run(source: Path, keep=None
     fields.insert(fields.index('service_ratio_mean') + 1, 'service_ratio_mean_served')
     fields.remove('nb_ilp_feasible_time_limit')
     fields.insert(fields.index('nb_ilp_failed'), 'nb_ilp_feasible_time_limit')
+    for col in ('E_tot', 'U', 'O_mean', 'O_max') + tuple(PAPER_ALIASES):
+        fields.remove(col)
+    fields += list(PAPER_COLUMNS)
     if len(fields) != len(set(fields)):
         raise AssertionError(f'duplicate columns: {fields}')
     for col in ('nb_chargers', 'network_occupancy_rate', 'network_service_rate'):

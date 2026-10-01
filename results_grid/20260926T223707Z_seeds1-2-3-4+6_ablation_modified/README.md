@@ -114,13 +114,38 @@ une solution réalisable, qui a bien été utilisée pour produire des offres.
 ## 4. Correction de Holm
 
 Une famille par contraste de l'échelle d'ablation (recherche multi-stations,
-réputation, adaptation) : 9 configurations (3 scénarios × 3 flottes) × 3
-indicateurs (`served_rate`, `fully_satisfied_rate`, `service_ratio_mean`) =
-27 tests t appariés (10 graines), α = 0,05. Après correction : 15/27 tests
-significatifs pour la recherche multi-stations, 0/27 pour la réputation et
-0/27 pour l'adaptation (plus petite p ajustée : 0,51).
+réputation, adaptation), comme dans le papier : 9 configurations
+(3 scénarios × 3 flottes) × 3 critères de service S_del
+(`service_ratio_mean`), S_full (`fully_satisfied_rate`) et E_tot (énergie
+totale délivrée, sommée sur les requêtes) = 27 tests t appariés bilatéraux
+(10 graines), α = 0,05. Après correction :
 
-## 5. Contenu
+- recherche multi-stations : 17/27 (S_del 6/9 : les 6 conditions à 150 et
+  250 véhicules, aucune à 50 ; S_full 6/9 ; E_tot 5/9) ;
+- réputation : 0/27 ;
+- adaptation : 0/27 (plus petite p ajustée sur ces deux contrastes : 0,51).
+
+## 5. Notations du papier
+
+Dix colonnes ajoutées en fin de `summary.csv`, sous le nom du papier :
+
+| Colonne | Définition (papier) | Source |
+|---|---|---|
+| `S_del` | moyenne de min(1, E_del/E_req) sur toutes les requêtes | = `service_ratio_mean` |
+| `S_full` | part des requêtes avec E_del ≥ E_req − 10⁻³ kWh | = `fully_satisfied_rate` |
+| `E_tot` | somme des énergies délivrées, sur les enregistrements par requête | `latency.csv` (écart ≤ 0,003 kWh avec la somme par station) |
+| `U` | moyenne par station des créneaux de charge / (chargeurs × T) | comptes de créneaux, pleine précision |
+| `O_mean`, `O_max` | moyenne et maximum par station des créneaux tenus / (chargeurs × T) | comptes de créneaux, pleine précision |
+| `I_held` | 1 − créneaux de charge / créneaux tenus, poolés sur le run | = `held_idle_rate` |
+| `sched_delay_min` | délai programmé moyen des réservations confirmées | = `mean_waiting_time_min` |
+| `n_requests` | requêtes uniques émises (une relance garde son identifiant) | = `nb_demands` |
+| `withdrawals` | retraits définitifs après épuisement des tentatives | = `nb_cars_excluded` |
+
+`U` et `O_mean` diffèrent de `mean_service_rate` et `mean_occupancy_rate`
+de moins de 2·10⁻⁵ : ces dernières moyennent des taux par station arrondis à
+4 décimales par le simulateur.
+
+## 6. Contenu
 
 | Fichier | Contenu |
 |---|---|
@@ -128,7 +153,7 @@ significatifs pour la recherche multi-stations, 0/27 pour la réputation et
 | `summary_mean.csv` | moyenne, écart-type, IC 95 % par (scénario, flotte, méthode, métrique) |
 | `paired.csv` | écarts appariés par graine : échelle d'ablation, baselines, variantes |
 | `ablation.csv` / `ablation_mean.csv` | écarts monde par monde / moyennés sur tous les mondes |
-| `holm_ladder.csv` | tests t appariés de l'échelle d'ablation, correction de Holm par contraste (27 tests : 9 configurations × 3 indicateurs de service) |
+| `holm_ladder.csv` | tests t appariés de l'échelle d'ablation, correction de Holm par contraste (27 tests : 9 configurations × S_del, S_full, E_tot) |
 | `solver_status.csv` | stations ayant au moins une résolution non optimale |
 | `full_service_sensitivity.csv` | `fully_satisfied_rate` selon la tolérance |
 | `tables_display/service_means.md` | les 4 indicateurs de service, moyenne ± demi-largeur IC, en % |

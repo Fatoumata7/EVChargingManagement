@@ -29,28 +29,34 @@ from statistics import mean
 from typing import Any, Mapping, Sequence
 
 from src.pipeline import ablation, aggregate, reanalysis
-from src.pipeline.ablation import GOAL_DOWN, Metric
+from src.pipeline.ablation import GOAL_DOWN, GOAL_UP, Metric
 from src.pipeline.store import RunStore, _write_csv
 
 #: Indicators of the pilot table, in display order:
 #: (column, label, display factor, format).
 INDICATORS: tuple[tuple[str, str, float, str], ...] = (
-    ('energy_delivered_kwh',       'Energy delivered (MWh)',              1e-3, '.2f'),
-    ('service_ratio_mean',         'Share of need met per demand (%)',    100., '.2f'),
-    ('served_rate',                'Demands served, even partially (%)',  100., '.2f'),
-    ('fully_satisfied_rate',       'Demands fully satisfied (%)',         100., '.2f'),
-    ('network_occupancy_rate',     'Charger occupancy — held (%)',        100., '.2f'),
-    ('network_service_rate',       'Charger effective use — charging (%)', 100., '.2f'),
+    ('E_tot',                      'E_tot — energy delivered (MWh)',      1e-3, '.2f'),
+    ('service_ratio_mean',         'S_del — mean energy satisfaction (%)', 100., '.2f'),
+    ('fully_satisfied_rate',       'S_full — fully satisfied requests (%)', 100., '.2f'),
+    ('served_rate',                'Requests served, even partially (%)', 100., '.2f'),
+    ('U',                          'U — executed utilization (%)',        100., '.2f'),
+    ('O_mean',                     'Mean O_m — held occupancy (%)',       100., '.2f'),
+    ('O_max',                      'Max O_m — held occupancy (%)',        100., '.2f'),
+    ('held_idle_rate',             'I_held — unused share of held capacity (%)', 100., '.2f'),
     ('no_offer_rate',              'Demands with no offer (%)',           100., '.2f'),
     ('request_rejection_rate',     'Demands never confirmed (%)',         100., '.2f'),
     ('station_rejection_rate',     'Station-level refusals (%)',          100., '.2f'),
     ('abandon_rate',               'Searches abandoned (%)',              100., '.2f'),
-    ('mean_waiting_time_min',      'Mean waiting time (min)',             1.,   '.2f'),
-    ('excluded_car_share',         'Vehicles excluded (%)',               100., '.2f'),
+    ('mean_waiting_time_min',      'Scheduled delay (min)',               1.,   '.2f'),
+    ('nb_demands',                 'Requests (N)',                        1.,   '.1f'),
+    ('nb_cars_excluded',           'Permanent withdrawals',               1.,   '.1f'),
     ('nb_ilp_not_optimal',         'MILP solves not proven optimal',      1.,   '.2f'),
     ('nb_ilp_feasible_time_limit', '  of which feasible at time limit',   1.,   '.2f'),
     ('nb_ilp_failed',              '  of which failed (no solution)',     1.,   '.2f'),
 )
+
+#: Indicators with no better direction: their verdict is not displayed.
+NO_DIRECTION = ('nb_demands',)
 
 #: Solver counts are summed over the seeds in the display, not averaged.
 SOLVER_COLUMNS = ('nb_ilp_not_optimal', 'nb_ilp_feasible_time_limit',
@@ -58,16 +64,19 @@ SOLVER_COLUMNS = ('nb_ilp_not_optimal', 'nb_ilp_feasible_time_limit',
 
 #: Indicators of the capacity check and of the component table.
 KEY_INDICATORS: tuple[str, ...] = (
-    'energy_delivered_kwh', 'service_ratio_mean', 'served_rate',
-    'fully_satisfied_rate', 'network_occupancy_rate', 'network_service_rate',
+    'E_tot', 'service_ratio_mean', 'fully_satisfied_rate', 'served_rate',
+    'U', 'O_mean', 'O_max', 'held_idle_rate',
     'no_offer_rate', 'request_rejection_rate', 'station_rejection_rate',
-    'mean_waiting_time_min', 'excluded_car_share',
+    'mean_waiting_time_min', 'nb_demands', 'nb_cars_excluded',
 )
 
 
 def _metrics() -> tuple[Metric, ...]:
     by_column = {m.column: m for m in reanalysis.METRICS}
     extra = {
+        'nb_demands':       Metric('nb_demands', 'Requests (N)', GOAL_UP),
+        'nb_cars_excluded': Metric('nb_cars_excluded', 'Permanent withdrawals',
+                                   GOAL_DOWN),
         'nb_ilp_not_optimal':         Metric('nb_ilp_not_optimal',
                                              'MILP solves not proven optimal',
                                              GOAL_DOWN),
@@ -227,8 +236,9 @@ def display_components(rows: Sequence[Mapping], scenario: str) -> str:
             ci = ('' if r['ci95_low'] is None else
                   f" [{_fmt(r['ci95_low'], factor, '+' + spec)}, "
                   f"{_fmt(r['ci95_high'], factor, '+' + spec)}]")
-            cells.append(f"{_fmt(r['mean_delta'], factor, '+' + spec)}{ci} "
-                         f"{r['nb_improved']}/{r['nb_pairs']} {r['verdict']}")
+            judged = ('' if column in NO_DIRECTION else
+                      f" {r['nb_improved']}/{r['nb_pairs']} {r['verdict']}")
+            cells.append(f"{_fmt(r['mean_delta'], factor, '+' + spec)}{ci}{judged}")
         lines.append(f'| {labels[column]} | ' + ' | '.join(cells) + ' |')
     return '\n'.join(lines)
 
@@ -276,9 +286,11 @@ def report(pilot_dir: Path, reference_dir: Path, out: Path | None = None) -> Pat
         f'Chargers in the network: pilot {chargers}, reference {ref_chargers} '
         '(one value per seed).',
         '',
-        'Occupancy = charger-slots still booked at their own slot / capacity; '
-        'effective use = charger-slots actually spent charging / capacity; both '
-        'network-wide, weighted by capacity. Refusal rates: *no offer* and '
+        'Definitions of the paper: U = executed charger-slots / capacity and '
+        'O_m = held charger-slots / capacity, per station, U averaged with equal '
+        'station weights; I_held pools held and executed slots within each run; '
+        'E_tot sums the energy delivered over the request records. '
+        'Refusal rates: *no offer* and '
         '*never confirmed* are per demand; *station-level refusals* are per '
         '(station, demand) request. MILP counts are summed over the seeds.',
         '',

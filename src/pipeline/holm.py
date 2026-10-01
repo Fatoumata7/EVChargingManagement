@@ -3,9 +3,11 @@ holm.py — Paired tests of the ablation ladder, Holm-corrected per contrast.
 
 One family per contrast of the ladder (a component added to the previous
 rung): every (scenario, fleet) configuration of the campaign crossed with the
-three service indicators. With 3 scenarios x 3 fleets x 3 indicators, each
-family holds 27 paired t-tests, and the Holm step-down procedure controls the
-family-wise error rate at `ALPHA` within it.
+three service endpoints of the paper — S_del (mean request-level energy
+satisfaction), S_full (share of fully satisfied requests) and E_tot (total
+energy delivered, from the request records). With 3 scenarios x 3 fleets x 3
+endpoints, each family holds 27 two-sided paired t-tests, and the Holm
+step-down procedure controls the family-wise error rate at `ALPHA` within it.
 
     greedy           -> multistation      Multi-station search
     multistation     -> multistation_rep  Reputation
@@ -33,13 +35,22 @@ from src.pipeline.store import RunStore, _write_csv
 
 ALPHA = 0.05
 
-#: Service indicators of each family, as defined by the re-analysis.
-INDICATORS: tuple[str, ...] = ('served_rate', 'fully_satisfied_rate',
-                               'service_ratio_mean')
+#: Service endpoints of each family, in the notation of the paper.
+INDICATORS: tuple[str, ...] = ('S_del', 'S_full', 'E_tot')
+
+#: Paper notation -> column of the re-analysis it is read from.
+COLUMNS: dict[str, str] = {'S_del': 'service_ratio_mean',
+                           'S_full': 'fully_satisfied_rate',
+                           'E_tot': 'E_tot'}
+
+#: Display: fractions in percentage points, energy in kWh.
+UNITS: dict[str, tuple[float, str]] = {'S_del': (100., 'pp'),
+                                       'S_full': (100., 'pp'),
+                                       'E_tot': (1., 'kWh')}
 
 FIELDS: tuple[str, ...] = (
     'step', 'component', 'from_method', 'to_method',
-    'scenario', 'nb_cars', 'metric', 'metric_label',
+    'scenario', 'nb_cars', 'endpoint', 'metric', 'metric_label',
     'nb_pairs', 'seeds', 'mean_from', 'mean_to',
     'mean_delta', 'sd_delta', 'ci95_low', 'ci95_high',
     't_stat', 'p_value', 'holm_rank', 'family_size', 'p_holm',
@@ -80,20 +91,22 @@ def family_rows(rows: Sequence[Mapping[str, Any]],
             worlds = [(w[2], by) for w, by in index.items()
                       if (w[0], w[1]) == (scenario, nb_cars)
                       and src in by and dst in by]
-            for column in indicators:
+            for endpoint in indicators:
+                column = COLUMNS[endpoint]
                 pairs = [(seed, float(by[src][column]), float(by[dst][column]))
                          for seed, by in worlds]
                 est, t_stat, p_value = aggregate.paired_test(
                     b - a for _, a, b in pairs)
                 if p_value is None:
                     raise ValueError(
-                        f'{component} {scenario} {nb_cars} {column}: '
+                        f'{component} {scenario} {nb_cars} {endpoint}: '
                         'paired test undefined (fewer than 2 pairs or no spread)')
                 family.append({
                     'step': step, 'component': component,
                     'from_method': src, 'to_method': dst,
                     'scenario': scenario, 'nb_cars': nb_cars,
-                    'metric': column, 'metric_label': labels.get(column, column),
+                    'endpoint': endpoint, 'metric': column,
+                    'metric_label': labels.get(column, column),
                     'nb_pairs': est.n,
                     'seeds': aggregate._seed_tag(s for s, _, _ in pairs),
                     'mean_from': sum(a for _, a, _ in pairs) / len(pairs),
@@ -123,14 +136,15 @@ def display(rows: Sequence[Mapping[str, Any]]) -> str:
         lines += [f"## {head['component']} ({head['from_method']} → "
                   f"{head['to_method']}) — family of {len(family)}, "
                   f"{nb_rejected} rejected at α = {ALPHA} after Holm", '',
-                  '| Scenario | Fleet | Indicator | Mean Δ (pp) | 95% CI (pp) '
+                  '| Scenario | Fleet | Endpoint | Mean Δ | 95% CI | Unit '
                   '| p | p Holm | Significant |',
-                  '|---|---:|---|---:|---|---:|---:|---|']
+                  '|---|---:|---|---:|---|---|---:|---:|---|']
         for r in family:
+            k, unit = UNITS[r['endpoint']]
             lines.append(
-                f"| {r['scenario']} | {r['nb_cars']} | {r['metric_label']} "
-                f"| {100 * r['mean_delta']:+.2f} "
-                f"| [{100 * r['ci95_low']:+.2f}, {100 * r['ci95_high']:+.2f}] "
+                f"| {r['scenario']} | {r['nb_cars']} | {r['endpoint']} "
+                f"| {k * r['mean_delta']:+.2f} "
+                f"| [{k * r['ci95_low']:+.2f}, {k * r['ci95_high']:+.2f}] | {unit} "
                 f"| {r['p_value']:.3g} | {r['p_holm']:.3g} "
                 f"| {'yes' if r['reject_holm_05'] else 'no'} |")
         lines.append('')
@@ -147,8 +161,10 @@ def write(run_dir: Path) -> list[Path]:
     md_path.write_text(
         '# Ablation ladder — paired t-tests, Holm correction per contrast\n\n'
         'Family = 9 configurations (3 scenarios × 3 fleets) × 3 service '
-        'indicators = 27 tests per contrast. Paired on the seed (10 worlds). '
-        'CIs are unadjusted.\n\n' + display(rows), encoding='utf-8')
+        'endpoints (S_del, S_full, E_tot) = 27 two-sided paired t-tests per '
+        'contrast; the three contrasts are separate families. Paired on the '
+        'seed (10 worlds). CIs are unadjusted.\n\n' + display(rows),
+        encoding='utf-8')
     return [csv_path, md_path]
 
 

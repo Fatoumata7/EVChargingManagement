@@ -134,14 +134,32 @@ The raw `summary.csv` is only an input. It still uses the former name
 All service indicators are computed over **all requests**, from the
 per-request table.
 
+**Paper notation.** The last ten columns of every `summary.csv` carry the
+notation of the paper:
+
+| Column | Paper | Definition | Same values as |
+|---|---|---|---|
+| `S_del` | S_del | mean over requests of `min(1, E_del / E_req)`; an unserved request counts 0 | `service_ratio_mean` |
+| `S_full` | S_full | share of requests with `E_del ≥ E_req − 0.001 kWh` | `fully_satisfied_rate` |
+| `E_tot` | E_tot | sum of `E_del` over the request records (kWh) | within 0.003 kWh of `energy_delivered_kwh`, which sums the per-station energies rounded to 0.1 kWh |
+| `U` | U | per station: executed charger-slots / (chargers × T); stations weighted equally | `mean_service_rate`, but computed from slot counts |
+| `O_mean`, `O_max` | mean / max O_m | per station: held charger-slots / (chargers × T); mean and maximum within the run | — |
+| `I_held` | I_held | 1 − executed / held charger-slots, pooled over the run | `held_idle_rate` |
+| `sched_delay_min` | scheduled delay | mean over confirmed reservations (min) | `mean_waiting_time_min` |
+| `n_requests` | \|N\| | unique emitted requests (a retry keeps its identifier) | `nb_demands` |
+| `withdrawals` | permanent withdrawals | vehicles withdrawn after exhausting their search attempts | `nb_cars_excluded` |
+
+`U` and `O_mean` differ from `mean_service_rate` and `mean_occupancy_rate` by
+less than 2e-5: the latter average per-station rates that the simulator
+stored rounded to 4 decimals.
+
+Other columns:
+
 | Column | Definition |
 |---|---|
-| `served_rate` | request **served, even partially**: at least one charging slot delivered (formerly `satisfied_rate`) |
-| `fully_satisfied_rate` | request **fully satisfied**: `delivered ≥ requested − 0.001 kWh` |
-| `service_ratio_mean` | mean of `min(1, delivered / requested)`; an unserved request counts 0 |
-| `service_ratio_mean_served` | same, over served requests only |
-| `network_occupancy_rate` | charger-slots still booked at their own slot / (chargers × horizon) |
-| `network_service_rate` | charger-slots actually spent charging / (chargers × horizon) — effective use |
+| `served_rate` | request **served, even partially**: at least one charging slot delivered (formerly `satisfied_rate`; not a paper endpoint) |
+| `service_ratio_mean_served` | `S_del` over served requests only |
+| `network_occupancy_rate`, `network_service_rate` | held / executed charger-slots over total capacity (capacity-weighted, unlike `O_m` and `U`) |
 | `no_offer_rate`, `request_rejection_rate` | requests with no offer / never confirmed, per request |
 | `station_rejection_rate` | refusals per (station, request) pair |
 | `mean_waiting_time_min` | mean waiting time over accepted offers |
@@ -196,17 +214,22 @@ per-request table.
     - multi-station search (greedy → multistation);
     - reputation (multistation → multistation_rep);
     - cross-station adaptation (multistation_rep → bramev).
-  - Each family holds 9 configurations (3 scenarios × 3 fleet sizes) × 3
-    service indicators (`served_rate`, `fully_satisfied_rate`,
-    `service_ratio_mean`) = 27 paired t-tests, with 10 pairs each.
+  - Each family holds 9 configurations (3 scenarios × 3 fleet sizes) × the
+    3 service endpoints of the paper (`S_del`, `S_full`, `E_tot`) = 27
+    two-sided paired t-tests, with 10 pairs each.
   - Holm's step-down procedure controls the family-wise error rate at
     α = 0.05 within each family. The CIs shown next to it are unadjusted.
   - Result:
-    - multi-station search: 15 of 27 tests significant after correction;
+    - multi-station search: 17 of 27 tests significant after correction
+      (`S_del`: the 6 conditions at 150 and 250 vehicles, none at 50;
+      `S_full`: 6; `E_tot`: 5);
     - reputation: 0 of 27;
     - adaptation: 0 of 27 (smallest adjusted p = 0.51).
-- **Pilot:** exploratory (3 seeds, Student multiplier 4.30). No multiplicity
-  correction is applied.
+- **Pilot:** exploratory and descriptive (3 seeds, Student multiplier 4.30).
+  No multiplicity correction is applied. Its report uses the paper's
+  definitions (`U` with equal station weights, `O_m`, `I_held`, `E_tot`).
+- **Baseline comparisons** (`kind = baseline` in `paired.csv`) are
+  descriptive.
 
 ## Output files
 

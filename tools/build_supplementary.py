@@ -2,6 +2,10 @@
 Build the anonymised supplementary archive of the paper.
 
     python tools/build_supplementary.py <git ref of the analysis code> <work dir>
+    python tools/build_supplementary.py WORKTREE <work dir>
+
+`WORKTREE` takes the analysis code from the working tree (uncommitted
+changes included) instead of a commit.
 
 Stages `<work dir>/supplementary/`, fills `outputs/` by running the archived
 analysis code on the archived data (so the shipped outputs are exactly what
@@ -92,6 +96,19 @@ def export_tree(ref: str, paths, dest: Path, exclude=()) -> None:
     anonymise_project(dest)
 
 
+def copy_worktree(paths, dest: Path) -> None:
+    """The analysis code as it is on disk, without caches."""
+    ignore = shutil.ignore_patterns('__pycache__', '*.pyc', '.DS_Store')
+    for path in paths:
+        src = REPO / path
+        if src.is_dir():
+            shutil.copytree(src, dest / path, ignore=ignore)
+        else:
+            (dest / path).parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(src, dest / path)
+    anonymise_project(dest)
+
+
 def anonymise_project(dest: Path) -> None:
     """The project name is the name of the (nominative) repository."""
     for name in ('pyproject.toml', 'uv.lock'):
@@ -105,8 +122,12 @@ def anonymise_project(dest: Path) -> None:
             path.write_text(text)
 
 
-def provenance() -> dict:
+def provenance(ref: str) -> dict:
     """Hash of every executed module, per campaign, against the shipped code."""
+    def shipped(path: str) -> bytes:
+        return ((REPO / path).read_bytes() if ref == 'WORKTREE'
+                else git_show(ref, path))
+
     out = {}
     for campaign, ref in (('ablation_campaign', ABLATION_COMMIT),
                           ('congestion_pilot', PILOT_TREE)):
@@ -115,7 +136,7 @@ def provenance() -> dict:
             executed = sha256(git_show(ref, path))
             modules[path] = {'sha256': executed,
                              'identical_to_code_dir':
-                                 executed == sha256(git_show('HEAD', path))}
+                                 executed == sha256(shipped(path))}
         out[campaign] = modules
     same = all(out['ablation_campaign'][p]['sha256']
                == out['congestion_pilot'][p]['sha256']
@@ -141,7 +162,10 @@ def main(ref: str, work: Path) -> int:
     stage.mkdir(parents=True)
 
     # --- Code: analysis code (frozen ref), and the code each campaign executed.
-    export_tree(ref, CODE_PATHS, stage / 'code')
+    if ref == 'WORKTREE':
+        copy_worktree(CODE_PATHS, stage / 'code')
+    else:
+        export_tree(ref, CODE_PATHS, stage / 'code')
     export_tree(ABLATION_COMMIT, ('src', 'main.py', 'pyproject.toml', 'uv.lock',
                                   '.python-version', 'experiments/ablation.yaml'),
                 stage / 'code_executed' / 'ablation_campaign')
@@ -151,7 +175,7 @@ def main(ref: str, work: Path) -> int:
                              '.python-version', 'experiments/congestion_pilot.yaml'),
                 stage / 'code_executed' / 'congestion_pilot',
                 exclude=('src/pipeline/reanalysis.py', 'src/pipeline/congestion.py'))
-    prov = provenance()
+    prov = provenance(ref)
     (stage / 'code_executed' / 'provenance.json').write_text(
         json.dumps(prov, indent=2) + '\n')
 
